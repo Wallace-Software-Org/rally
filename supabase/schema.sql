@@ -8,8 +8,9 @@ create table public.profiles (
   lat         float8,
   lng         float8,
   city        text,
-  sports      text[],
-  created_at  timestamptz default now()
+  sports            text[],
+  instagram_handle  text,
+  created_at        timestamptz default now()
 );
 
 alter table public.profiles enable row level security;
