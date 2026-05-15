@@ -1,4 +1,4 @@
-// Runs on every request before the page renders (Edge runtime, not Node.js)
+// Runs on every request before the page renders (Node.js runtime in Next.js 16+)
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -9,7 +9,7 @@ function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Start with a passthrough response; may be replaced inside setAll if cookies change
   let response = NextResponse.next({ request })
 
@@ -40,12 +40,13 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // getUser() validates the JWT with the Supabase Auth server on every call.
-  // Must be called before returning — this is what actually refreshes an expiring session.
-  // getSession() is faster but only reads the local cookie, so it can't be trusted for auth checks.
+  // Proxy must only do optimistic checks (cookie read, no network call) — see Next.js auth docs.
+  // getUser() hits the Supabase auth server on every request, which causes request pile-up under
+  // prefetch load and exhausts memory. Real JWT validation belongs in server components / route handlers.
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   const { pathname } = request.nextUrl
 
