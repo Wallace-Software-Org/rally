@@ -20,6 +20,7 @@ const mockActivity: ActivityWithParticipants = {
 // Stable defaults keep each test focused on one prop or callback.
 const base = {
   activity: mockActivity,
+  userId: "user-123",
   isActive: false,
   isJoined: false,
   isJoining: false,

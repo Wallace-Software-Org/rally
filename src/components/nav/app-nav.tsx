@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types";
 
@@ -12,7 +13,13 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-export default function AppNav({ profile }: { profile: Profile }) {
+export default function AppNav({
+  profile,
+  userId,
+}: {
+  profile: Profile;
+  userId: string | null;
+}) {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -20,14 +27,41 @@ export default function AppNav({ profile }: { profile: Profile }) {
     window.location.href = "/login";
   }
 
+  const logo = (
+    <div className="flex items-center gap-2 flex-none">
+      <span className="w-2.5 h-2.5 rounded-full bg-[#1D9E75] block" />
+      <span className="text-base font-semibold tracking-tight text-[#2C2C2C]">
+        Rally
+      </span>
+    </div>
+  );
+
+  if (!userId) {
+    return (
+      <header className="flex-none flex items-center h-14 px-4 gap-3 border-b border-[#C8B8A8] bg-[#F0EAE2]">
+        {logo}
+        <div className="flex-1" />
+        <div className="flex items-center gap-2 flex-none">
+          <Link
+            href="/login"
+            className="border border-[#C8B8A8] text-[#7A6A5A] rounded-full px-4 py-1.5 text-sm hover:border-[#B8A898] transition-colors"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/login"
+            className="bg-[#1D9E75] text-white rounded-full px-4 py-1.5 text-sm font-medium hover:bg-[#199068] transition-colors"
+          >
+            Sign up
+          </Link>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="flex-none flex items-center h-14 px-4 gap-3 border-b border-[#C8B8A8] bg-[#F0EAE2]">
-      <div className="flex items-center gap-2 flex-none">
-        <span className="w-2.5 h-2.5 rounded-full bg-[#1D9E75] block" />
-        <span className="text-base font-semibold tracking-tight text-[#2C2C2C]">
-          Rally
-        </span>
-      </div>
+      {logo}
 
       {/* Mobile: city center */}
       <span className="flex-1 text-center text-sm text-[#7A6A5A] truncate lg:hidden">
@@ -38,7 +72,7 @@ export default function AppNav({ profile }: { profile: Profile }) {
       <span className="hidden lg:block flex-1 text-center text-sm text-[#7A6A5A] truncate">
         {profile?.city ? `📍 ${profile.city}` : "📍 Nearby"}
       </span>
-      <a
+      <Link
         href="/activity/new"
         className="hidden lg:flex items-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold px-4 py-2 hover:bg-[#199068] active:bg-[#147a56] transition-colors flex-none"
       >
@@ -57,7 +91,7 @@ export default function AppNav({ profile }: { profile: Profile }) {
           />
         </svg>
         Post activity
-      </a>
+      </Link>
 
       {/* Avatar */}
       <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-[#D4C4B4] flex items-center justify-center">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ActivityWithParticipants } from "@/types";
 import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
@@ -7,6 +8,7 @@ import { formatActivityTime } from "@/lib/utils/format-time";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
+  userId: string | null;
   isJoined: boolean;
   isJoining: boolean;
   isLeaving: boolean;
@@ -17,6 +19,7 @@ type MapPreviewCardProps = {
 
 export default function MapPreviewCard({
   activity,
+  userId,
   isJoined,
   isJoining,
   isLeaving,
@@ -103,8 +106,13 @@ export default function MapPreviewCard({
           >
             <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
           </svg>
-          {activity.location_name}
-          {activity.skill_level && ` · ${activity.skill_level}`}
+          {userId ? (
+            <span>{activity.location_name}{activity.skill_level && ` · ${activity.skill_level}`}</span>
+          ) : (
+            <span className="rounded px-1.5 bg-[#C8B8A8] text-[#C8B8A8] select-none blur-[2px]">
+              ••••••••••••
+            </span>
+          )}
         </p>
         <p className="text-[11px] text-[#7A6A5A]">
           {activity.max_participants === null
@@ -116,7 +124,14 @@ export default function MapPreviewCard({
       </div>
 
       {/* CTA */}
-      {isJoined ? (
+      {userId === null ? (
+        <Link
+          href="/login"
+          className="w-full flex items-center justify-center rounded-xl border border-[#C8B8A8] text-[#7A6A5A] text-sm font-medium py-3 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+        >
+          Sign in to join
+        </Link>
+      ) : isJoined ? (
         confirming ? (
           <button
             ref={btnRef}

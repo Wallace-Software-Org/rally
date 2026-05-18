@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ActivityWithParticipants, Profile } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import AppNav from "@/components/nav/app-nav";
@@ -76,7 +77,7 @@ export default function ActivityFeed({
 
   return (
     <div className="h-screen flex flex-col bg-[#F0EAE2] overflow-hidden">
-      <AppNav profile={profile} />
+      <AppNav profile={profile} userId={userId} />
 
       {/* ── Filter pills (mobile) ─────────────────────────────── */}
       <div
@@ -88,7 +89,13 @@ export default function ActivityFeed({
 
       {/* ── Scrollable body (mobile) ──────────────────────────── */}
       <div className="flex-1 overflow-y-auto lg:hidden">
-        <MapPanel activities={activities} variant="strip" />
+        <MapPanel activities={activities} userId={userId} variant="strip" />
+
+        {!userId && (
+          <div className="mx-3 mb-1 mt-2 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
+            Join to see who&apos;s going and save your spot
+          </div>
+        )}
 
         {visible.length === 0 ? (
           <p className="py-20 text-center text-sm text-[#7A6A5A]">
@@ -100,6 +107,7 @@ export default function ActivityFeed({
               <ActivityCardMobile
                 key={a.id}
                 activity={a}
+                userId={userId}
                 isActive={selectedId === a.id}
                 isJoined={joined.has(a.id)}
                 isJoining={joining.has(a.id)}
@@ -115,29 +123,31 @@ export default function ActivityFeed({
         )}
       </div>
 
-      {/* ── Bottom bar (mobile) ───────────────────────────────── */}
-      <div className="flex-none border-t border-[#C8B8A8] p-3 lg:hidden">
-        <a
-          href="/activity/new"
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            aria-hidden="true"
+      {/* ── Bottom bar (mobile) — hidden for logged-out users ─── */}
+      {userId && (
+        <div className="flex-none border-t border-[#C8B8A8] p-3 lg:hidden">
+          <Link
+            href="/activity/new"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"
           >
-            <path
-              d="M7 1.5V12.5M1.5 7H12.5"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-          Post an activity
-        </a>
-      </div>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M7 1.5V12.5M1.5 7H12.5"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            Post an activity
+          </Link>
+        </div>
+      )}
 
       {/* ── Desktop layout ────────────────────────────────────── */}
       <div className="hidden lg:flex flex-1 overflow-hidden">
@@ -151,6 +161,11 @@ export default function ActivityFeed({
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+            {!userId && (
+              <div className="mx-0 mb-1 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
+                Join to see who&apos;s going and save your spot
+              </div>
+            )}
             {visible.length === 0 ? (
               <p className="py-20 text-center text-sm text-[#7A6A5A]">
                 No open activities
@@ -160,6 +175,7 @@ export default function ActivityFeed({
                 <ActivityCardDesktop
                   key={a.id}
                   activity={a}
+                  userId={userId}
                   isActive={selectedId === a.id}
                   isJoined={joined.has(a.id)}
                   isJoining={joining.has(a.id)}
@@ -178,6 +194,7 @@ export default function ActivityFeed({
         {/* Map panel */}
         <MapPanel
           activities={activities}
+          userId={userId}
           selectedId={selectedId}
           onDotClick={(id) =>
             setSelectedId((prev) => (prev === id ? null : id))
@@ -186,6 +203,7 @@ export default function ActivityFeed({
           {selectedActivity && (
             <MapPreviewCard
               activity={selectedActivity}
+              userId={userId}
               isJoined={joined.has(selectedActivity.id)}
               isJoining={joining.has(selectedActivity.id)}
               isLeaving={leaving.has(selectedActivity.id)}

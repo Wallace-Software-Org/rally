@@ -65,6 +65,7 @@ function useDotPositions(
 
 type MapPanelProps = {
   activities: ActivityWithParticipants[];
+  userId?: string | null;
   variant?: "strip" | "full";
   selectedId?: string | null;
   onDotClick?: (id: string) => void;
@@ -73,6 +74,7 @@ type MapPanelProps = {
 
 export default function MapPanel({
   activities,
+  userId,
   variant = "full",
   selectedId,
   onDotClick,
@@ -144,15 +146,31 @@ export default function MapPanel({
             className="absolute -translate-x-1/2 flex flex-col items-center gap-0.5 group"
             style={{ top: `${pos.y}%`, left: `${pos.x}%` }}
           >
-            <span className="text-[10px] font-medium text-[#7A6A5A] bg-[#F0EAE2]/80 px-1.5 py-0.5 rounded backdrop-blur-sm leading-tight max-w-25 truncate">
-              {a.location_name}
-            </span>
+            {userId && (
+              <span className="text-[10px] font-medium text-[#7A6A5A] bg-[#F0EAE2]/80 px-1.5 py-0.5 rounded backdrop-blur-sm leading-tight max-w-25 truncate">
+                {a.location_name}
+              </span>
+            )}
             <span
-              className={`w-3 h-3 rounded-full transition-all ${
+              className="rounded-full transition-all"
+              style={
                 isActive
-                  ? "bg-white ring-2 ring-[#1D9E75] ring-offset-1"
-                  : "bg-[#1D9E75] group-hover:ring-2 group-hover:ring-[#1D9E75]/40"
-              }`}
+                  ? {
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      background: "#1D9E75",
+                      outline: "2px solid white",
+                      outlineOffset: "1px",
+                      boxShadow: "0 0 0 1px #1D9E75",
+                    }
+                  : {
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#1D9E75",
+                    }
+              }
             />
           </button>
         );

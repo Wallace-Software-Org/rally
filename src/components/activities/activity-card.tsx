@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
 import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
 import { formatActivityTime } from "@/lib/utils/format-time";
@@ -16,6 +17,7 @@ function initials(name: string): string {
 
 type CardProps = {
   activity: ActivityWithParticipants;
+  userId: string | null;
   isJoined: boolean;
   isJoining: boolean;
   isLeaving: boolean;
@@ -30,6 +32,7 @@ type MobileCardProps = CardProps & {
 
 export function ActivityCardMobile({
   activity,
+  userId,
   isActive,
   isJoined,
   isJoining,
@@ -92,7 +95,13 @@ export function ActivityCardMobile({
           >
             <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
           </svg>
-          <span className="truncate">{activity.location_name}</span>
+          {userId ? (
+            <span className="truncate">{activity.location_name}</span>
+          ) : (
+            <span className="rounded px-1.5 bg-[#C8B8A8] text-[#C8B8A8] select-none blur-[2px]">
+              ••••••••••••
+            </span>
+          )}
         </p>
         <p className="text-[11px] text-[#7A6A5A]">
           {"— mi" /* distance placeholder — wire useLocation to calculate this */}
@@ -129,16 +138,26 @@ export function ActivityCardMobile({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
-        <JoinButton
-          isJoined={isJoined}
-          isJoining={isJoining}
-          isLeaving={isLeaving}
-          spotsLeft={spotsLeft}
-          onJoin={onJoin}
-          onLeave={onLeave}
-          stopPropagation
-          className="py-1.75 px-5 text-[12px] min-w-20"
-        />
+        {userId === null ? (
+          <Link
+            href="/login"
+            onClick={(e) => e.stopPropagation()}
+            className="w-20 h-7 flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+          >
+            Sign in
+          </Link>
+        ) : (
+          <JoinButton
+            isJoined={isJoined}
+            isJoining={isJoining}
+            isLeaving={isLeaving}
+            spotsLeft={spotsLeft}
+            onJoin={onJoin}
+            onLeave={onLeave}
+            stopPropagation
+            className="py-1.75 px-5 text-[12px] min-w-20"
+          />
+        )}
       </div>
     </div>
   );
@@ -151,6 +170,7 @@ type DesktopCardProps = CardProps & {
 
 export function ActivityCardDesktop({
   activity,
+  userId,
   isActive,
   isJoined,
   isJoining,
@@ -215,7 +235,13 @@ export function ActivityCardDesktop({
         >
           <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
         </svg>
-        <span className="truncate">{activity.location_name}</span>
+        {userId ? (
+          <span className="truncate">{activity.location_name}</span>
+        ) : (
+          <span className="rounded px-1.5 bg-[#C8B8A8] text-[#C8B8A8] select-none blur-[2px]">
+            ••••••••••••
+          </span>
+        )}
         {activity.skill_level && (
           <span className="text-[#7A6A5A] flex-none">
             · {activity.skill_level}
@@ -235,10 +261,10 @@ export function ActivityCardDesktop({
                   <img
                     src={av.avatar_url}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover${userId === null ? " blur-sm" : ""}`}
                   />
                 ) : (
-                  <span className="text-[8px] font-semibold text-[#5C4A38]">
+                  <span className={`text-[8px] font-semibold text-[#5C4A38]${userId === null ? " blur-sm" : ""}`}>
                     {av.full_name ? initials(av.full_name) : "?"}
                   </span>
                 )}
@@ -253,15 +279,25 @@ export function ActivityCardDesktop({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
-        <JoinButton
-          isJoined={isJoined}
-          isJoining={isJoining}
-          isLeaving={isLeaving}
-          spotsLeft={spotsLeft}
-          onJoin={onJoin}
-          onLeave={onLeave}
-          stopPropagation
-        />
+        {userId === null ? (
+          <Link
+            href="/login"
+            onClick={(e) => e.stopPropagation()}
+            className="w-20 h-7 flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+          >
+            Sign in
+          </Link>
+        ) : (
+          <JoinButton
+            isJoined={isJoined}
+            isJoining={isJoining}
+            isLeaving={isLeaving}
+            spotsLeft={spotsLeft}
+            onJoin={onJoin}
+            onLeave={onLeave}
+            stopPropagation
+          />
+        )}
       </div>
     </div>
   );
