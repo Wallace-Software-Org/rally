@@ -14,7 +14,7 @@ export async function getActivities(): Promise<ActivityWithParticipants[]> {
     `,
     )
     .eq("status", "open")
-    .gt("starts_at", new Date(Date.now() - 60 * 60 * 1000).toISOString()) // keep activities visible up to 1h after they start
+    .gt("starts_at", new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()) // Arizona is UTC-7 (no DST); 3h buffer keeps local-time activities visible
     .order("starts_at", { ascending: true });
 
   // Supabase without generated types infers many-to-one joins as arrays at the type level

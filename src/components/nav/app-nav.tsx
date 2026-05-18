@@ -75,7 +75,7 @@ export default function AppNav({ profile }: { profile: Profile }) {
       <button
         onClick={handleLogout}
         aria-label="Sign out"
-        className="flex-none flex items-center gap-1.5 rounded-lg border border-[#C8B8A8] text-[#7A6A5A] hover:border-[#B8A898] hover:text-[#2C2C2C] transition-colors px-2 py-1.5"
+        className="flex-none flex items-center gap-1.5 rounded-lg border border-[#C8B8A8] bg-transparent text-sm text-[#7A6A5A] hover:border-[#B8A898] hover:text-[#2C2C2C] transition-colors px-3 py-1.5"
       >
         <svg
           width="15"
@@ -92,7 +92,7 @@ export default function AppNav({ profile }: { profile: Profile }) {
             strokeLinejoin="round"
           />
         </svg>
-        <span className="hidden lg:inline text-xs font-medium">Sign out</span>
+        <span className="hidden lg:inline">Sign out</span>
       </button>
     </header>
   );

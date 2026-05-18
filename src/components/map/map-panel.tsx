@@ -31,6 +31,34 @@ function useDotPositions(
         y: PAD + ((maxLat - a.lat!) / latRange) * scale,
       });
     }
+
+    // Nudge dots that are too close together so labels don't overlap
+    const COLLISION_RADIUS = 6;
+    const posArray = Array.from(map.values());
+    for (let pass = 0; pass < 10; pass++) {
+      for (let i = 0; i < posArray.length; i++) {
+        for (let j = i + 1; j < posArray.length; j++) {
+          const a = posArray[i];
+          const b = posArray[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist === 0) {
+            a.y -= COLLISION_RADIUS / 2;
+            b.y += COLLISION_RADIUS / 2;
+          } else if (dist < COLLISION_RADIUS) {
+            const push = (COLLISION_RADIUS - dist) / 2;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            a.x += nx * push;
+            a.y += ny * push;
+            b.x -= nx * push;
+            b.y -= ny * push;
+          }
+        }
+      }
+    }
+
     return map;
   }, [activities]);
 }
