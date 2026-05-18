@@ -71,7 +71,9 @@ export function ActivityCardMobile({
           <span className="truncate">{activity.location_name}</span>
         </p>
         <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-          {"— mi"/* distance placeholder — wire useLocation to calculate this */}
+          {
+            "— mi" /* distance placeholder — wire useLocation to calculate this */
+          }
           {activity.skill_level ? ` · ${activity.skill_level}` : ""}
         </p>
       </div>

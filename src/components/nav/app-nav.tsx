@@ -1,3 +1,6 @@
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types";
 
 function initials(name: string): string {
@@ -10,6 +13,13 @@ function initials(name: string): string {
 }
 
 export default function AppNav({ profile }: { profile: Profile }) {
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    // Full reload so all client state and cached server components are cleared
+    window.location.href = "/login";
+  }
+
   return (
     <header className="flex-none flex items-center h-14 px-4 gap-3 border-b border-zinc-100 dark:border-zinc-800">
       <div className="flex items-center gap-2 flex-none">
@@ -46,7 +56,7 @@ export default function AppNav({ profile }: { profile: Profile }) {
         Post activity
       </button>
 
-      {/* Avatar — both layouts */}
+      {/* Avatar */}
       <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
         {profile?.avatar_url ? (
           <img
@@ -60,6 +70,31 @@ export default function AppNav({ profile }: { profile: Profile }) {
           </span>
         )}
       </div>
+
+      {/* Logout — icon only on mobile, icon + label on desktop */}
+      <button
+        onClick={handleLogout}
+        aria-label="Sign out"
+        className="flex-none flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors px-2 py-1.5"
+      >
+        {/* Exit / logout icon */}
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 15 15"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M5.5 2H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2.5M10 10.5l3-3-3-3M13 7.5H5.5"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span className="hidden lg:inline text-xs font-medium">Sign out</span>
+      </button>
     </header>
   );
 }
