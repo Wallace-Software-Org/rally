@@ -16,16 +16,16 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950 px-6">
+    <main className="min-h-screen flex items-center justify-center bg-[#F0EAE2] px-6">
       <div className="flex flex-col items-center w-full max-w-xs gap-10">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-2.5">
             <span className="block w-3 h-3 rounded-full bg-[#1D9E75]" aria-hidden="true" />
-            <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+            <span className="text-2xl font-bold tracking-tight text-[#2C2C2C]">
               Rally
             </span>
           </div>
-          <p className="text-sm text-zinc-400">Active people, real plans</p>
+          <p className="text-sm text-[#7A6A5A]">Active people, real plans</p>
         </div>
 
         <button

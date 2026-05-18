@@ -1,10 +1,13 @@
+// Single tag palette across all sports — brand uses one unified sport tag color
+const TAG = { bg: "#C8E6DC", text: "#1A6B52" };
+
 export const SPORT_COLORS: Record<string, { bg: string; text: string }> = {
-  pickleball: { bg: "#E1F5EE", text: "#0F6E56" },
-  running: { bg: "#EAF3DE", text: "#3B6D11" },
-  boxing: { bg: "#FAEEDA", text: "#854F0B" },
-  hiking: { bg: "#EAF3DE", text: "#3B6D11" },
-  gym: { bg: "#E6F1FB", text: "#185FA5" },
-  paddleboard: { bg: "#E1F5EE", text: "#0F6E56" },
+  pickleball:  TAG,
+  running:     TAG,
+  boxing:      TAG,
+  hiking:      TAG,
+  gym:         TAG,
+  paddleboard: TAG,
 };
 
 export function getSportLabel(sport: string): string {

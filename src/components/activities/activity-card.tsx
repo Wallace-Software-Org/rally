@@ -32,8 +32,8 @@ export function ActivityCardMobile({
   onLeave,
 }: CardProps) {
   const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
-    bg: "#F4F4F5",
-    text: "#52525B",
+    bg: "#C8E6DC",
+    text: "#1A6B52",
   };
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
@@ -41,7 +41,7 @@ export function ActivityCardMobile({
   const spotsLeft = activity.max_participants - participantCount;
 
   return (
-    <div className="rounded-xl bg-white dark:bg-zinc-900 p-[10px] flex flex-col gap-2 ring-[0.5px] ring-zinc-200 dark:ring-zinc-800">
+    <div className="rounded-xl bg-[#F0EAE2] p-2.5 flex flex-col gap-2 border border-[#C8B8A8]">
       <div className="flex items-start justify-between gap-1">
         <span
           className="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 flex-none"
@@ -49,15 +49,15 @@ export function ActivityCardMobile({
         >
           {getSportLabel(activity.sport)}
         </span>
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-4 shrink-0">
+        <span className="text-[10px] text-[#7A6A5A] leading-4 shrink-0">
           {formatActivityTime(activity.starts_at)}
         </span>
       </div>
-      <p className="text-sm font-medium text-zinc-900 dark:text-white leading-snug">
+      <p className="text-sm font-medium text-[#2C2C2C] leading-snug">
         {activity.title}
       </p>
       <div className="flex flex-col gap-0.5">
-        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 min-w-0">
+        <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1 min-w-0">
           <svg
             width="8"
             height="10"
@@ -70,15 +70,13 @@ export function ActivityCardMobile({
           </svg>
           <span className="truncate">{activity.location_name}</span>
         </p>
-        <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-          {
-            "— mi" /* distance placeholder — wire useLocation to calculate this */
-          }
+        <p className="text-[11px] text-[#7A6A5A]">
+          {"— mi" /* distance placeholder — wire useLocation to calculate this */}
           {activity.skill_level ? ` · ${activity.skill_level}` : ""}
         </p>
       </div>
       <div className="flex items-center justify-between gap-1 mt-auto pt-0.5">
-        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[11px] text-[#7A6A5A]">
           {spotsLeft <= 0
             ? "Full"
             : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
@@ -112,8 +110,8 @@ export function ActivityCardDesktop({
   onLeave,
 }: DesktopCardProps) {
   const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
-    bg: "#F4F4F5",
-    text: "#52525B",
+    bg: "#C8E6DC",
+    text: "#1A6B52",
   };
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
@@ -131,10 +129,10 @@ export function ActivityCardDesktop({
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={(e) => e.key === "Enter" && onSelect()}
-      className={`rounded-xl p-[11px] flex flex-col gap-2 cursor-pointer transition-all ${
+      className={`rounded-xl p-2.75 flex flex-col gap-2 cursor-pointer transition-all ${
         isActive
-          ? "ring-[1.5px] ring-[#1D9E75] bg-[#E1F5EE]/40 dark:bg-[#0F6E56]/10"
-          : "ring-[0.5px] ring-zinc-200 dark:ring-zinc-800 bg-white dark:bg-zinc-900 hover:ring-zinc-300 dark:hover:ring-zinc-700"
+          ? "ring-[1.5px] ring-[#1D9E75] bg-[#C8E6DC]/30"
+          : "border border-[#C8B8A8] bg-[#F0EAE2] hover:border-[#B8A898]"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -144,16 +142,16 @@ export function ActivityCardDesktop({
         >
           {getSportLabel(activity.sport)}
         </span>
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-4 shrink-0">
+        <span className="text-[10px] text-[#7A6A5A] leading-4 shrink-0">
           {formatActivityTime(activity.starts_at)}
         </span>
       </div>
 
-      <p className="text-[13px] font-medium text-zinc-900 dark:text-white leading-snug">
+      <p className="text-[13px] font-medium text-[#2C2C2C] leading-snug">
         {activity.title}
       </p>
 
-      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 min-w-0">
+      <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1 min-w-0">
         <svg
           width="8"
           height="10"
@@ -166,7 +164,7 @@ export function ActivityCardDesktop({
         </svg>
         <span className="truncate">{activity.location_name}</span>
         {activity.skill_level && (
-          <span className="text-zinc-400 dark:text-zinc-500 flex-none">
+          <span className="text-[#7A6A5A] flex-none">
             · {activity.skill_level}
           </span>
         )}
@@ -178,7 +176,7 @@ export function ActivityCardDesktop({
             {avatars.map((av, i) => (
               <div
                 key={i}
-                className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-700 ring-[1.5px] ring-white dark:ring-zinc-900 overflow-hidden flex items-center justify-center"
+                className="w-5 h-5 rounded-full bg-[#D4C4B4] ring-[1.5px] ring-[#F0EAE2] overflow-hidden flex items-center justify-center"
               >
                 {av.avatar_url ? (
                   <img
@@ -187,7 +185,7 @@ export function ActivityCardDesktop({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-[8px] font-semibold text-zinc-600 dark:text-zinc-300">
+                  <span className="text-[8px] font-semibold text-[#5C4A38]">
                     {av.full_name ? initials(av.full_name) : "?"}
                   </span>
                 )}
@@ -195,7 +193,7 @@ export function ActivityCardDesktop({
             ))}
           </div>
         )}
-        <span className="text-[11px] text-zinc-400 dark:text-zinc-500 flex-1">
+        <span className="text-[11px] text-[#7A6A5A] flex-1">
           {spotsLeft <= 0
             ? "Full"
             : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}

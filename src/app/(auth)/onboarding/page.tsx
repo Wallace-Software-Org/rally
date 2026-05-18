@@ -17,19 +17,19 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950 px-6 py-12">
+    <main className="min-h-screen flex items-center justify-center bg-[#F0EAE2] px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2.5 mb-10">
           <span className="block w-3 h-3 rounded-full bg-[#1D9E75]" aria-hidden="true" />
-          <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+          <span className="text-2xl font-bold tracking-tight text-[#2C2C2C]">
             Rally
           </span>
         </div>
 
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-[#2C2C2C]">
           Set up your profile
         </h1>
-        <p className="mt-1 mb-8 text-sm text-zinc-400">Tell the community a bit about yourself</p>
+        <p className="mt-1 mb-8 text-sm text-[#7A6A5A]">Tell the community a bit about yourself</p>
 
         {/*
           action={createProfile} wires this native <form> to a Server Action.
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
           </Field>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <legend className="text-sm font-medium text-[#2C2C2C]">
               I&apos;m into
             </legend>
             <div className="flex flex-wrap gap-2 mt-1">
@@ -96,7 +96,7 @@ export default function OnboardingPage() {
                     className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                       active
                         ? 'bg-[#1D9E75] border-[#1D9E75] text-white'
-                        : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-[#1D9E75] hover:text-[#1D9E75]'
+                        : 'border-[#C8B8A8] text-[#7A6A5A] hover:border-[#1D9E75] hover:text-[#1D9E75]'
                     }`}
                   >
                     {sport}
@@ -120,7 +120,7 @@ export default function OnboardingPage() {
 
 // Shared Tailwind string for all text inputs — defined once to keep field markup clean
 const inputCls =
-  'w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-transparent px-3.5 py-2.5 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/40 transition'
+  'w-full rounded-lg border border-[#C8B8A8] bg-transparent px-3.5 py-2.5 text-sm text-[#2C2C2C] placeholder:text-[#7A6A5A] focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/40 transition'
 
 // Thin wrapper that pairs a <label> with any form control
 function Field({
@@ -132,7 +132,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</label>
+      <label className="text-sm font-medium text-[#2C2C2C]">{label}</label>
       {children}
     </div>
   )

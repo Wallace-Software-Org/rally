@@ -75,12 +75,12 @@ export default function ActivityFeed({
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white dark:bg-zinc-950 overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#F0EAE2] overflow-hidden">
       <AppNav profile={profile} />
 
       {/* ── Filter pills (mobile) ─────────────────────────────── */}
       <div
-        className="flex-none flex gap-2 px-4 py-3 overflow-x-auto border-b border-zinc-100 dark:border-zinc-800 lg:hidden"
+        className="flex-none flex gap-2 px-4 py-3 overflow-x-auto border-b border-[#C8B8A8] lg:hidden"
         style={{ scrollbarWidth: "none" }}
       >
         <ActivityFilters sport={sport} onChange={setSport} />
@@ -91,7 +91,7 @@ export default function ActivityFeed({
         <MapPanel activities={activities} variant="strip" />
 
         {visible.length === 0 ? (
-          <p className="py-20 text-center text-sm text-zinc-400">
+          <p className="py-20 text-center text-sm text-[#7A6A5A]">
             No open activities
           </p>
         ) : (
@@ -112,7 +112,7 @@ export default function ActivityFeed({
       </div>
 
       {/* ── Bottom bar (mobile) ───────────────────────────────── */}
-      <div className="flex-none border-t border-zinc-100 dark:border-zinc-800 p-3 lg:hidden">
+      <div className="flex-none border-t border-[#C8B8A8] p-3 lg:hidden">
         <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors">
           <svg
             width="14"
@@ -135,9 +135,9 @@ export default function ActivityFeed({
       {/* ── Desktop layout ────────────────────────────────────── */}
       <div className="hidden lg:flex flex-1 overflow-hidden">
         {/* Left panel */}
-        <div className="flex flex-col w-[380px] flex-none border-r border-zinc-100 dark:border-zinc-800 overflow-hidden">
+        <div className="flex flex-col w-[380px] flex-none border-r border-[#C8B8A8] overflow-hidden">
           <div
-            className="flex-none flex gap-2 px-4 py-3 overflow-x-auto border-b border-zinc-100 dark:border-zinc-800"
+            className="flex-none flex gap-2 px-4 py-3 overflow-x-auto border-b border-[#C8B8A8]"
             style={{ scrollbarWidth: "none" }}
           >
             <ActivityFilters sport={sport} onChange={setSport} />
@@ -145,7 +145,7 @@ export default function ActivityFeed({
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
             {visible.length === 0 ? (
-              <p className="py-20 text-center text-sm text-zinc-400">
+              <p className="py-20 text-center text-sm text-[#7A6A5A]">
                 No open activities
               </p>
             ) : (

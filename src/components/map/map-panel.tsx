@@ -54,12 +54,12 @@ export default function MapPanel({
 
   if (variant === "strip") {
     return (
-      <div className="h-20 bg-zinc-50 dark:bg-zinc-900 relative overflow-hidden flex items-end px-3 pb-2">
+      <div className="h-20 bg-[#E8DFCF] relative overflow-hidden flex items-end px-3 pb-2">
         <div
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(113,113,122,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(113,113,122,0.25) 1px, transparent 1px)",
+              "linear-gradient(rgba(139,120,100,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(139,120,100,0.2) 1px, transparent 1px)",
             backgroundSize: "32px 32px",
           }}
         />
@@ -74,7 +74,7 @@ export default function MapPanel({
             />
           );
         })}
-        <button className="relative z-10 flex items-center gap-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 shadow-sm">
+        <button className="relative z-10 flex items-center gap-1 rounded-full bg-[#F0EAE2] border border-[#C8B8A8] px-3 py-1 text-[11px] font-medium text-[#7A6A5A] shadow-sm">
           <svg
             width="10"
             height="10"
@@ -96,12 +96,12 @@ export default function MapPanel({
   }
 
   return (
-    <div className="flex-1 relative bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
+    <div className="flex-1 relative bg-[#E8DFCF] overflow-hidden">
       <div
         className="absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(113,113,122,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(113,113,122,0.18) 1px, transparent 1px)",
+            "linear-gradient(rgba(139,120,100,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(139,120,100,0.15) 1px, transparent 1px)",
           backgroundSize: "48px 48px",
         }}
       />
@@ -116,7 +116,7 @@ export default function MapPanel({
             className="absolute -translate-x-1/2 flex flex-col items-center gap-0.5 group"
             style={{ top: `${pos.y}%`, left: `${pos.x}%` }}
           >
-            <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-300 bg-white/80 dark:bg-zinc-900/80 px-1.5 py-0.5 rounded backdrop-blur-sm leading-tight max-w-[100px] truncate">
+            <span className="text-[10px] font-medium text-[#7A6A5A] bg-[#F0EAE2]/80 px-1.5 py-0.5 rounded backdrop-blur-sm leading-tight max-w-25 truncate">
               {a.location_name}
             </span>
             <span

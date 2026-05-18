@@ -37,8 +37,8 @@ export default function MapPreviewCard({
   }, [confirming]);
 
   const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
-    bg: "#F4F4F5",
-    text: "#52525B",
+    bg: "#C8E6DC",
+    text: "#1A6B52",
   };
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
@@ -46,11 +46,11 @@ export default function MapPreviewCard({
   const spotsLeft = activity.max_participants - participantCount;
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[320px] rounded-2xl bg-white dark:bg-zinc-900 shadow-xl ring-[0.5px] ring-zinc-200 dark:ring-zinc-800 p-4 flex flex-col gap-3 z-10">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[320px] rounded-2xl bg-[#F0EAE2] shadow-xl border border-[#C8B8A8] p-4 flex flex-col gap-3 z-10">
       {/* Dismiss */}
       <button
         onClick={onDismiss}
-        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-[#D4C4B4] text-[#7A6A5A] hover:bg-[#C8B8A8] transition-colors"
         aria-label="Close"
       >
         <svg
@@ -77,19 +77,19 @@ export default function MapPreviewCard({
         >
           {getSportLabel(activity.sport)}
         </span>
-        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[11px] text-[#7A6A5A]">
           {formatActivityTime(activity.starts_at)}
         </span>
       </div>
 
       {/* Title */}
-      <p className="text-sm font-semibold text-zinc-900 dark:text-white leading-snug">
+      <p className="text-sm font-semibold text-[#2C2C2C] leading-snug">
         {activity.title}
       </p>
 
       {/* Location + skill + spots */}
       <div className="flex flex-col gap-1">
-        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+        <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1">
           <svg
             width="8"
             height="10"
@@ -103,7 +103,7 @@ export default function MapPreviewCard({
           {activity.location_name}
           {activity.skill_level && ` · ${activity.skill_level}`}
         </p>
-        <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+        <p className="text-[11px] text-[#7A6A5A]">
           {spotsLeft <= 0
             ? "Full"
             : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left`}
@@ -125,7 +125,7 @@ export default function MapPreviewCard({
           <button
             ref={btnRef}
             onClick={() => setConfirming(true)}
-            className="w-full rounded-xl border border-transparent bg-[#E1F5EE] dark:bg-[#0F6E56]/20 text-[#1D9E75] text-sm font-semibold py-3 transition-colors"
+            className="w-full rounded-xl border border-transparent bg-[#C8E6DC] text-[#1D9E75] text-sm font-semibold py-3 transition-colors"
           >
             You&apos;re in ✓
           </button>
@@ -139,8 +139,8 @@ export default function MapPreviewCard({
           {isJoining ? "Joining…" : "Join this activity"}
         </button>
       ) : (
-        <div className="flex items-center justify-center rounded-xl py-3 bg-zinc-100 dark:bg-zinc-800">
-          <span className="text-sm font-medium text-zinc-400">
+        <div className="flex items-center justify-center rounded-xl py-3 bg-[#D4C4B4]">
+          <span className="text-sm font-medium text-[#7A6A5A]">
             Activity is full
           </span>
         </div>
