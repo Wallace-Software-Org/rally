@@ -95,14 +95,18 @@ export default function ActivityFeed({
             No open activities
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-2 p-[14px]">
+          <div className="flex flex-col gap-2 p-3.5">
             {visible.map((a) => (
               <ActivityCardMobile
                 key={a.id}
                 activity={a}
+                isActive={selectedId === a.id}
                 isJoined={joined.has(a.id)}
                 isJoining={joining.has(a.id)}
                 isLeaving={leaving.has(a.id)}
+                onSelect={() =>
+                  setSelectedId((prev) => (prev === a.id ? null : a.id))
+                }
                 onJoin={() => handleJoin(a.id)}
                 onLeave={() => handleLeave(a.id)}
               />

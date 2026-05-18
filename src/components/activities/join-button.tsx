@@ -10,6 +10,7 @@ type JoinButtonProps = {
   onJoin: () => void;
   onLeave: () => void;
   stopPropagation?: boolean; // set true inside clickable cards so the button doesn't also trigger onSelect
+  className?: string; // overrides default w-20 h-7 text-[11px] sizing (e.g. larger tap targets on mobile)
 };
 
 export default function JoinButton({
@@ -20,7 +21,9 @@ export default function JoinButton({
   onJoin,
   onLeave,
   stopPropagation = false,
+  className,
 }: JoinButtonProps) {
+  const sizeCls = className ?? "w-20 h-7 text-[11px]";
   const [confirming, setConfirming] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -46,7 +49,7 @@ export default function JoinButton({
           onLeave();
         }}
         disabled={isLeaving}
-        className="w-20 h-7 flex items-center justify-center rounded-full border border-red-500 text-red-500 text-[11px] font-semibold transition-colors disabled:opacity-50"
+        className={`${sizeCls} flex items-center justify-center rounded-full border border-red-500 text-red-500 font-semibold transition-colors disabled:opacity-50`}
       >
         {isLeaving ? "…" : "Leave"}
       </button>
@@ -57,7 +60,7 @@ export default function JoinButton({
           stop(e);
           setConfirming(true);
         }}
-        className="w-20 h-7 flex items-center justify-center rounded-full border border-transparent bg-[#1D9E75] text-white text-[11px] font-semibold transition-colors"
+        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-[#1D9E75] text-white font-semibold transition-colors`}
       >
         Joined ✓
       </button>
@@ -72,7 +75,7 @@ export default function JoinButton({
           onJoin();
         }}
         disabled={isJoining}
-        className="w-20 h-7 flex items-center justify-center rounded-full border border-transparent bg-[#1D9E75] text-white text-[11px] font-semibold hover:bg-[#199068] active:bg-[#147a56] transition-colors disabled:opacity-50"
+        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-[#1D9E75] text-white font-semibold hover:bg-[#199068] active:bg-[#147a56] transition-colors disabled:opacity-50`}
       >
         {isJoining ? "…" : "Join"}
       </button>
