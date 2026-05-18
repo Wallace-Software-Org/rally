@@ -43,7 +43,10 @@ export default function MapPreviewCard({
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
     : 0;
-  const spotsLeft = activity.max_participants - participantCount;
+  const spotsLeft =
+    activity.max_participants === null
+      ? Infinity
+      : activity.max_participants - participantCount;
 
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[320px] rounded-2xl bg-[#F0EAE2] shadow-xl border border-[#C8B8A8] p-4 flex flex-col gap-3 z-10">
@@ -104,9 +107,11 @@ export default function MapPreviewCard({
           {activity.skill_level && ` · ${activity.skill_level}`}
         </p>
         <p className="text-[11px] text-[#7A6A5A]">
-          {spotsLeft <= 0
-            ? "Full"
-            : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left`}
+          {activity.max_participants === null
+            ? "Open"
+            : spotsLeft <= 0
+              ? "Full"
+              : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left`}
         </p>
       </div>
 

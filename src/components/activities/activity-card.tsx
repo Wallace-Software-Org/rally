@@ -45,7 +45,10 @@ export function ActivityCardMobile({
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
     : 0;
-  const spotsLeft = activity.max_participants - participantCount;
+  const spotsLeft =
+    activity.max_participants === null
+      ? Infinity
+      : activity.max_participants - participantCount;
   const avatars = activity.participants
     .filter((p) => p.profiles)
     .slice(0, 3)
@@ -120,9 +123,11 @@ export function ActivityCardMobile({
           </div>
         )}
         <span className="text-[11px] text-[#7A6A5A] flex-1">
-          {spotsLeft <= 0
-            ? "Full"
-            : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
+          {activity.max_participants === null
+            ? "Open"
+            : spotsLeft <= 0
+              ? "Full"
+              : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
         <JoinButton
           isJoined={isJoined}
@@ -161,7 +166,10 @@ export function ActivityCardDesktop({
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
     : 0;
-  const spotsLeft = activity.max_participants - participantCount;
+  const spotsLeft =
+    activity.max_participants === null
+      ? Infinity
+      : activity.max_participants - participantCount;
 
   const avatars = activity.participants
     .filter((p) => p.profiles)
@@ -239,9 +247,11 @@ export function ActivityCardDesktop({
           </div>
         )}
         <span className="text-[11px] text-[#7A6A5A] flex-1">
-          {spotsLeft <= 0
-            ? "Full"
-            : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
+          {activity.max_participants === null
+            ? "Open"
+            : spotsLeft <= 0
+              ? "Full"
+              : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
         <JoinButton
           isJoined={isJoined}

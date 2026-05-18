@@ -117,7 +117,10 @@ export default function ActivityFeed({
 
       {/* ── Bottom bar (mobile) ───────────────────────────────── */}
       <div className="flex-none border-t border-[#C8B8A8] p-3 lg:hidden">
-        <button className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors">
+        <a
+          href="/activity/new"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"
+        >
           <svg
             width="14"
             height="14"
@@ -133,7 +136,7 @@ export default function ActivityFeed({
             />
           </svg>
           Post an activity
-        </button>
+        </a>
       </div>
 
       {/* ── Desktop layout ────────────────────────────────────── */}

@@ -15,7 +15,7 @@ export type Activity = {
   sport: string;
   location_name: string;
   starts_at: string;
-  max_participants: number;
+  max_participants: number | null;
   skill_level: string | null;
   lat: number | null;
   lng: number | null;

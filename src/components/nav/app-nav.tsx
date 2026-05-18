@@ -38,7 +38,10 @@ export default function AppNav({ profile }: { profile: Profile }) {
       <span className="hidden lg:block flex-1 text-center text-sm text-[#7A6A5A] truncate">
         {profile?.city ? `📍 ${profile.city}` : "📍 Nearby"}
       </span>
-      <button className="hidden lg:flex items-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold px-4 py-2 hover:bg-[#199068] active:bg-[#147a56] transition-colors flex-none">
+      <a
+        href="/activity/new"
+        className="hidden lg:flex items-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold px-4 py-2 hover:bg-[#199068] active:bg-[#147a56] transition-colors flex-none"
+      >
         <svg
           width="12"
           height="12"
@@ -54,7 +57,7 @@ export default function AppNav({ profile }: { profile: Profile }) {
           />
         </svg>
         Post activity
-      </button>
+      </a>
 
       {/* Avatar */}
       <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-[#D4C4B4] flex items-center justify-center">
