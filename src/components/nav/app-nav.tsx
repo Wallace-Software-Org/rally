@@ -39,7 +39,7 @@ export default function AppNav({
   if (!userId) {
     return (
       <header className="flex-none border-b border-[#C8B8A8] bg-[#F0EAE2]">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
+        <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center gap-3">
           {logo}
           <div className="flex-1" />
           <div className="flex items-center gap-2 flex-none">
@@ -63,7 +63,7 @@ export default function AppNav({
 
   return (
     <header className="flex-none border-b border-[#C8B8A8] bg-[#F0EAE2]">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
+      <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center gap-3">
         {logo}
 
         <div className="flex-1" />

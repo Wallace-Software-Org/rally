@@ -77,8 +77,13 @@ export default function ActivityFeed({
     <div className="h-screen flex flex-col bg-[#F0EAE2] overflow-hidden">
       <AppNav profile={profile} userId={userId} />
 
-      {/* ── Filter bar — mobile only (< md): date pill left, sport pills scroll right ── */}
-      <div className="md:hidden flex-none flex items-center border-b border-[#C8B8A8]">
+      {/* ── Map strip — mobile, md, lg: fixed above filter bar, hidden at xl ── */}
+      <div className="xl:hidden flex-none">
+        <MapPanel activities={activities} userId={userId} variant="strip" />
+      </div>
+
+      {/* ── Filter bar — mobile + md (< lg): date pill left, sport pills scroll right ── */}
+      <div className="lg:hidden flex-none flex items-center border-b border-[#C8B8A8]">
         <div className="pl-4 pr-2 py-3 flex-none">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
         </div>
@@ -99,22 +104,20 @@ export default function ActivityFeed({
         </div>
       </div>
 
-      {/* ── Filter bar — md and lg (768–1279px): toolbar with overflow pill ── */}
-      <div className="hidden md:flex xl:hidden flex-none border-b border-[#C8B8A8]">
+      {/* ── Filter bar — lg only (1024–1279px): toolbar with overflow, date first ── */}
+      <div className="hidden lg:flex xl:hidden flex-none border-b border-[#C8B8A8]">
         <div className="max-w-5xl mx-auto px-4 w-full flex items-center gap-2 py-3">
-          <ActivityFilters sports={sports} onChange={setSports} toolbar />
-          <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
+          <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
+          <ActivityFilters sports={sports} onChange={setSports} toolbar />
         </div>
       </div>
 
       {/* ── Content area ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-hidden flex">
 
-        {/* Mobile + md + lg (< xl): map strip at top, single scrollable card grid */}
+        {/* Mobile + md + lg (< xl): single scrollable card grid */}
         <div className="xl:hidden flex-1 overflow-y-auto">
-          <MapPanel activities={activities} userId={userId} variant="strip" />
-
           <div className="max-w-5xl mx-auto px-4">
             {!userId && (
               <div className="mt-3 mb-1 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
@@ -155,11 +158,11 @@ export default function ActivityFeed({
           {/* Left panel — 720px fixed, scrolls independently */}
           <div className="w-180 flex-none flex flex-col overflow-hidden border-r border-[#C8B8A8]">
 
-            {/* Filter bar — full width of left panel */}
+            {/* Filter bar — full width of left panel, date first */}
             <div className="flex-none border-b border-[#C8B8A8] px-6 flex items-center gap-2 py-3">
-              <ActivityFilters sports={sports} onChange={setSports} toolbar />
-              <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
+              <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
+              <ActivityFilters sports={sports} onChange={setSports} toolbar />
             </div>
 
             {/* Scrollable card area */}
@@ -200,7 +203,7 @@ export default function ActivityFeed({
           </div>
 
           {/* Map panel — fills remaining space, always visible at xl */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
             <MapPanel
               activities={visible}
               userId={userId}
