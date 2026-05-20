@@ -5,13 +5,16 @@ import Link from "next/link";
 import type { ActivityWithParticipants, Profile } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import AppNav from "@/components/nav/app-nav";
-import ActivityFilters from "@/components/activities/activity-filters";
+import ActivityFilters, {
+  DatePickerPill,
+} from "@/components/activities/activity-filters";
 import {
   ActivityCardMobile,
   ActivityCardDesktop,
 } from "@/components/activities/activity-card";
 import MapPanel from "@/components/map/map-panel";
 import MapPreviewCard from "@/components/map/map-preview-card";
+import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
 
 export default function ActivityFeed({
   activities,
@@ -23,6 +26,7 @@ export default function ActivityFeed({
   userId: string | null;
 }) {
   const [sport, setSport] = useState("All");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
@@ -35,10 +39,11 @@ export default function ActivityFeed({
   const [joining, setJoining] = useState<Set<string>>(new Set());
   const [leaving, setLeaving] = useState<Set<string>>(new Set());
 
-  const visible =
-    sport === "All"
-      ? activities
-      : activities.filter((a) => a.sport.toLowerCase() === sport.toLowerCase());
+  const visible = activities.filter(
+    (a) =>
+      (sport === "All" || a.sport.toLowerCase() === sport.toLowerCase()) &&
+      matchesDateFilter(a.starts_at, dateFilter),
+  );
 
   const selectedActivity = selectedId
     ? (activities.find((a) => a.id === selectedId) ?? null)
@@ -79,20 +84,28 @@ export default function ActivityFeed({
     <div className="h-screen flex flex-col bg-[#F0EAE2] overflow-hidden">
       <AppNav profile={profile} userId={userId} />
 
-      {/* ── Filter pills (mobile) ─────────────────────────────── */}
-      <div className="relative flex-none overflow-hidden lg:hidden">
-        <div
-          className="flex gap-2 px-4 py-3 overflow-x-scroll border-b border-[#C8B8A8]"
-          style={
-            {
-              scrollbarWidth: "none",
-              WebkitOverflowScrolling: "touch",
-            } as React.CSSProperties
-          }
-        >
-          <ActivityFilters sport={sport} onChange={setSport} />
+      {/* ── Filter bar (mobile) ──────────────────────────────────
+           Date pill sits outside the overflow-hidden scroll container
+           so its popover is never clipped. Sport pills scroll right. */}
+      <div className="flex-none flex items-center border-b border-[#C8B8A8] lg:hidden">
+        <div className="pl-4 pr-2 py-3 flex-none">
+          <DatePickerPill value={dateFilter} onChange={setDateFilter} />
         </div>
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-[#F0EAE2] to-transparent" />
+        <div className="w-px self-stretch bg-[#C8B8A8] flex-none" />
+        <div className="relative flex-1 overflow-hidden">
+          <div
+            className="flex gap-2 px-3 py-3 overflow-x-scroll"
+            style={
+              {
+                scrollbarWidth: "none",
+                WebkitOverflowScrolling: "touch",
+              } as React.CSSProperties
+            }
+          >
+            <ActivityFilters sport={sport} onChange={setSport} />
+          </div>
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-[#F0EAE2] to-transparent" />
+        </div>
       </div>
 
       {/* ── Scrollable body (mobile) ──────────────────────────── */}
@@ -163,6 +176,11 @@ export default function ActivityFeed({
         <div className="flex flex-col w-95 flex-none border-r border-[#C8B8A8] overflow-hidden">
           <div className="flex-none px-4 py-3 border-b border-[#C8B8A8]">
             <ActivityFilters sport={sport} onChange={setSport} wrap />
+            <div
+              className="my-3"
+              style={{ height: "0.5px", background: "#C8B8A8" }}
+            />
+            <DatePickerPill value={dateFilter} onChange={setDateFilter} />
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">

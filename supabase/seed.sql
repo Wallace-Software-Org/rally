@@ -2,11 +2,15 @@
 -- Rally development seed data
 -- Run in Supabase SQL Editor (requires postgres role — the default in Supabase's SQL editor)
 --
+-- KEEP SEED DATES CURRENT: all starts_at values use dynamic date expressions so this
+-- script stays valid whenever it is re-run. Never hardcode absolute timestamps here.
+--
 -- user-1 (wallace@wallace.software) is NOT seeded here.
 -- That profile was created via real onboarding and already exists.
 --
 -- Dates use dynamic expressions so the data stays valid whenever this is re-run:
 --   date_trunc('week', current_date)  →  Monday of the current ISO week (Postgres default)
+--   + 2 days                          →  Wednesday  (mid-week, tests "This week" filter distinctly)
 --   + 5 days                          →  Saturday
 --   + 6 days                          →  Sunday
 --   + 7 days                          →  next Monday
@@ -127,6 +131,18 @@ VALUES
     33.4989, -111.9263,
     (date_trunc('week', current_date)::timestamp + interval '7 days 6 hours') AT TIME ZONE 'America/Phoenix',
     3, 'all', 'open'
+  ),
+
+  -- act-8 │ this Wednesday 7:00am │ cycling │ Tom │ mid-week (tests "This week" ≠ "This weekend")
+  (
+    '00000000-0000-0000-0001-000000000008',
+    '00000000-0000-0000-0000-000000000004',
+    'cycling',
+    'Scottsdale greenbelt ride',
+    'Indian Bend Wash Greenbelt',
+    33.4942, -111.9261,
+    (date_trunc('week', current_date)::timestamp + interval '2 days 7 hours') AT TIME ZONE 'America/Phoenix',
+    null, 'all', 'open'
   ),
 
   -- act-7 │ yesterday │ paddleboard │ Maria │ past — filtered from main feed
