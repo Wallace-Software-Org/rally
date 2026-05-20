@@ -63,15 +63,7 @@ export default function AppNav({
     <header className="flex-none flex items-center h-14 px-4 gap-3 border-b border-[#C8B8A8] bg-[#F0EAE2]">
       {logo}
 
-      {/* Mobile: city center */}
-      <span className="flex-1 text-center text-sm text-[#7A6A5A] truncate lg:hidden">
-        {profile?.city ?? "Nearby"}
-      </span>
-
-      {/* Desktop: city center + Post activity button */}
-      <span className="hidden lg:block flex-1 text-center text-sm text-[#7A6A5A] truncate">
-        {profile?.city ? `📍 ${profile.city}` : "📍 Nearby"}
-      </span>
+      <div className="flex-1" />
       <Link
         href="/activity/new"
         className="hidden lg:flex items-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold px-4 py-2 hover:bg-[#199068] active:bg-[#147a56] transition-colors flex-none"

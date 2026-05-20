@@ -80,11 +80,19 @@ export default function ActivityFeed({
       <AppNav profile={profile} userId={userId} />
 
       {/* ── Filter pills (mobile) ─────────────────────────────── */}
-      <div
-        className="flex-none flex gap-2 px-4 py-3 overflow-x-auto border-b border-[#C8B8A8] lg:hidden"
-        style={{ scrollbarWidth: "none" }}
-      >
-        <ActivityFilters sport={sport} onChange={setSport} />
+      <div className="relative flex-none overflow-hidden lg:hidden">
+        <div
+          className="flex gap-2 px-4 py-3 overflow-x-scroll border-b border-[#C8B8A8]"
+          style={
+            {
+              scrollbarWidth: "none",
+              WebkitOverflowScrolling: "touch",
+            } as React.CSSProperties
+          }
+        >
+          <ActivityFilters sport={sport} onChange={setSport} />
+        </div>
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-[#F0EAE2] to-transparent" />
       </div>
 
       {/* ── Scrollable body (mobile) ──────────────────────────── */}
@@ -152,12 +160,9 @@ export default function ActivityFeed({
       {/* ── Desktop layout ────────────────────────────────────── */}
       <div className="hidden lg:flex flex-1 overflow-hidden">
         {/* Left panel */}
-        <div className="flex flex-col w-[380px] flex-none border-r border-[#C8B8A8] overflow-hidden">
-          <div
-            className="flex-none flex gap-2 px-4 py-3 overflow-x-auto border-b border-[#C8B8A8]"
-            style={{ scrollbarWidth: "none" }}
-          >
-            <ActivityFilters sport={sport} onChange={setSport} />
+        <div className="flex flex-col w-95 flex-none border-r border-[#C8B8A8] overflow-hidden">
+          <div className="flex-none px-4 py-3 border-b border-[#C8B8A8]">
+            <ActivityFilters sport={sport} onChange={setSport} wrap />
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">

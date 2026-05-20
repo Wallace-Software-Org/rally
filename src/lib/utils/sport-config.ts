@@ -8,6 +8,11 @@ export const SPORT_COLORS: Record<string, { bg: string; text: string }> = {
   hiking:      TAG,
   gym:         TAG,
   paddleboard: TAG,
+  cycling:     TAG,
+  tennis:      TAG,
+  swimming:    TAG,
+  yoga:        TAG,
+  basketball:  TAG,
 };
 
 export function getSportLabel(sport: string): string {
@@ -22,4 +27,9 @@ export const SPORTS_LIST = [
   "Hiking",
   "Gym",
   "Paddleboard",
+  "Cycling",
+  "Tennis",
+  "Swimming",
+  "Yoga",
+  "Basketball",
 ];
