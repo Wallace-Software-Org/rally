@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { ActivityWithParticipants } from "@/types";
+import type { ActivityWithParticipants, ActivityDetail } from "@/types";
 
 export async function getActivities(): Promise<ActivityWithParticipants[]> {
   const supabase = await createClient();
@@ -27,4 +27,50 @@ export async function getActivities(): Promise<ActivityWithParticipants[]> {
         (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) ?? null,
     })),
   }));
+}
+
+export async function getActivityById(id: string): Promise<ActivityDetail | null> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("activities")
+    .select(
+      `
+      id, title, sport, description, location_name, starts_at,
+      max_participants, skill_level, lat, lng, status, creator_id,
+      participants (
+        id, user_id,
+        profiles ( full_name, avatar_url, instagram_handle )
+      )
+    `,
+    )
+    .eq("id", id)
+    .single();
+
+  if (!data) return null;
+
+  const [{ data: host }, { count: hostedCount }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, instagram_handle")
+      .eq("id", data.creator_id)
+      .single(),
+    supabase
+      .from("activities")
+      .select("id", { count: "exact", head: true })
+      .eq("creator_id", data.creator_id),
+  ]);
+
+  if (!host) return null;
+
+  return {
+    ...data,
+    participants: data.participants.map((p) => ({
+      ...p,
+      profiles:
+        (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) ?? null,
+    })),
+    host,
+    hosted_count: hostedCount ?? 0,
+  };
 }

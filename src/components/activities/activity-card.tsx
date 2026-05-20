@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
+
+const detailLinkClass =
+  "text-[11px] text-[#7A6A5A] hover:text-[#1D9E75] transition-colors flex-none";
 import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import JoinButton from "./join-button";
@@ -138,6 +141,13 @@ export function ActivityCardMobile({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
+        <Link
+          href={`/activity/${activity.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className={detailLinkClass}
+        >
+          Details
+        </Link>
         {userId === null ? (
           <Link
             href="/login"
@@ -220,9 +230,13 @@ export function ActivityCardDesktop({
         </span>
       </div>
 
-      <p className="text-[13px] font-medium text-[#2C2C2C] leading-snug">
+      <Link
+        href={`/activity/${activity.id}`}
+        onClick={(e) => e.stopPropagation()}
+        className="text-[13px] font-medium text-[#2C2C2C] leading-snug hover:text-[#1D9E75] transition-colors cursor-pointer"
+      >
         {activity.title}
-      </p>
+      </Link>
 
       <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1 min-w-0">
         <svg
@@ -279,6 +293,13 @@ export function ActivityCardDesktop({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
+        <Link
+          href={`/activity/${activity.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className={detailLinkClass}
+        >
+          Details
+        </Link>
         {userId === null ? (
           <Link
             href="/login"

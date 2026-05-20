@@ -74,3 +74,25 @@ export async function createActivity(data: {
   revalidatePath("/");
   return { error: null };
 }
+
+export async function cancelActivity(
+  activityId: string,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("activities")
+    .update({ status: "cancelled" })
+    .eq("id", activityId)
+    .eq("creator_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/");
+  revalidatePath(`/activity/${activityId}`);
+  return { error: null };
+}
