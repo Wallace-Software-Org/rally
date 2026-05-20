@@ -8,12 +8,8 @@ import AppNav from "@/components/nav/app-nav";
 import ActivityFilters, {
   DatePickerPill,
 } from "@/components/activities/activity-filters";
-import {
-  ActivityCardMobile,
-  ActivityCardDesktop,
-} from "@/components/activities/activity-card";
+import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import MapPanel from "@/components/map/map-panel";
-import MapPreviewCard from "@/components/map/map-preview-card";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
 
 export default function ActivityFeed({
@@ -25,7 +21,7 @@ export default function ActivityFeed({
   profile: Profile;
   userId: string | null;
 }) {
-  const [sport, setSport] = useState("All");
+  const [sports, setSports] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
@@ -41,13 +37,10 @@ export default function ActivityFeed({
 
   const visible = activities.filter(
     (a) =>
-      (sport === "All" || a.sport.toLowerCase() === sport.toLowerCase()) &&
+      (sports.length === 0 ||
+        sports.some((s) => s.toLowerCase() === a.sport.toLowerCase())) &&
       matchesDateFilter(a.starts_at, dateFilter),
   );
-
-  const selectedActivity = selectedId
-    ? (activities.find((a) => a.id === selectedId) ?? null)
-    : null;
 
   // Optimistic updates: local state is mutated immediately so the UI responds instantly.
   // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
@@ -84,10 +77,8 @@ export default function ActivityFeed({
     <div className="h-screen flex flex-col bg-[#F0EAE2] overflow-hidden">
       <AppNav profile={profile} userId={userId} />
 
-      {/* ── Filter bar (mobile) ──────────────────────────────────
-           Date pill sits outside the overflow-hidden scroll container
-           so its popover is never clipped. Sport pills scroll right. */}
-      <div className="flex-none flex items-center border-b border-[#C8B8A8] lg:hidden">
+      {/* ── Filter bar — mobile only (< md): date pill left, sport pills scroll right ── */}
+      <div className="md:hidden flex-none flex items-center border-b border-[#C8B8A8]">
         <div className="pl-4 pr-2 py-3 flex-none">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
         </div>
@@ -102,54 +93,133 @@ export default function ActivityFeed({
               } as React.CSSProperties
             }
           >
-            <ActivityFilters sport={sport} onChange={setSport} />
+            <ActivityFilters sports={sports} onChange={setSports} />
           </div>
           <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-[#F0EAE2] to-transparent" />
         </div>
       </div>
 
-      {/* ── Scrollable body (mobile) ──────────────────────────── */}
-      <div className="flex-1 overflow-y-auto lg:hidden">
-        <MapPanel activities={activities} userId={userId} variant="strip" />
-
-        {!userId && (
-          <div className="mx-3 mb-1 mt-2 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
-            Join to see who&apos;s going and save your spot
-          </div>
-        )}
-
-        {visible.length === 0 ? (
-          <p className="py-20 text-center text-sm text-[#7A6A5A]">
-            No open activities
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2 p-3.5">
-            {visible.map((a) => (
-              <ActivityCardMobile
-                key={a.id}
-                activity={a}
-                userId={userId}
-                isActive={selectedId === a.id}
-                isJoined={joined.has(a.id)}
-                isJoining={joining.has(a.id)}
-                isLeaving={leaving.has(a.id)}
-                onSelect={() =>
-                  setSelectedId((prev) => (prev === a.id ? null : a.id))
-                }
-                onJoin={() => handleJoin(a.id)}
-                onLeave={() => handleLeave(a.id)}
-              />
-            ))}
-          </div>
-        )}
+      {/* ── Filter bar — md and lg (768–1279px): toolbar with overflow pill ── */}
+      <div className="hidden md:flex xl:hidden flex-none border-b border-[#C8B8A8]">
+        <div className="max-w-5xl mx-auto px-4 w-full flex items-center gap-2 py-3">
+          <ActivityFilters sports={sports} onChange={setSports} toolbar />
+          <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
+          <DatePickerPill value={dateFilter} onChange={setDateFilter} />
+        </div>
       </div>
 
-      {/* ── Bottom bar (mobile) — hidden for logged-out users ─── */}
+      {/* ── Content area ────────────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-hidden flex">
+
+        {/* Mobile + md + lg (< xl): map strip at top, single scrollable card grid */}
+        <div className="xl:hidden flex-1 overflow-y-auto">
+          <MapPanel activities={activities} userId={userId} variant="strip" />
+
+          <div className="max-w-5xl mx-auto px-4">
+            {!userId && (
+              <div className="mt-3 mb-1 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
+                Join to see who&apos;s going and save your spot
+              </div>
+            )}
+
+            {visible.length === 0 ? (
+              <p className="py-20 text-center text-sm text-[#7A6A5A]">
+                No open activities
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4 items-start">
+                {visible.map((a) => (
+                  <ActivityCardDesktop
+                    key={a.id}
+                    activity={a}
+                    userId={userId}
+                    isActive={selectedId === a.id}
+                    isJoined={joined.has(a.id)}
+                    isJoining={joining.has(a.id)}
+                    isLeaving={leaving.has(a.id)}
+                    onSelect={() =>
+                      setSelectedId((prev) => (prev === a.id ? null : a.id))
+                    }
+                    onJoin={() => handleJoin(a.id)}
+                    onLeave={() => handleLeave(a.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* xl (1280px+): fixed 720px left panel + map fills remaining space */}
+        <div className="hidden xl:flex flex-1 overflow-hidden">
+
+          {/* Left panel — 720px fixed, scrolls independently */}
+          <div className="w-180 flex-none flex flex-col overflow-hidden border-r border-[#C8B8A8]">
+
+            {/* Filter bar — full width of left panel */}
+            <div className="flex-none border-b border-[#C8B8A8] px-6 flex items-center gap-2 py-3">
+              <ActivityFilters sports={sports} onChange={setSports} toolbar />
+              <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
+              <DatePickerPill value={dateFilter} onChange={setDateFilter} />
+            </div>
+
+            {/* Scrollable card area */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-6 py-4">
+                {!userId && (
+                  <div className="mb-3 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
+                    Join to see who&apos;s going and save your spot
+                  </div>
+                )}
+
+                {visible.length === 0 ? (
+                  <p className="py-20 text-center text-sm text-[#7A6A5A]">
+                    No open activities
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 items-start">
+                    {visible.map((a) => (
+                      <ActivityCardDesktop
+                        key={a.id}
+                        activity={a}
+                        userId={userId}
+                        isActive={selectedId === a.id}
+                        isJoined={joined.has(a.id)}
+                        isJoining={joining.has(a.id)}
+                        isLeaving={leaving.has(a.id)}
+                        onSelect={() =>
+                          setSelectedId((prev) => (prev === a.id ? null : a.id))
+                        }
+                        onJoin={() => handleJoin(a.id)}
+                        onLeave={() => handleLeave(a.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Map panel — fills remaining space, always visible at xl */}
+          <div className="flex-1 overflow-hidden">
+            <MapPanel
+              activities={visible}
+              userId={userId}
+              variant="full"
+              selectedId={selectedId}
+              onDotClick={(id) =>
+                setSelectedId((prev) => (prev === id ? null : id))
+              }
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Post activity button — mobile (full width) and md/lg (max-w-xs centered) ── */}
       {userId && (
-        <div className="flex-none border-t border-[#C8B8A8] p-3 lg:hidden">
+        <div className="xl:hidden flex-none border-t border-[#C8B8A8] p-3">
           <Link
             href="/activity/new"
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"
+            className="w-full md:max-w-xs md:mx-auto flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"
           >
             <svg
               width="14"
@@ -169,74 +239,6 @@ export default function ActivityFeed({
           </Link>
         </div>
       )}
-
-      {/* ── Desktop layout ────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-1 overflow-hidden">
-        {/* Left panel */}
-        <div className="flex flex-col w-95 flex-none border-r border-[#C8B8A8] overflow-hidden">
-          <div className="flex-none px-4 py-3 border-b border-[#C8B8A8]">
-            <ActivityFilters sport={sport} onChange={setSport} wrap />
-            <div
-              className="my-3"
-              style={{ height: "0.5px", background: "#C8B8A8" }}
-            />
-            <DatePickerPill value={dateFilter} onChange={setDateFilter} />
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-            {!userId && (
-              <div className="mx-0 mb-1 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
-                Join to see who&apos;s going and save your spot
-              </div>
-            )}
-            {visible.length === 0 ? (
-              <p className="py-20 text-center text-sm text-[#7A6A5A]">
-                No open activities
-              </p>
-            ) : (
-              visible.map((a) => (
-                <ActivityCardDesktop
-                  key={a.id}
-                  activity={a}
-                  userId={userId}
-                  isActive={selectedId === a.id}
-                  isJoined={joined.has(a.id)}
-                  isJoining={joining.has(a.id)}
-                  isLeaving={leaving.has(a.id)}
-                  onSelect={() =>
-                    setSelectedId((prev) => (prev === a.id ? null : a.id))
-                  }
-                  onJoin={() => handleJoin(a.id)}
-                  onLeave={() => handleLeave(a.id)}
-                />
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Map panel */}
-        <MapPanel
-          activities={activities}
-          userId={userId}
-          selectedId={selectedId}
-          onDotClick={(id) =>
-            setSelectedId((prev) => (prev === id ? null : id))
-          }
-        >
-          {selectedActivity && (
-            <MapPreviewCard
-              activity={selectedActivity}
-              userId={userId}
-              isJoined={joined.has(selectedActivity.id)}
-              isJoining={joining.has(selectedActivity.id)}
-              isLeaving={leaving.has(selectedActivity.id)}
-              onJoin={() => handleJoin(selectedActivity.id)}
-              onLeave={() => handleLeave(selectedActivity.id)}
-              onDismiss={() => setSelectedId(null)}
-            />
-          )}
-        </MapPanel>
-      </div>
     </div>
   );
 }
