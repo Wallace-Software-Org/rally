@@ -92,6 +92,8 @@ export async function cancelActivity(
 
   if (error) return { error: error.message };
 
+  await supabase.from("participants").delete().eq("activity_id", activityId);
+
   revalidatePath("/");
   revalidatePath(`/activity/${activityId}`);
   return { error: null };

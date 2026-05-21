@@ -99,7 +99,7 @@ export default function PostActivityForm() {
     if (!error) router.push("/");
   }
 
-  const step2Valid = Boolean(form.title.trim() && date && time);
+  const step2Valid = Boolean(form.title.trim() && date && time && form.description.trim().length >= 20);
   const step3Valid = Boolean(form.location_name.trim());
   const reviewStartsAt = startsAt();
 
@@ -300,6 +300,24 @@ export default function PostActivityForm() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between">
+                <label className="text-sm font-medium text-[#2C2C2C]">
+                  Description
+                </label>
+                <span className="text-[11px] text-[#7A6A5A]">
+                  {form.description.trim().length}/20 min
+                </span>
+              </div>
+              <textarea
+                value={form.description}
+                onChange={(e) => patch({ description: e.target.value })}
+                placeholder="Tell people what to expect — pace, gear, meetup spot, anything useful."
+                rows={4}
+                className={`${inputCls} resize-none`}
+              />
             </div>
 
             <button

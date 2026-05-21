@@ -10,6 +10,10 @@ vi.mock("@/lib/actions/activities", () => ({
   cancelActivity: vi.fn().mockResolvedValue({ error: null }),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({ push: vi.fn() })),
+}));
+
 import {
   joinActivity,
   leaveActivity,
@@ -75,6 +79,27 @@ function renderAsHost(overrides: Partial<ActivityDetail> = {}) {
   );
 }
 
+// Helper: renders as a non-host viewer who has already joined
+function renderAsJoinedViewer() {
+  return render(
+    <ActivityDetailView
+      activity={{
+        ...mockActivity,
+        participants: [
+          ...mockActivity.participants,
+          {
+            id: "p-2",
+            user_id: "viewer-99",
+            profiles: { full_name: "Wallace Palmer", avatar_url: null, instagram_handle: "wallacepalmer" },
+          },
+        ],
+      }}
+      userId="viewer-99"
+      userProfile={userProfile}
+    />,
+  );
+}
+
 // Helper: renders unauthenticated
 function renderUnauthenticated() {
   return render(
@@ -135,10 +160,10 @@ describe("ActivityDetailView — rendering", () => {
     expect(screen.queryByText(/casual doubles/i)).not.toBeInTheDocument();
   });
 
-  it("renders skill level and spots in meta cards", () => {
+  it("renders skill level and spots as meta pills", () => {
     renderAsViewer();
-    // 4 max - 1 participant = 3 spots left shown as "3 of 4"
-    expect(screen.getAllByText("3 of 4").length).toBeGreaterThan(0);
+    // 4 max - 1 participant = 3 spots left
+    expect(screen.getAllByText("3 spots left").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/all levels/i).length).toBeGreaterThan(0);
   });
 });
@@ -176,28 +201,25 @@ describe("ActivityDetailView — join flow", () => {
   });
 });
 
-// ── Leave flow (two-step confirm) ────────────────────────────────────────────
+// ── Leave flow (cycling pill) ─────────────────────────────────────────────────
 
 describe("ActivityDetailView — leave flow", () => {
-  // Render as the host (who is already in participants) so isJoined initialises true
-  it('shows "Leave activity" when the user is already joined', () => {
-    renderAsHost();
-    const leaveBtns = screen.getAllByRole("button", { name: /leave activity/i });
-    expect(leaveBtns.length).toBeGreaterThan(0);
+  it('shows "✓ You\'re going" pill when the user has joined', () => {
+    renderAsJoinedViewer();
+    expect(screen.getAllByText(/you're going/i).length).toBeGreaterThan(0);
   });
 
-  it('first click on Leave shows "Confirm leave?" state', () => {
-    renderAsHost();
-    fireEvent.click(screen.getAllByRole("button", { name: /leave activity/i })[0]);
-    expect(screen.getAllByRole("button", { name: /confirm leave/i }).length).toBeGreaterThan(0);
+  it('first tap on pill transitions to "Leave activity?" confirm state', () => {
+    renderAsJoinedViewer();
+    // desktop cycling button (md/lg or xl) is the first interactive pill in DOM order
+    fireEvent.click(screen.getAllByRole("button", { name: /you're going/i })[0]);
+    expect(screen.getAllByRole("button", { name: /leave activity\?/i }).length).toBeGreaterThan(0);
   });
 
-  it("second click on Leave calls leaveActivity", async () => {
-    renderAsHost();
-    const leaveBtn = screen.getAllByRole("button", { name: /leave activity/i })[0];
-    fireEvent.click(leaveBtn);
-    const confirmBtn = screen.getAllByRole("button", { name: /confirm leave/i })[0];
-    fireEvent.click(confirmBtn);
+  it("second tap on confirm calls leaveActivity", async () => {
+    renderAsJoinedViewer();
+    fireEvent.click(screen.getAllByRole("button", { name: /you're going/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /leave activity\?/i })[0]);
     await waitFor(() => {
       expect(leaveActivity).toHaveBeenCalledWith("act-1");
     });
