@@ -110,7 +110,7 @@ export default function PostActivityForm() {
         <button
           onClick={goBack}
           aria-label="Go back"
-          className="flex-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#D4C4B4] transition-colors"
+          className="flex-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-brand-avatar-bg transition-colors"
         >
           <svg
             width="18"

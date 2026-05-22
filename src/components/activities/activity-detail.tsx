@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ActivityDetail } from "@/types";
 import {
@@ -47,12 +48,12 @@ function Avatar({
   const dim = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
   return (
     <div
-      className={`${dim} rounded-full flex-none overflow-hidden bg-[#D4C4B4] flex items-center justify-center`}
+      className={`${dim} relative rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center`}
     >
       {url ? (
-        <img src={url} alt="" className="w-full h-full object-cover" />
+        <Image src={url} alt="" fill className="object-cover" />
       ) : (
-        <span className="font-semibold text-[#5C4A38]">{initials(name)}</span>
+        <span className="font-semibold text-brand-avatar-text">{initials(name)}</span>
       )}
     </div>
   );
@@ -118,7 +119,7 @@ function MapPlaceholder({
 }) {
   return (
     <div
-      className={`${height} rounded-xl bg-[#E8DFCF] relative overflow-hidden`}
+      className={`${height} rounded-xl bg-brand-map-bg relative overflow-hidden`}
     >
       <div
         className="absolute inset-0"
@@ -129,7 +130,7 @@ function MapPlaceholder({
         }}
       />
       <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-brand-teal" />
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 max-w-[80%] truncate text-center text-xs font-medium text-[#5C4A38] bg-brand-bg/90 px-2.5 py-1 rounded-full border border-brand-border">
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 max-w-[80%] truncate text-center text-xs font-medium text-brand-avatar-text bg-brand-bg/90 px-2.5 py-1 rounded-full border border-brand-border">
         {locationName}
       </div>
     </div>
@@ -247,7 +248,7 @@ export default function ActivityDetailView({
         }}
         className={`flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
           leaveConfirm
-            ? "border-[#CC3333] text-[#CC3333] bg-transparent hover:bg-[#CC3333]/5"
+            ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
             : "border-brand-border text-brand-muted bg-transparent hover:border-brand-border-hover"
         }`}
       >
@@ -313,7 +314,7 @@ export default function ActivityDetailView({
         }}
         className={`flex-1 flex items-center justify-center rounded-xl text-sm font-medium py-3 border transition-colors ${
           cancelConfirm
-            ? "border-[#CC3333] text-[#CC3333] bg-transparent hover:bg-[#CC3333]/5"
+            ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
             : "border-red-200 text-red-400 bg-transparent hover:border-red-300"
         }`}
       >
@@ -490,24 +491,20 @@ export default function ActivityDetailView({
                             className="flex flex-col items-center gap-1.5 flex-none w-13"
                           >
                             <div
-                              className={`w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ${
+                              className={`relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ${
                                 isParticipantHost
                                   ? "bg-brand-teal-muted"
-                                  : "bg-[#D4C4B4]"
+                                  : "bg-brand-avatar-bg"
                               }`}
                             >
                               {p.profiles?.avatar_url ? (
-                                <img
-                                  src={p.profiles.avatar_url}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
+                                <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
                               ) : (
                                 <span
                                   className={`text-xs font-semibold ${
                                     isParticipantHost
                                       ? "text-brand-teal-text"
-                                      : "text-[#5C4A38]"
+                                      : "text-brand-avatar-text"
                                   }`}
                                 >
                                   {initials(name)}
@@ -541,24 +538,20 @@ export default function ActivityDetailView({
                             className="flex flex-col items-center gap-1.5 flex-none w-13"
                           >
                             <div
-                              className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
+                              className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
                                 isParticipantHost
                                   ? "bg-brand-teal-muted"
-                                  : "bg-[#D4C4B4]"
+                                  : "bg-brand-avatar-bg"
                               }`}
                             >
                               {p.profiles?.avatar_url ? (
-                                <img
-                                  src={p.profiles.avatar_url}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
+                                <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
                               ) : (
                                 <span
                                   className={`text-xs font-semibold ${
                                     isParticipantHost
                                       ? "text-brand-teal-text"
-                                      : "text-[#5C4A38]"
+                                      : "text-brand-avatar-text"
                                   }`}
                                 >
                                   {initials(name)}
@@ -714,7 +707,7 @@ export default function ActivityDetailView({
                 }
               }}
               disabled={cancelling}
-              className="w-full flex items-center justify-center bg-[#C0392B] text-white rounded-xl p-3.5 text-sm font-semibold disabled:opacity-60"
+              className="w-full flex items-center justify-center bg-brand-danger-dark text-white rounded-xl p-3.5 text-sm font-semibold disabled:opacity-60"
             >
               {cancelling ? "Cancelling…" : "Yes, cancel activity"}
             </button>

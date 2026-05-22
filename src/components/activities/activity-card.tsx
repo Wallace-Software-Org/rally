@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import type { ActivityWithParticipants } from "@/types";
 import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
 import { formatActivityDate } from "@/lib/utils/format-time";
@@ -42,6 +44,7 @@ export function ActivityCardMobile({
   onJoin,
   onLeave,
 }: MobileCardProps) {
+  const router = useRouter();
   const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
     bg: "#C8E6DC",
     text: "#1A6B52",
@@ -64,7 +67,7 @@ export function ActivityCardMobile({
       href={`/activity/${activity.id}`}
       className={`rounded-xl p-[13px_14px] flex flex-col gap-2 transition-all ${
         isActive
-          ? "border border-brand-teal bg-brand-teal/[3%]"
+          ? "border border-brand-teal bg-brand-teal/3"
           : "border border-brand-border bg-brand-bg"
       }`}
     >
@@ -79,9 +82,7 @@ export function ActivityCardMobile({
           <span className="text-xs font-medium text-brand-text leading-tight">
             {time}
           </span>
-          <span className="text-xs text-brand-muted leading-tight">
-            {date}
-          </span>
+          <span className="text-xs text-brand-muted leading-tight">{date}</span>
         </div>
       </div>
       <p className="text-base font-medium text-brand-text leading-snug">
@@ -118,16 +119,12 @@ export function ActivityCardMobile({
             {avatars.map((av, i) => (
               <div
                 key={i}
-                className="w-5.5 h-5.5 rounded-full bg-[#D4C4B4] ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
+                className="relative w-5.5 h-5.5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
               >
                 {av.avatar_url ? (
-                  <img
-                    src={av.avatar_url}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  <Image src={av.avatar_url} alt="" fill className="object-cover" />
                 ) : (
-                  <span className="text-[8px] font-semibold text-[#5C4A38]">
+                  <span className="text-[8px] font-semibold text-brand-avatar-text">
                     {av.full_name ? initials(av.full_name) : "?"}
                   </span>
                 )}
@@ -143,13 +140,16 @@ export function ActivityCardMobile({
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
         {userId === null ? (
-          <Link
-            href="/login"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              router.push("/login");
+            }}
             className="flex items-center justify-center rounded-full border border-brand-border text-brand-muted text-xs font-medium py-1.5 px-4 hover:border-brand-teal hover:text-brand-teal transition-colors"
           >
             Sign in
-          </Link>
+          </button>
         ) : (
           <JoinButton
             isJoined={isJoined}
@@ -189,6 +189,7 @@ export function ActivityCardDesktop({
   onJoin,
   onLeave,
 }: DesktopCardProps) {
+  const router = useRouter();
   const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
     bg: "#C8E6DC",
     text: "#1A6B52",
@@ -225,9 +226,7 @@ export function ActivityCardDesktop({
           <span className="text-xs font-medium text-brand-text leading-tight">
             {time}
           </span>
-          <span className="text-xs text-brand-muted leading-tight">
-            {date}
-          </span>
+          <span className="text-xs text-brand-muted leading-tight">{date}</span>
         </div>
       </div>
 
@@ -266,17 +265,18 @@ export function ActivityCardDesktop({
             {avatars.map((av, i) => (
               <div
                 key={i}
-                className="w-5 h-5 rounded-full bg-[#D4C4B4] ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
+                className="relative w-5 h-5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
               >
                 {av.avatar_url ? (
-                  <img
+                  <Image
                     src={av.avatar_url}
                     alt=""
-                    className={`w-full h-full object-cover${userId === null ? " blur-sm" : ""}`}
+                    fill
+                    className={`object-cover${userId === null ? " blur-sm" : ""}`}
                   />
                 ) : (
                   <span
-                    className={`text-[8px] font-semibold text-[#5C4A38]${userId === null ? " blur-sm" : ""}`}
+                    className={`text-[8px] font-semibold text-brand-avatar-text${userId === null ? " blur-sm" : ""}`}
                   >
                     {av.full_name ? initials(av.full_name) : "?"}
                   </span>
@@ -302,13 +302,16 @@ export function ActivityCardDesktop({
           </Link>
         )}
         {userId === null ? (
-          <Link
-            href="/login"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              router.push("/login");
+            }}
             className="flex items-center justify-center rounded-full border border-brand-border text-brand-muted text-xs font-medium py-1.5 px-4 hover:border-brand-teal hover:text-brand-teal transition-colors"
           >
             Sign in
-          </Link>
+          </button>
         ) : (
           <JoinButton
             isJoined={isJoined}

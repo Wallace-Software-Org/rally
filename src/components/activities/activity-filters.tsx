@@ -73,7 +73,7 @@ function OverflowPill({
                 onSelect(s);
                 setOpen(false);
               }}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-[#E8DFCF] transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
             >
               {s}
               {activeSports.includes(s) && (
@@ -167,7 +167,7 @@ export function DatePickerPill({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-[#E8DFCF] transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
             >
               {opt.label}
               {value === opt.value && (

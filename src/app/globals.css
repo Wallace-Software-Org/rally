@@ -16,6 +16,8 @@
   --color-brand-avatar-bg: #D4C4B4;
   --color-brand-avatar-text: #5C4A38;
   --color-brand-map-bg: #E8DFCF;
+  --color-brand-danger: #CC3333;
+  --color-brand-danger-dark: #C0392B;
 
   /* ── Fonts ────────────────────────────────────────────────────────────────── */
   --font-sans: var(--font-geist-sans);

@@ -56,7 +56,7 @@ export default function MapPreviewCard({
       {/* Dismiss */}
       <button
         onClick={onDismiss}
-        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-[#D4C4B4] text-brand-muted hover:bg-brand-border transition-colors"
+        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-brand-avatar-bg text-brand-muted hover:bg-brand-border transition-colors"
         aria-label="Close"
       >
         <svg
@@ -159,7 +159,7 @@ export default function MapPreviewCard({
           {isJoining ? "Joining…" : "Join this activity"}
         </button>
       ) : (
-        <div className="flex items-center justify-center rounded-xl py-3 bg-[#D4C4B4]">
+        <div className="flex items-center justify-center rounded-xl py-3 bg-brand-avatar-bg">
           <span className="text-sm font-medium text-brand-muted">
             Activity is full
           </span>

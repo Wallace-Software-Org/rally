@@ -91,7 +91,7 @@ export default function AppNav({
         </Link>
 
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-[#D4C4B4] flex items-center justify-center">
+        <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
           {profile?.avatar_url ? (
             <Image
               src={profile.avatar_url}
@@ -101,7 +101,7 @@ export default function AppNav({
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-xs font-semibold text-[#5C4A38]">
+            <span className="text-xs font-semibold text-brand-avatar-text">
               {profile?.full_name ? initials(profile.full_name) : "?"}
             </span>
           )}

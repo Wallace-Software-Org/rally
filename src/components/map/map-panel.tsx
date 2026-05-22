@@ -84,7 +84,7 @@ export default function MapPanel({
 
   if (variant === "strip") {
     return (
-      <div className="h-20 bg-[#E8DFCF] relative overflow-hidden flex items-end px-3 pb-2">
+      <div className="h-20 bg-brand-map-bg relative overflow-hidden flex items-end px-3 pb-2">
         <div
           className="absolute inset-0"
           style={{
@@ -126,7 +126,7 @@ export default function MapPanel({
   }
 
   return (
-    <div className="flex-1 relative bg-[#E8DFCF] overflow-hidden">
+    <div className="flex-1 relative bg-brand-map-bg overflow-hidden">
       <div
         className="absolute inset-0"
         style={{
