@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import type { ActivityWithParticipants } from "@/types";
 
-// Representative activity data shared by render and interaction tests.
 const mockActivity: ActivityWithParticipants = {
   id: "act-1",
   title: "Morning Run at Papago Park",
@@ -17,11 +16,11 @@ const mockActivity: ActivityWithParticipants = {
   participants: [],
 };
 
-// Stable defaults keep each test focused on one prop or callback.
 const base = {
   activity: mockActivity,
   userId: "user-123",
   isActive: false,
+  showDetails: true,
   isJoined: false,
   isJoining: false,
   isLeaving: false,
@@ -38,81 +37,91 @@ describe("ActivityCardDesktop", () => {
     expect(screen.getByText("Papago Park")).toBeInTheDocument();
   });
 
-  it("has teal ring class when isActive is true", () => {
-    const { container } = render(
-      <ActivityCardDesktop {...base} isActive={true} />,
-    );
+  // ── showDetails=true (xl): div wrapper, onSelect, Details pill ────────────
+
+  it("card wrapper is a div[role=button] when showDetails=true", () => {
+    const { container } = render(<ActivityCardDesktop {...base} showDetails={true} />);
     const card = container.firstChild as HTMLElement;
-    expect(card.className).toContain("ring-[#1D9E75]");
+    expect(card.tagName).toBe("DIV");
+    expect(card).toHaveAttribute("role", "button");
   });
 
-  it("does not have teal ring class when isActive is false", () => {
-    const { container } = render(
-      <ActivityCardDesktop {...base} isActive={false} />,
-    );
-    const card = container.firstChild as HTMLElement;
-    expect(card.className).not.toContain("ring-[#1D9E75]");
-  });
-
-  it("clicking the card container calls onSelect", () => {
+  it("clicking the card calls onSelect when showDetails=true", () => {
     const onSelect = vi.fn();
     const { container } = render(
-      <ActivityCardDesktop {...base} onSelect={onSelect} />,
+      <ActivityCardDesktop {...base} showDetails={true} onSelect={onSelect} />,
     );
     fireEvent.click(container.firstChild as HTMLElement);
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it("clicking the title link does NOT propagate to onSelect", () => {
-    // Title is now a Next.js Link with stopPropagation — navigates instead of selecting.
-    const onSelect = vi.fn();
-    render(<ActivityCardDesktop {...base} onSelect={onSelect} />);
-    fireEvent.click(screen.getByText("Morning Run at Papago Park"));
-    expect(onSelect).not.toHaveBeenCalled();
+  it("has teal ring when isActive=true and showDetails=true", () => {
+    const { container } = render(
+      <ActivityCardDesktop {...base} showDetails={true} isActive={true} />,
+    );
+    expect((container.firstChild as HTMLElement).className).toContain("ring-[#1D9E75]");
   });
 
-  it("title link points to the activity detail page", () => {
-    render(<ActivityCardDesktop {...base} />);
-    const titleLink = screen.getByText("Morning Run at Papago Park").closest("a");
-    expect(titleLink).toHaveAttribute("href", "/activity/act-1");
+  it("does not have teal ring when isActive=false", () => {
+    const { container } = render(
+      <ActivityCardDesktop {...base} showDetails={true} isActive={false} />,
+    );
+    expect((container.firstChild as HTMLElement).className).not.toContain("ring-[#1D9E75]");
   });
 
-  it("clicking the Join button does not propagate to onSelect", () => {
-    const onSelect = vi.fn();
-    render(<ActivityCardDesktop {...base} onSelect={onSelect} />);
-    fireEvent.click(screen.getByRole("button", { name: "Join" }));
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it('renders a "Details" link pointing to the activity detail page', () => {
-    render(<ActivityCardDesktop {...base} />);
-    const detailsLink = screen.getByRole("link", { name: "Details" });
-    expect(detailsLink).toBeInTheDocument();
-    expect(detailsLink).toHaveAttribute("href", "/activity/act-1");
+  it("renders Details link when showDetails=true", () => {
+    render(<ActivityCardDesktop {...base} showDetails={true} />);
+    const link = screen.getByRole("link", { name: "Details" });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/activity/act-1");
   });
 
   it("clicking Details link does not propagate to onSelect", () => {
     const onSelect = vi.fn();
-    render(<ActivityCardDesktop {...base} onSelect={onSelect} />);
+    render(<ActivityCardDesktop {...base} showDetails={true} onSelect={onSelect} />);
     fireEvent.click(screen.getByRole("link", { name: "Details" }));
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('shows "Sign in" link and Details link when userId is null', () => {
-    render(<ActivityCardDesktop {...base} userId={null} />);
-    expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Details" })).toBeInTheDocument();
+  it("clicking Join button does not propagate to onSelect", () => {
+    const onSelect = vi.fn();
+    render(<ActivityCardDesktop {...base} showDetails={true} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('shows spots remaining when max_participants is set', () => {
+  // ── showDetails=false (< xl): Link wrapper, no Details pill ──────────────
+
+  it("card wrapper is a Link (<a>) when showDetails=false", () => {
+    const { container } = render(
+      <ActivityCardDesktop {...base} showDetails={false} />,
+    );
+    const card = container.firstChild as HTMLElement;
+    expect(card.tagName).toBe("A");
+    expect(card).toHaveAttribute("href", "/activity/act-1");
+  });
+
+  it("does not render Details link when showDetails=false", () => {
+    render(<ActivityCardDesktop {...base} showDetails={false} />);
+    expect(screen.queryByRole("link", { name: "Details" })).not.toBeInTheDocument();
+  });
+
+  // ── Shared ────────────────────────────────────────────────────────────────
+
+  it('shows "Sign in" link when userId is null', () => {
+    render(<ActivityCardDesktop {...base} userId={null} />);
+    expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument();
+  });
+
+  it("shows spots remaining when max_participants is set", () => {
     render(<ActivityCardDesktop {...base} />);
-    // 10 max - 0 participants = 10 spots
     expect(screen.getByText("10 spots")).toBeInTheDocument();
   });
 
   it('shows "Open" when max_participants is null', () => {
-    const activity = { ...mockActivity, max_participants: null };
-    render(<ActivityCardDesktop {...base} activity={activity} />);
+    render(
+      <ActivityCardDesktop {...base} activity={{ ...mockActivity, max_participants: null }} />,
+    );
     expect(screen.getByText("Open")).toBeInTheDocument();
   });
 });

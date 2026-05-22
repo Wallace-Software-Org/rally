@@ -110,7 +110,6 @@ export default function ActivityFeed({
 
       {/* ── Content area ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-hidden flex">
-
         {/* Mobile + md + lg (< xl): single scrollable card grid */}
         <div className="xl:hidden flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-4">
@@ -131,7 +130,8 @@ export default function ActivityFeed({
                     key={a.id}
                     activity={a}
                     userId={userId}
-                    isActive={selectedId === a.id}
+                    isActive={false}
+                    showDetails={false}
                     isJoined={joined.has(a.id)}
                     isJoining={joining.has(a.id)}
                     isLeaving={leaving.has(a.id)}
@@ -149,10 +149,8 @@ export default function ActivityFeed({
 
         {/* xl (1280px+): fixed 720px left panel + map fills remaining space */}
         <div className="hidden xl:flex flex-1 overflow-hidden">
-
           {/* Left panel — 720px fixed, scrolls independently */}
           <div className="w-180 flex-none flex flex-col overflow-hidden border-r border-[#C8B8A8]">
-
             {/* Filter bar — full width of left panel, date first */}
             <div className="flex-none border-b border-[#C8B8A8] px-6 flex items-center gap-2 py-3">
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
@@ -181,6 +179,7 @@ export default function ActivityFeed({
                         activity={a}
                         userId={userId}
                         isActive={selectedId === a.id}
+                        showDetails={true}
                         isJoined={joined.has(a.id)}
                         isJoining={joining.has(a.id)}
                         isLeaving={leaving.has(a.id)}
@@ -214,7 +213,7 @@ export default function ActivityFeed({
 
       {/* ── Post activity button — mobile (full width) and md/lg (max-w-xs centered) ── */}
       {userId && (
-        <div className="xl:hidden flex-none border-t border-[#C8B8A8] p-3">
+        <div className="lg:hidden flex-none border-t border-[#C8B8A8] p-3">
           <Link
             href="/activity/new"
             className="w-full md:max-w-xs md:mx-auto flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"

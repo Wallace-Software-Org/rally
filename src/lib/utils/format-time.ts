@@ -14,3 +14,23 @@ export function formatActivityTime(startsAt: string): string {
     : d.toLocaleDateString("en-US", { weekday: "short" });
   return `${day} · ${t}`;
 }
+
+export function formatActivityDate(startsAt: string): {
+  time: string;
+  date: string;
+} {
+  const d = new Date(startsAt);
+  const isToday = d.toDateString() === new Date().toDateString();
+
+  const time = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }); // e.g. "6:30 AM"
+
+  const date = isToday
+    ? "Today"
+    : `${d.toLocaleDateString("en-US", { weekday: "short" })} · ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`; // e.g. "Sat · May 24"
+
+  return { time, date };
+}

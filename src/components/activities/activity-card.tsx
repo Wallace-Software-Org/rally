@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
-
-const detailLinkClass =
-  "text-[11px] text-[#7A6A5A] hover:text-[#1D9E75] transition-colors flex-none";
 import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
-import { formatActivityTime } from "@/lib/utils/format-time";
+import { formatActivityDate } from "@/lib/utils/format-time";
 import JoinButton from "./join-button";
 
 function initials(name: string): string {
@@ -28,6 +25,8 @@ type CardProps = {
   onLeave: () => void;
 };
 
+// ── Mobile card — always a Link; no Details pill ──────────────────────────────
+
 type MobileCardProps = CardProps & {
   isActive: boolean;
   onSelect: () => void;
@@ -40,7 +39,6 @@ export function ActivityCardMobile({
   isJoined,
   isJoining,
   isLeaving,
-  onSelect,
   onJoin,
   onLeave,
 }: MobileCardProps) {
@@ -59,14 +57,12 @@ export function ActivityCardMobile({
     .filter((p) => p.profiles)
     .slice(0, 3)
     .map((p) => p.profiles!);
+  const { time, date } = formatActivityDate(activity.starts_at);
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => e.key === "Enter" && onSelect()}
-      className={`rounded-xl p-[13px_14px] flex flex-col gap-2 cursor-pointer transition-all ${
+    <Link
+      href={`/activity/${activity.id}`}
+      className={`rounded-xl p-[13px_14px] flex flex-col gap-2 transition-all ${
         isActive
           ? "border border-[#1D9E75] bg-[rgba(29,158,117,0.03)]"
           : "border border-[#C8B8A8] bg-[#F0EAE2]"
@@ -79,11 +75,16 @@ export function ActivityCardMobile({
         >
           {getSportLabel(activity.sport)}
         </span>
-        <span className="text-[11px] text-[#7A6A5A] leading-4 shrink-0">
-          {formatActivityTime(activity.starts_at)}
-        </span>
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-[12px] font-medium text-[#2C2C2C] leading-tight">
+            {time}
+          </span>
+          <span className="text-[11px] text-[#7A6A5A] leading-tight">
+            {date}
+          </span>
+        </div>
       </div>
-      <p className="text-[15px] font-medium text-[#2C2C2C] leading-snug">
+      <p className="text-[16px] font-medium text-[#2C2C2C] leading-snug">
         {activity.title}
       </p>
       <div className="flex flex-col gap-0.5">
@@ -107,7 +108,7 @@ export function ActivityCardMobile({
           )}
         </p>
         <p className="text-[11px] text-[#7A6A5A]">
-          {"— mi" /* distance placeholder — wire useLocation to calculate this */}
+          {"— mi" /* distance placeholder */}
           {activity.skill_level ? ` · ${activity.skill_level}` : ""}
         </p>
       </div>
@@ -141,18 +142,11 @@ export function ActivityCardMobile({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
-        <Link
-          href={`/activity/${activity.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className={detailLinkClass}
-        >
-          Details
-        </Link>
         {userId === null ? (
           <Link
             href="/login"
             onClick={(e) => e.stopPropagation()}
-            className="w-20 h-7 flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+            className="flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium py-1.5 px-4 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
           >
             Sign in
           </Link>
@@ -165,16 +159,21 @@ export function ActivityCardMobile({
             onJoin={onJoin}
             onLeave={onLeave}
             stopPropagation
-            className="py-1.75 px-5 text-[12px] min-w-20"
+            className="py-1.5 px-4 text-[11px]"
           />
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
+// ── Desktop card ──────────────────────────────────────────────────────────────
+// showDetails=true (xl): div wrapper + onSelect + Details pill
+// showDetails=false (< xl): Link wrapper, no Details pill
+
 type DesktopCardProps = CardProps & {
   isActive: boolean;
+  showDetails: boolean;
   onSelect: () => void;
 };
 
@@ -182,6 +181,7 @@ export function ActivityCardDesktop({
   activity,
   userId,
   isActive,
+  showDetails,
   isJoined,
   isJoining,
   isLeaving,
@@ -200,24 +200,20 @@ export function ActivityCardDesktop({
     activity.max_participants === null
       ? Infinity
       : activity.max_participants - participantCount;
-
   const avatars = activity.participants
     .filter((p) => p.profiles)
     .slice(0, 3)
     .map((p) => p.profiles!);
+  const { time, date } = formatActivityDate(activity.starts_at);
 
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => e.key === "Enter" && onSelect()}
-      className={`rounded-xl p-2.75 flex flex-col gap-2 cursor-pointer transition-all ${
-        isActive
-          ? "ring-[1.5px] ring-[#1D9E75] bg-[#F0EAE2]"
-          : "border border-[#C8B8A8] bg-[#F0EAE2] hover:border-[#B8A898]"
-      }`}
-    >
+  const cardClass = `rounded-xl p-3.5 flex flex-col gap-0 transition-all border  ${
+    showDetails && isActive
+      ? "border-[#1D9E75] bg-[#1D9E75]/10"
+      : "border-[#C8B8A8] bg-[#F0EAE2] hover:border-[#B8A898]"
+  }`;
+
+  const inner = (
+    <>
       <div className="flex items-start justify-between gap-2">
         <span
           className="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 flex-none"
@@ -225,18 +221,19 @@ export function ActivityCardDesktop({
         >
           {getSportLabel(activity.sport)}
         </span>
-        <span className="text-[10px] text-[#7A6A5A] leading-4 shrink-0">
-          {formatActivityTime(activity.starts_at)}
-        </span>
+        <div className="flex flex-col items-end shrink-0">
+          <span className="text-[12px] font-medium text-[#2C2C2C] leading-tight">
+            {time}
+          </span>
+          <span className="text-[11px] text-[#7A6A5A] leading-tight">
+            {date}
+          </span>
+        </div>
       </div>
 
-      <Link
-        href={`/activity/${activity.id}`}
-        onClick={(e) => e.stopPropagation()}
-        className="text-[13px] font-medium text-[#2C2C2C] leading-snug hover:text-[#1D9E75] transition-colors cursor-pointer"
-      >
+      <p className="text-lg font-semibold text-[#2C2C2C] leading-snug">
         {activity.title}
-      </Link>
+      </p>
 
       <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1 min-w-0">
         <svg
@@ -263,7 +260,7 @@ export function ActivityCardDesktop({
         )}
       </p>
 
-      <div className="flex items-center gap-2 mt-auto pt-0.5">
+      <div className="flex items-center gap-2 mt-auto pt-1.5">
         {avatars.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
             {avatars.map((av, i) => (
@@ -278,7 +275,9 @@ export function ActivityCardDesktop({
                     className={`w-full h-full object-cover${userId === null ? " blur-sm" : ""}`}
                   />
                 ) : (
-                  <span className={`text-[8px] font-semibold text-[#5C4A38]${userId === null ? " blur-sm" : ""}`}>
+                  <span
+                    className={`text-[8px] font-semibold text-[#5C4A38]${userId === null ? " blur-sm" : ""}`}
+                  >
                     {av.full_name ? initials(av.full_name) : "?"}
                   </span>
                 )}
@@ -293,18 +292,20 @@ export function ActivityCardDesktop({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
-        <Link
-          href={`/activity/${activity.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className={detailLinkClass}
-        >
-          Details
-        </Link>
+        {showDetails && (
+          <Link
+            href={`/activity/${activity.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="border border-[#C8B8A8] rounded-full px-3 py-1.5 text-[11px] text-[#7A6A5A] hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors flex-none"
+          >
+            Details
+          </Link>
+        )}
         {userId === null ? (
           <Link
             href="/login"
             onClick={(e) => e.stopPropagation()}
-            className="w-20 h-7 flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+            className="flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium py-1.5 px-4 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
           >
             Sign in
           </Link>
@@ -317,9 +318,30 @@ export function ActivityCardDesktop({
             onJoin={onJoin}
             onLeave={onLeave}
             stopPropagation
+            className="py-1.5 px-4 text-[11px]"
           />
         )}
       </div>
-    </div>
+    </>
+  );
+
+  if (showDetails) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onSelect}
+        onKeyDown={(e) => e.key === "Enter" && onSelect()}
+        className={`cursor-pointer ${cardClass}`}
+      >
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Link href={`/activity/${activity.id}`} className={cardClass}>
+      {inner}
+    </Link>
   );
 }
