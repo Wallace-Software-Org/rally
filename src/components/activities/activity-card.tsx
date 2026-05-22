@@ -113,7 +113,7 @@ export function ActivityCardMobile({
           {activity.skill_level ? ` · ${activity.skill_level}` : ""}
         </p>
       </div>
-      <div className="flex items-center gap-2 mt-auto pt-0.5">
+      <div className="flex items-center gap-2 mt-auto pt-0.5" onClick={(e) => e.stopPropagation()}>
         {avatars.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
             {avatars.map((av, i) => (
@@ -264,7 +264,7 @@ export function ActivityCardDesktop({
         )}
       </p>
 
-      <div className="flex items-center gap-2 mt-auto pt-1.5">
+      <div className="flex items-center gap-2 mt-auto pt-1.5" onClick={(e) => e.stopPropagation()}>
         {avatars.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
             {avatars.map((av, i) => (
@@ -348,8 +348,14 @@ export function ActivityCardDesktop({
   }
 
   return (
-    <Link href={`/activity/${activity.id}`} className={cardClass}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => router.push(`/activity/${activity.id}`)}
+      onKeyDown={(e) => e.key === "Enter" && router.push(`/activity/${activity.id}`)}
+      className={`cursor-pointer ${cardClass}`}
+    >
       {inner}
-    </Link>
+    </div>
   );
 }
