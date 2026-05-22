@@ -44,7 +44,7 @@ function Avatar({
   name: string;
   size: "sm" | "md";
 }) {
-  const dim = size === "sm" ? "w-8 h-8 text-[10px]" : "w-10 h-10 text-sm";
+  const dim = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
   return (
     <div
       className={`${dim} rounded-full flex-none overflow-hidden bg-[#D4C4B4] flex items-center justify-center`}
@@ -73,7 +73,7 @@ function JoinedPill({
 }) {
   if (isHost) {
     return (
-      <div className="w-full bg-[#C8E6DC] text-[#1A6B52] rounded-xl py-3 text-[13px] font-medium text-center">
+      <div className="w-full bg-brand-teal-muted text-brand-teal-text rounded-xl py-3 text-sm font-medium text-center">
         ✓ You&apos;re going
       </div>
     );
@@ -82,10 +82,10 @@ function JoinedPill({
     <button
       data-joined-pill
       onClick={() => (confirming ? onConfirm() : onFirstTap())}
-      className={`w-full rounded-xl py-3 text-[13px] font-bold text-center transition-colors ${
+      className={`w-full rounded-xl py-3 text-sm font-bold text-center transition-colors ${
         confirming
           ? " text-red-600 bg-red-400/10 border border-red-400"
-          : "bg-[#C8E6DC] text-[#1A6B52]"
+          : "bg-brand-teal-muted text-brand-teal-text"
       }`}
     >
       {leaving
@@ -98,12 +98,12 @@ function JoinedPill({
 }
 
 function Divider() {
-  return <div className="h-px bg-[#C8B8A8]" />;
+  return <div className="h-px bg-brand-border" />;
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7A6A5A] mb-3">
+    <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted mb-3">
       {children}
     </p>
   );
@@ -128,8 +128,8 @@ function MapPlaceholder({
           backgroundSize: "32px 32px",
         }}
       />
-      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#1D9E75]" />
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 max-w-[80%] truncate text-center text-xs font-medium text-[#5C4A38] bg-[#F0EAE2]/90 px-2.5 py-1 rounded-full border border-[#C8B8A8]">
+      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-brand-teal" />
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 max-w-[80%] truncate text-center text-xs font-medium text-[#5C4A38] bg-brand-bg/90 px-2.5 py-1 rounded-full border border-brand-border">
         {locationName}
       </div>
     </div>
@@ -231,7 +231,7 @@ export default function ActivityDetailView({
     userId === null ? (
       <Link
         href="/login"
-        className="flex items-center justify-center rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"
+        className="flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
       >
         Sign in to join
       </Link>
@@ -248,7 +248,7 @@ export default function ActivityDetailView({
         className={`flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
           leaveConfirm
             ? "border-[#CC3333] text-[#CC3333] bg-transparent hover:bg-[#CC3333]/5"
-            : "border-[#C8B8A8] text-[#7A6A5A] bg-transparent hover:border-[#B8A898]"
+            : "border-brand-border text-brand-muted bg-transparent hover:border-brand-border-hover"
         }`}
       >
         {leaving
@@ -261,7 +261,7 @@ export default function ActivityDetailView({
       <button
         onClick={handleJoin}
         disabled={joining}
-        className="flex items-center justify-center rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors disabled:opacity-60"
+        className="flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
       >
         {joining ? "Joining…" : "Join activity"}
       </button>
@@ -270,7 +270,7 @@ export default function ActivityDetailView({
   const shareBtn = (
     <button
       onClick={handleInstagram}
-      className="flex items-center justify-center gap-2 rounded-xl border border-[#C8B8A8] text-[#7A6A5A] text-sm font-medium py-3.5 hover:border-[#B8A898] hover:text-[#2C2C2C] transition-colors"
+      className="flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-border-hover hover:text-brand-text transition-colors"
     >
       <svg
         width="15"
@@ -299,7 +299,7 @@ export default function ActivityDetailView({
     <div className="flex gap-3">
       <Link
         href={`/activity/${activity.id}/edit`}
-        className="flex-1 flex items-center justify-center rounded-xl border border-[#C8B8A8] text-[#7A6A5A] text-sm font-medium py-3 hover:border-[#B8A898] hover:text-[#2C2C2C] transition-colors"
+        className="flex-1 flex items-center justify-center rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-border-hover hover:text-brand-text transition-colors"
       >
         Edit activity
       </Link>
@@ -327,17 +327,17 @@ export default function ActivityDetailView({
   ) : null;
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#F0EAE2]">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
 
       {/* ── Breadcrumb — xl only ────────────────────────────────────────────── */}
-      <div className="hidden xl:flex flex-none items-center gap-1.5 text-[12px] text-[#7A6A5A] px-8 py-2">
+      <div className="hidden xl:flex flex-none items-center gap-1.5 text-xs text-brand-muted px-8 py-2">
         <Link
           href="/"
-          className="hover:text-[#1D9E75] transition-colors flex-none"
+          className="hover:text-brand-teal transition-colors flex-none"
         >
           Feed
         </Link>
-        <span className="text-[#C8B8A8]">/</span>
+        <span className="text-brand-border">/</span>
         <span className="truncate">{activity.title}</span>
       </div>
 
@@ -355,10 +355,10 @@ export default function ActivityDetailView({
               >
                 {getSportLabel(activity.sport)}
               </span>
-              <h1 className="text-2xl font-medium text-[#2C2C2C] leading-snug">
+              <h1 className="text-2xl font-medium text-brand-text leading-snug">
                 {activity.title}
               </h1>
-              <p className="flex items-center gap-2 text-sm text-[#7A6A5A]">
+              <p className="flex items-center gap-2 text-sm text-brand-muted">
                 <svg
                   width="14"
                   height="14"
@@ -386,7 +386,7 @@ export default function ActivityDetailView({
                 {formatDetailDate(activity.starts_at)}
               </p>
               {/* Location row — xl only (map stays in right panel) */}
-              <p className="hidden xl:flex items-center gap-2 text-[13px] text-[#7A6A5A]">
+              <p className="hidden xl:flex items-center gap-2 text-sm text-brand-muted">
                 <svg
                   width="10"
                   height="12"
@@ -413,15 +413,15 @@ export default function ActivityDetailView({
                   size="md"
                 />
                 <div className="flex flex-col gap-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#2C2C2C] leading-none">
+                  <p className="text-sm font-semibold text-brand-text leading-none">
                     {activity.host.full_name}
                   </p>
                   {activity.host.instagram_handle && (
-                    <p className="text-xs text-[#7A6A5A]">
+                    <p className="text-xs text-brand-muted">
                       @{activity.host.instagram_handle}
                     </p>
                   )}
-                  <span className="inline-flex self-start items-center rounded-full bg-[#C8E6DC] px-2 py-0.5 text-[11px] font-medium text-[#1A6B52]">
+                  <span className="inline-flex self-start items-center rounded-full bg-brand-teal-muted px-2 py-0.5 text-xs font-medium text-brand-teal-text">
                     {activity.hosted_count} activities hosted
                   </span>
                 </div>
@@ -433,16 +433,16 @@ export default function ActivityDetailView({
             {/* 3. About + meta pills */}
             <div>
               <SectionLabel>About</SectionLabel>
-              <p className="text-sm leading-relaxed text-[#2C2C2C]">
+              <p className="text-sm leading-relaxed text-brand-text">
                 {activity.description}
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="flex items-center gap-1.5 border border-[#C8B8A8] rounded-full px-3 py-1 text-[11px] text-[#7A6A5A] bg-[#F0EAE2]">
-                  <span className="w-1.25 h-1.25 rounded-full bg-[#C8B8A8] flex-none" />
+                <span className="flex items-center gap-1.5 border border-brand-border rounded-full px-3 py-1 text-xs text-brand-muted bg-brand-bg">
+                  <span className="w-1.25 h-1.25 rounded-full bg-brand-border flex-none" />
                   {skillDisplay}
                 </span>
-                <span className="flex items-center gap-1.5 border border-[#C8B8A8] rounded-full px-3 py-1 text-[11px] text-[#7A6A5A] bg-[#F0EAE2]">
-                  <span className="w-1.25 h-1.25 rounded-full bg-[#C8B8A8] flex-none" />
+                <span className="flex items-center gap-1.5 border border-brand-border rounded-full px-3 py-1 text-xs text-brand-muted bg-brand-bg">
+                  <span className="w-1.25 h-1.25 rounded-full bg-brand-border flex-none" />
                   {activity.max_participants === null
                     ? "Open enrollment"
                     : spotsLeft === 0
@@ -454,7 +454,7 @@ export default function ActivityDetailView({
 
             {/* 4. Location — mobile + md/lg only; owns its top divider so xl stays clean */}
             <div className="xl:hidden flex flex-col gap-3">
-              <div className="h-px bg-[#C8B8A8]" />
+              <div className="h-px bg-brand-border" />
               <SectionLabel>Location</SectionLabel>
               <MapPlaceholder
                 locationName={activity.location_name}
@@ -468,7 +468,7 @@ export default function ActivityDetailView({
             <div>
               <SectionLabel>Who&apos;s going</SectionLabel>
               {activity.participants.length === 0 ? (
-                <p className="text-sm text-[#7A6A5A]">
+                <p className="text-sm text-brand-muted">
                   No one yet — be the first
                 </p>
               ) : (
@@ -492,7 +492,7 @@ export default function ActivityDetailView({
                             <div
                               className={`w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ${
                                 isParticipantHost
-                                  ? "bg-[#C8E6DC]"
+                                  ? "bg-brand-teal-muted"
                                   : "bg-[#D4C4B4]"
                               }`}
                             >
@@ -506,7 +506,7 @@ export default function ActivityDetailView({
                                 <span
                                   className={`text-xs font-semibold ${
                                     isParticipantHost
-                                      ? "text-[#1A6B52]"
+                                      ? "text-brand-teal-text"
                                       : "text-[#5C4A38]"
                                   }`}
                                 >
@@ -514,14 +514,14 @@ export default function ActivityDetailView({
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] text-[#2C2C2C] truncate w-full text-center leading-tight">
+                            <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
                               {firstName}
                             </span>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-r from-transparent to-[#F0EAE2] pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-r from-transparent to-brand-bg pointer-events-none" />
                   </div>
 
                   {/* md+: horizontal scroll row */}
@@ -543,7 +543,7 @@ export default function ActivityDetailView({
                             <div
                               className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
                                 isParticipantHost
-                                  ? "bg-[#C8E6DC]"
+                                  ? "bg-brand-teal-muted"
                                   : "bg-[#D4C4B4]"
                               }`}
                             >
@@ -557,7 +557,7 @@ export default function ActivityDetailView({
                                 <span
                                   className={`text-xs font-semibold ${
                                     isParticipantHost
-                                      ? "text-[#1A6B52]"
+                                      ? "text-brand-teal-text"
                                       : "text-[#5C4A38]"
                                   }`}
                                 >
@@ -565,14 +565,14 @@ export default function ActivityDetailView({
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] text-[#2C2C2C] truncate w-full text-center leading-tight">
+                            <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
                               {firstName}
                             </span>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-r from-transparent to-[#F0EAE2] pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-r from-transparent to-brand-bg pointer-events-none" />
                   </div>
                 </>
               )}
@@ -621,7 +621,7 @@ export default function ActivityDetailView({
       </div>
 
       {/* ── Bottom CTA bar — mobile only ────────────────────────────────────── */}
-      <div className="md:hidden flex-none border-t border-[#C8B8A8] bg-[#F0EAE2] p-3 flex flex-col gap-2">
+      <div className="md:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
         {isJoined ? (
           <JoinedPill
             confirming={pillConfirm}
@@ -637,7 +637,7 @@ export default function ActivityDetailView({
         {isHost && (
           <button
             onClick={() => setShowSheet(true)}
-            className="border border-[#C8B8A8] rounded-xl px-3 py-2.5 text-[13px] text-[#7A6A5A]"
+            className="border border-brand-border rounded-xl px-3 py-2.5 text-sm text-brand-muted"
           >
             Manage ···
           </button>
@@ -646,7 +646,7 @@ export default function ActivityDetailView({
 
       {/* ── Toast ───────────────────────────────────────────────────────────── */}
       {showToast && (
-        <div className="fixed bottom-28 md:bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-[#2C2C2C] text-white text-xs font-medium px-4 py-2 shadow-lg">
+        <div className="fixed bottom-28 md:bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-brand-text text-white text-xs font-medium px-4 py-2 shadow-lg">
           Coming soon
         </div>
       )}
@@ -661,14 +661,14 @@ export default function ActivityDetailView({
           />
           {/* Bottom sheet */}
           <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 z-20">
-            <div className="w-9 h-1 bg-[#C8B8A8] rounded-full mx-auto mb-3" />
-            <p className="text-[12px] text-[#7A6A5A] text-center mb-2">
+            <div className="w-9 h-1 bg-brand-border rounded-full mx-auto mb-3" />
+            <p className="text-xs text-brand-muted text-center mb-2">
               Manage activity
             </p>
             <div className="flex flex-col gap-2">
               <Link
                 href={`/activity/${activity.id}/edit`}
-                className="w-full flex items-center justify-center bg-white border border-[#C8B8A8] rounded-xl p-3.5 text-[13px] text-[#2C2C2C]"
+                className="w-full flex items-center justify-center bg-white border border-brand-border rounded-xl p-3.5 text-sm text-brand-text"
               >
                 Edit activity
               </Link>
@@ -677,13 +677,13 @@ export default function ActivityDetailView({
                   setShowSheet(false);
                   setShowConfirm(true);
                 }}
-                className="w-full flex items-center justify-center bg-transparent border border-red-200 rounded-xl p-3.5 text-[13px] text-red-400 hover:border-red-300 transition-colors"
+                className="w-full flex items-center justify-center bg-transparent border border-red-200 rounded-xl p-3.5 text-sm text-red-400 hover:border-red-300 transition-colors"
               >
                 Cancel activity
               </button>
               <button
                 onClick={() => setShowSheet(false)}
-                className="w-full flex items-center justify-center bg-[#F0EAE2] rounded-xl p-3.5 text-[13px] text-[#7A6A5A] mt-1"
+                className="w-full flex items-center justify-center bg-brand-bg rounded-xl p-3.5 text-sm text-brand-muted mt-1"
               >
                 Close
               </button>
@@ -696,10 +696,10 @@ export default function ActivityDetailView({
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 z-30 flex items-center justify-center px-5">
           <div className="bg-white rounded-2xl p-5 w-full flex flex-col gap-3">
-            <p className="text-[15px] font-semibold text-[#2C2C2C]">
+            <p className="text-base font-semibold text-brand-text">
               Cancel this activity?
             </p>
-            <p className="text-[12px] text-[#7A6A5A] leading-relaxed">
+            <p className="text-xs text-brand-muted leading-relaxed">
               All participants will be removed and this activity will be
               permanently cancelled. This can&apos;t be undone.
             </p>
@@ -714,13 +714,13 @@ export default function ActivityDetailView({
                 }
               }}
               disabled={cancelling}
-              className="w-full flex items-center justify-center bg-[#C0392B] text-white rounded-xl p-3.5 text-[13px] font-semibold disabled:opacity-60"
+              className="w-full flex items-center justify-center bg-[#C0392B] text-white rounded-xl p-3.5 text-sm font-semibold disabled:opacity-60"
             >
               {cancelling ? "Cancelling…" : "Yes, cancel activity"}
             </button>
             <button
               onClick={() => setShowConfirm(false)}
-              className="w-full flex items-center justify-center border border-[#C8B8A8] text-[#7A6A5A] rounded-xl p-3.5 text-[13px]"
+              className="w-full flex items-center justify-center border border-brand-border text-brand-muted rounded-xl p-3.5 text-sm"
             >
               Keep it
             </button>

@@ -30,8 +30,8 @@ export default function AppNav({
 
   const logo = (
     <Link href="/" className="flex items-center gap-2 flex-none">
-      <span className="w-2.5 h-2.5 rounded-full bg-[#1D9E75] block" />
-      <span className="text-base font-semibold tracking-tight text-[#2C2C2C]">
+      <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
+      <span className="text-base font-semibold tracking-tight text-brand-text">
         Rally
       </span>
     </Link>
@@ -39,20 +39,20 @@ export default function AppNav({
 
   if (!userId) {
     return (
-      <header className="flex-none border-b border-[#C8B8A8] bg-[#F0EAE2]">
+      <header className="flex-none border-b border-brand-border bg-brand-bg">
         <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center gap-3">
           {logo}
           <div className="flex-1" />
           <div className="flex items-center gap-2 flex-none">
             <Link
               href="/login"
-              className="border border-[#C8B8A8] text-[#7A6A5A] rounded-full px-4 py-1.5 text-sm hover:border-[#B8A898] transition-colors"
+              className="border border-brand-border text-brand-muted rounded-full px-4 py-1.5 text-sm hover:border-brand-border-hover transition-colors"
             >
               Log in
             </Link>
             <Link
               href="/login"
-              className="bg-[#1D9E75] text-white rounded-full px-4 py-1.5 text-sm font-medium hover:bg-[#199068] transition-colors"
+              className="bg-brand-teal text-white rounded-full px-4 py-1.5 text-sm font-medium hover:bg-brand-teal-hover transition-colors"
             >
               Sign up
             </Link>
@@ -63,7 +63,7 @@ export default function AppNav({
   }
 
   return (
-    <header className="flex-none border-b border-[#C8B8A8] bg-[#F0EAE2]">
+    <header className="flex-none border-b border-brand-border bg-brand-bg">
       <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center gap-3">
         {logo}
 
@@ -71,7 +71,7 @@ export default function AppNav({
 
         <Link
           href="/activity/new"
-          className="hidden lg:flex items-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold px-4 py-2 hover:bg-[#199068] active:bg-[#147a56] transition-colors flex-none"
+          className="hidden lg:flex items-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold px-4 py-2 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors flex-none"
         >
           <svg
             width="12"
@@ -111,7 +111,7 @@ export default function AppNav({
         <button
           onClick={handleLogout}
           aria-label="Sign out"
-          className="flex-none flex items-center gap-1.5 rounded-lg border border-[#C8B8A8] bg-transparent text-sm text-[#7A6A5A] hover:border-[#B8A898] hover:text-[#2C2C2C] transition-colors px-3 py-1.5"
+          className="flex-none flex items-center gap-1.5 rounded-lg border border-brand-border bg-transparent text-sm text-brand-muted hover:border-brand-border-hover hover:text-brand-text transition-colors px-3 py-1.5"
         >
           <svg
             width="15"

@@ -38,8 +38,8 @@ function OverflowPill({
         onClick={() => setOpen((p) => !p)}
         className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
           isActive
-            ? "border border-[#1D9E75] text-[#1D9E75] bg-[#C8E6DC]"
-            : "border border-[#C8B8A8] text-[#7A6A5A] hover:border-[#B8A898]"
+            ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
+            : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
         }`}
       >
         +{sports.length}
@@ -65,7 +65,7 @@ function OverflowPill({
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1.5 left-0 z-20 w-max min-w-36 bg-[#F0EAE2] border border-[#C8B8A8] rounded-xl shadow-lg py-1">
+        <div className="absolute top-full mt-1.5 left-0 z-20 w-max min-w-36 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-1">
           {sports.map((s) => (
             <button
               key={s}
@@ -73,7 +73,7 @@ function OverflowPill({
                 onSelect(s);
                 setOpen(false);
               }}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-[#2C2C2C] hover:bg-[#E8DFCF] transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-[#E8DFCF] transition-colors"
             >
               {s}
               {activeSports.includes(s) && (
@@ -132,8 +132,8 @@ export function DatePickerPill({
         onClick={() => setOpen((p) => !p)}
         className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
           isActive
-            ? "border border-[#1D9E75] text-[#1D9E75] bg-[#C8E6DC]"
-            : "border border-[#C8B8A8] text-[#7A6A5A] hover:border-[#B8A898]"
+            ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
+            : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
         }`}
       >
         {label}
@@ -159,7 +159,7 @@ export function DatePickerPill({
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1.5 left-0 z-20 w-max min-w-36 bg-[#F0EAE2] border border-[#C8B8A8] rounded-xl shadow-lg py-2">
+        <div className="absolute top-full mt-1.5 left-0 z-20 w-max min-w-36 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-2">
           {DATE_FILTER_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -167,7 +167,7 @@ export function DatePickerPill({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-[#2C2C2C] hover:bg-[#E8DFCF] transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-[#E8DFCF] transition-colors"
             >
               {opt.label}
               {value === opt.value && (
@@ -226,8 +226,8 @@ export default function ActivityFilters({
       onClick={() => onChange([])}
       className={`flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
         allActive
-          ? "border border-[#1D9E75] text-[#1D9E75] bg-[#C8E6DC]"
-          : "border border-[#C8B8A8] text-[#7A6A5A] hover:border-[#B8A898]"
+          ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
+          : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
       }`}
     >
       All
@@ -245,8 +245,8 @@ export default function ActivityFilters({
       onClick={() => toggle(s)}
       className={`flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
         sports.includes(s)
-          ? "border border-[#1D9E75] text-[#1D9E75] bg-[#C8E6DC]"
-          : "border border-[#C8B8A8] text-[#7A6A5A] hover:border-[#B8A898]"
+          ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
+          : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
       }`}
     >
       {s}

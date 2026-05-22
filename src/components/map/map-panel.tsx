@@ -99,12 +99,12 @@ export default function MapPanel({
           return (
             <span
               key={a.id}
-              className="absolute w-2 h-2 rounded-full bg-[#1D9E75]"
+              className="absolute w-2 h-2 rounded-full bg-brand-teal"
               style={{ top: `${pos.y}%`, left: `${pos.x}%` }}
             />
           );
         })}
-        <button className="relative z-10 flex items-center gap-1 rounded-full bg-[#F0EAE2] border border-[#C8B8A8] px-3 py-1 text-[11px] font-medium text-[#7A6A5A] shadow-sm">
+        <button className="relative z-10 flex items-center gap-1 rounded-full bg-brand-bg border border-brand-border px-3 py-1 text-xs font-medium text-brand-muted shadow-sm">
           <svg
             width="10"
             height="10"
@@ -147,7 +147,7 @@ export default function MapPanel({
             style={{ top: `${pos.y}%`, left: `${pos.x}%` }}
           >
             {userId && (
-              <span className="text-[10px] font-medium text-[#7A6A5A] bg-[#F0EAE2]/80 px-1.5 py-0.5 rounded backdrop-blur-sm leading-tight max-w-25 truncate">
+              <span className="text-xs font-medium text-brand-muted bg-brand-bg/80 px-1.5 py-0.5 rounded backdrop-blur-sm leading-tight max-w-25 truncate">
                 {a.location_name}
               </span>
             )}

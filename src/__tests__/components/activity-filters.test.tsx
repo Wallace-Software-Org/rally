@@ -30,18 +30,18 @@ describe("ActivityFilters", () => {
   it("active sport pill has the teal active class", () => {
     render(<ActivityFilters sports={["Running"]} onChange={vi.fn()} />);
     const btn = screen.getByRole("button", { name: "Running" });
-    expect(btn.className).toContain("border-[#1D9E75]");
+    expect(btn.className).toContain("border-brand-teal");
   });
 
   it("inactive sport pill does not have the teal active class", () => {
     render(<ActivityFilters sports={[]} onChange={vi.fn()} />);
     const btn = screen.getByRole("button", { name: "Running" });
-    expect(btn.className).not.toContain("border-[#1D9E75]");
+    expect(btn.className).not.toContain("border-brand-teal");
   });
 
   it("All pill is active when no sports are selected", () => {
     render(<ActivityFilters sports={[]} onChange={vi.fn()} />);
     const btn = screen.getByRole("button", { name: "All" });
-    expect(btn.className).toContain("border-[#1D9E75]");
+    expect(btn.className).toContain("border-brand-teal");
   });
 });

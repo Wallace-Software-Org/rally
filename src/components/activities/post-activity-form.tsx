@@ -23,10 +23,10 @@ type FormState = {
 };
 
 const inputCls =
-  "w-full rounded-xl border border-[#C8B8A8] bg-white px-4 py-3 text-sm text-[#2C2C2C] placeholder:text-[#7A6A5A] focus:outline-none focus:ring-[1.5px] focus:ring-[#1D9E75]";
+  "w-full rounded-xl border border-brand-border bg-white px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
 
 const primaryBtn =
-  "w-full rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors disabled:opacity-40";
+  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40";
 
 const STEP_LABELS = [
   "Choose a sport",
@@ -104,7 +104,7 @@ export default function PostActivityForm() {
   const reviewStartsAt = startsAt();
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col bg-[#F0EAE2]">
+    <div className="flex-1 overflow-y-auto flex flex-col bg-brand-bg">
       {/* ── Header: back arrow + step indicator ─────────────── */}
       <div className="flex items-center px-4 pt-6 pb-4 gap-4 max-w-lg mx-auto w-full">
         <button
@@ -139,7 +139,7 @@ export default function PostActivityForm() {
               />
             ))}
           </div>
-          <span className="text-xs font-medium text-[#7A6A5A]">
+          <span className="text-xs font-medium text-brand-muted">
             {STEP_LABELS[step - 1]}
           </span>
         </div>
@@ -162,7 +162,7 @@ export default function PostActivityForm() {
                     patch({ sport: sport.toLowerCase() });
                     setStep(2);
                   }}
-                  className="rounded-xl border border-[#C8B8A8] bg-white p-3 flex items-center gap-2.5 cursor-pointer active:bg-[#F0EAE2] transition-colors"
+                  className="rounded-xl border border-brand-border bg-white p-3 flex items-center gap-2.5 cursor-pointer active:bg-brand-bg transition-colors"
                 >
                   <div
                     className="w-2 h-2 rounded-full flex-none"
@@ -171,13 +171,13 @@ export default function PostActivityForm() {
                         SPORT_COLORS[sport.toLowerCase()]?.text ?? "#1D9E75",
                     }}
                   />
-                  <span className="text-sm font-medium text-[#2C2C2C]">
+                  <span className="text-sm font-medium text-brand-text">
                     {getSportLabel(sport)}
                   </span>
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-[#7A6A5A] text-center">
+            <p className="text-xs text-brand-muted text-center">
               Tap a sport to continue
             </p>
           </>
@@ -187,7 +187,7 @@ export default function PostActivityForm() {
         {step === 2 && (
           <>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-[#2C2C2C]">
+              <label className="text-sm font-medium text-brand-text">
                 Activity title
               </label>
               <input
@@ -201,7 +201,7 @@ export default function PostActivityForm() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-[#2C2C2C]">
+                <label className="text-sm font-medium text-brand-text">
                   Date
                 </label>
                 <input
@@ -212,7 +212,7 @@ export default function PostActivityForm() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-[#2C2C2C]">
+                <label className="text-sm font-medium text-brand-text">
                   Time
                 </label>
                 <input
@@ -224,10 +224,10 @@ export default function PostActivityForm() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border border-[#C8B8A8] bg-white rounded-xl px-4 py-3">
+            <div className="flex items-center justify-between border border-brand-border bg-white rounded-xl px-4 py-3">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm text-[#2C2C2C]">Limit spots</span>
-                <span className="text-[11px] text-[#7A6A5A]">
+                <span className="text-sm text-brand-text">Limit spots</span>
+                <span className="text-xs text-brand-muted">
                   {limitSpots
                     ? `Max ${stepperValue} participants`
                     : "Off — open to all"}
@@ -243,7 +243,7 @@ export default function PostActivityForm() {
                   patch({ max_participants: next ? stepperValue : null });
                 }}
                 className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-                  limitSpots ? "bg-[#1D9E75] justify-end" : "bg-[#C8B8A8] justify-start"
+                  limitSpots ? "bg-brand-teal justify-end" : "bg-brand-border justify-start"
                 }`}
               >
                 <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
@@ -259,11 +259,11 @@ export default function PostActivityForm() {
                     setStepperValue(v);
                     patch({ max_participants: v });
                   }}
-                  className="w-8 h-8 rounded-lg border border-[#C8B8A8] bg-[#F0EAE2] flex items-center justify-center text-[#2C2C2C] flex-none"
+                  className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
                 >
                   −
                 </button>
-                <span className="flex-1 text-center text-base font-semibold text-[#2C2C2C]">
+                <span className="flex-1 text-center text-base font-semibold text-brand-text">
                   {stepperValue}
                 </span>
                 <button
@@ -273,7 +273,7 @@ export default function PostActivityForm() {
                     setStepperValue(v);
                     patch({ max_participants: v });
                   }}
-                  className="w-8 h-8 rounded-lg border border-[#C8B8A8] bg-[#F0EAE2] flex items-center justify-center text-[#2C2C2C] flex-none"
+                  className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
                 >
                   +
                 </button>
@@ -281,10 +281,10 @@ export default function PostActivityForm() {
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-[#2C2C2C]">
+              <label className="text-sm font-medium text-brand-text">
                 Skill level
               </label>
-              <div className="flex rounded-xl overflow-hidden border border-[#C8B8A8]">
+              <div className="flex rounded-xl overflow-hidden border border-brand-border">
                 {SKILL_LEVELS.map((level) => (
                   <button
                     key={level}
@@ -292,8 +292,8 @@ export default function PostActivityForm() {
                     onClick={() => patch({ skill_level: level })}
                     className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                       form.skill_level === level
-                        ? "bg-[#1D9E75] text-white"
-                        : "text-[#7A6A5A] hover:text-[#2C2C2C]"
+                        ? "bg-brand-teal text-white"
+                        : "text-brand-muted hover:text-brand-text"
                     }`}
                   >
                     {level}
@@ -304,10 +304,10 @@ export default function PostActivityForm() {
 
             <div className="flex flex-col gap-1.5">
               <div className="flex items-baseline justify-between">
-                <label className="text-sm font-medium text-[#2C2C2C]">
+                <label className="text-sm font-medium text-brand-text">
                   Description
                 </label>
-                <span className="text-[11px] text-[#7A6A5A]">
+                <span className="text-xs text-brand-muted">
                   {form.description.trim().length}/20 min
                 </span>
               </div>
@@ -334,7 +334,7 @@ export default function PostActivityForm() {
         {step === 3 && (
           <>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-[#2C2C2C]">
+              <label className="text-sm font-medium text-brand-text">
                 Location
               </label>
               <input
@@ -350,7 +350,7 @@ export default function PostActivityForm() {
               type="button"
               onClick={handleUseLocation}
               disabled={geoLoading}
-              className="self-start border border-[#C8B8A8] text-[#1D9E75] rounded-xl px-4 py-2.5 text-sm flex items-center gap-2 hover:border-[#1D9E75] transition-colors disabled:opacity-50"
+              className="self-start border border-brand-border text-brand-teal rounded-xl px-4 py-2.5 text-sm flex items-center gap-2 hover:border-brand-teal transition-colors disabled:opacity-50"
             >
               <svg
                 width="10"
@@ -364,7 +364,7 @@ export default function PostActivityForm() {
               {geoLoading ? "Getting location…" : "Use my current location"}
             </button>
 
-            <div className="border-t border-[#C8B8A8]" />
+            <div className="border-t border-brand-border" />
 
             <ReviewCard form={form} startsAtIso={reviewStartsAt} />
 
@@ -392,26 +392,26 @@ function ReviewCard({
   const colors = SPORT_COLORS[form.sport] ?? { bg: "#C8E6DC", text: "#1A6B52" };
 
   return (
-    <div className="rounded-xl border border-[#C8B8A8] bg-white p-3 flex flex-col gap-2">
+    <div className="rounded-xl border border-brand-border bg-white p-3 flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
         <span
-          className="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 flex-none"
+          className="rounded-full px-2 py-0.5 text-xs font-semibold leading-4 flex-none"
           style={{ backgroundColor: colors.bg, color: colors.text }}
         >
           {getSportLabel(form.sport)}
         </span>
         {startsAtIso && (
-          <span className="text-[10px] text-[#7A6A5A] leading-4 shrink-0">
+          <span className="text-xs text-brand-muted leading-4 shrink-0">
             {formatActivityTime(startsAtIso)}
           </span>
         )}
       </div>
 
-      <p className="text-[13px] font-medium text-[#2C2C2C] leading-snug">
+      <p className="text-sm font-medium text-brand-text leading-snug">
         {form.title}
       </p>
 
-      <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1 min-w-0">
+      <p className="text-xs text-brand-muted flex items-center gap-1 min-w-0">
         <svg
           width="8"
           height="10"
@@ -425,14 +425,14 @@ function ReviewCard({
         {form.location_name ? (
           <span className="truncate">{form.location_name}</span>
         ) : (
-          <span className="italic text-[#C8B8A8]">No location yet</span>
+          <span className="italic text-brand-border">No location yet</span>
         )}
         {form.skill_level && (
           <span className="flex-none">· {form.skill_level}</span>
         )}
       </p>
 
-      <p className="text-[11px] text-[#7A6A5A] pt-0.5 flex items-center gap-1">
+      <p className="text-xs text-brand-muted pt-0.5 flex items-center gap-1">
         <svg
           width="13"
           height="11"

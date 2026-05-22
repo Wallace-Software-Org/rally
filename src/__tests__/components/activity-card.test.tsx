@@ -55,18 +55,18 @@ describe("ActivityCardDesktop", () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it("has teal ring when isActive=true and showDetails=true", () => {
+  it("has teal border when isActive=true and showDetails=true", () => {
     const { container } = render(
       <ActivityCardDesktop {...base} showDetails={true} isActive={true} />,
     );
-    expect((container.firstChild as HTMLElement).className).toContain("ring-[#1D9E75]");
+    expect((container.firstChild as HTMLElement).className).toContain("border-brand-teal");
   });
 
-  it("does not have teal ring when isActive=false", () => {
+  it("does not have teal border when isActive=false", () => {
     const { container } = render(
       <ActivityCardDesktop {...base} showDetails={true} isActive={false} />,
     );
-    expect((container.firstChild as HTMLElement).className).not.toContain("ring-[#1D9E75]");
+    expect((container.firstChild as HTMLElement).className).not.toContain("border-brand-teal");
   });
 
   it("renders Details link when showDetails=true", () => {

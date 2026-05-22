@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
-:root {
-  --color-bg: #F0EAE2;
-  --color-card: #F0EAE2;
-  --color-border: #C8B8A8;
-  --color-text-primary: #2C2C2C;
-  --color-text-muted: #7A6A5A;
-  --color-accent: #1D9E75;
-  --color-avatar-bg: #D4C4B4;
-  --color-avatar-text: #5C4A38;
-  --color-tag-bg: #C8E6DC;
-  --color-tag-text: #1A6B52;
-  --color-map-bg: #E8DFCF;
-}
+@theme {
+  /* ── Brand colors ─────────────────────────────────────────────────────────── */
+  --color-brand-bg: #F0EAE2;
+  --color-brand-card: #F0EAE2;
+  --color-brand-border: #C8B8A8;
+  --color-brand-border-hover: #B8A898;
+  --color-brand-teal: #1D9E75;
+  --color-brand-teal-hover: #199068;
+  --color-brand-teal-active: #147A56;
+  --color-brand-teal-muted: #C8E6DC;
+  --color-brand-teal-text: #1A6B52;
+  --color-brand-text: #2C2C2C;
+  --color-brand-muted: #7A6A5A;
+  --color-brand-avatar-bg: #D4C4B4;
+  --color-brand-avatar-text: #5C4A38;
+  --color-brand-map-bg: #E8DFCF;
 
-@theme inline {
+  /* ── Fonts ────────────────────────────────────────────────────────────────── */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --color-bg: var(--color-brand-bg);
+  --color-card: var(--color-brand-card);
+  --color-border: var(--color-brand-border);
+  --color-text-primary: var(--color-brand-text);
+  --color-text-muted: var(--color-brand-muted);
+  --color-accent: var(--color-brand-teal);
+  --color-avatar-bg: var(--color-brand-avatar-bg);
+  --color-avatar-text: var(--color-brand-avatar-text);
+  --color-tag-bg: var(--color-brand-teal-muted);
+  --color-tag-text: var(--color-brand-teal-text);
+  --color-map-bg: var(--color-brand-map-bg);
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-text-primary);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }

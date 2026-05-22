@@ -52,11 +52,11 @@ export default function MapPreviewCard({
       : activity.max_participants - participantCount;
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[320px] rounded-2xl bg-[#F0EAE2] shadow-xl border border-[#C8B8A8] p-4 flex flex-col gap-3 z-10">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[320px] rounded-2xl bg-brand-bg shadow-xl border border-brand-border p-4 flex flex-col gap-3 z-10">
       {/* Dismiss */}
       <button
         onClick={onDismiss}
-        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-[#D4C4B4] text-[#7A6A5A] hover:bg-[#C8B8A8] transition-colors"
+        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-[#D4C4B4] text-brand-muted hover:bg-brand-border transition-colors"
         aria-label="Close"
       >
         <svg
@@ -78,24 +78,24 @@ export default function MapPreviewCard({
       {/* Sport pill + time */}
       <div className="flex items-center gap-2 pr-8">
         <span
-          className="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4"
+          className="rounded-full px-2 py-0.5 text-xs font-semibold leading-4"
           style={{ backgroundColor: colors.bg, color: colors.text }}
         >
           {getSportLabel(activity.sport)}
         </span>
-        <span className="text-[11px] text-[#7A6A5A]">
+        <span className="text-xs text-brand-muted">
           {formatActivityTime(activity.starts_at)}
         </span>
       </div>
 
       {/* Title */}
-      <p className="text-sm font-semibold text-[#2C2C2C] leading-snug">
+      <p className="text-sm font-semibold text-brand-text leading-snug">
         {activity.title}
       </p>
 
       {/* Location + skill + spots */}
       <div className="flex flex-col gap-1">
-        <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1">
+        <p className="text-xs text-brand-muted flex items-center gap-1">
           <svg
             width="8"
             height="10"
@@ -109,12 +109,12 @@ export default function MapPreviewCard({
           {userId ? (
             <span>{activity.location_name}{activity.skill_level && ` · ${activity.skill_level}`}</span>
           ) : (
-            <span className="rounded px-1.5 bg-[#C8B8A8] text-[#C8B8A8] select-none blur-[2px]">
+            <span className="rounded px-1.5 bg-brand-border text-brand-border select-none blur-[2px]">
               ••••••••••••
             </span>
           )}
         </p>
-        <p className="text-[11px] text-[#7A6A5A]">
+        <p className="text-xs text-brand-muted">
           {activity.max_participants === null
             ? "Open"
             : spotsLeft <= 0
@@ -127,7 +127,7 @@ export default function MapPreviewCard({
       {userId === null ? (
         <Link
           href="/login"
-          className="w-full flex items-center justify-center rounded-xl border border-[#C8B8A8] text-[#7A6A5A] text-sm font-medium py-3 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+          className="w-full flex items-center justify-center rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-teal hover:text-brand-teal transition-colors"
         >
           Sign in to join
         </Link>
@@ -145,7 +145,7 @@ export default function MapPreviewCard({
           <button
             ref={btnRef}
             onClick={() => setConfirming(true)}
-            className="w-full rounded-xl border border-transparent bg-[#C8E6DC] text-[#1D9E75] text-sm font-semibold py-3 transition-colors"
+            className="w-full rounded-xl border border-transparent bg-brand-teal-muted text-brand-teal text-sm font-semibold py-3 transition-colors"
           >
             You&apos;re in ✓
           </button>
@@ -154,13 +154,13 @@ export default function MapPreviewCard({
         <button
           onClick={onJoin}
           disabled={isJoining}
-          className="w-full rounded-xl border border-transparent bg-[#1D9E75] text-white text-sm font-semibold py-3 hover:bg-[#199068] active:bg-[#147a56] transition-colors disabled:opacity-50"
+          className="w-full rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50"
         >
           {isJoining ? "Joining…" : "Join this activity"}
         </button>
       ) : (
         <div className="flex items-center justify-center rounded-xl py-3 bg-[#D4C4B4]">
-          <span className="text-sm font-medium text-[#7A6A5A]">
+          <span className="text-sm font-medium text-brand-muted">
             Activity is full
           </span>
         </div>

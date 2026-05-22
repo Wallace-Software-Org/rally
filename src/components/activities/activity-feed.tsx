@@ -78,11 +78,11 @@ export default function ActivityFeed({
       </div>
 
       {/* ── Filter bar — mobile + md (< lg): date pill left, sport pills scroll right ── */}
-      <div className="lg:hidden flex-none flex items-center border-b border-[#C8B8A8]">
+      <div className="lg:hidden flex-none flex items-center border-b border-brand-border">
         <div className="pl-4 pr-2 py-3 flex-none">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
         </div>
-        <div className="w-px self-stretch bg-[#C8B8A8] flex-none" />
+        <div className="w-px self-stretch bg-brand-border flex-none" />
         <div className="relative flex-1 overflow-hidden">
           <div
             className="flex gap-2 px-3 py-3 overflow-x-scroll"
@@ -95,15 +95,15 @@ export default function ActivityFeed({
           >
             <ActivityFilters sports={sports} onChange={setSports} />
           </div>
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-[#F0EAE2] to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-brand-bg to-transparent" />
         </div>
       </div>
 
       {/* ── Filter bar — lg only (1024–1279px): toolbar with overflow, date first ── */}
-      <div className="hidden lg:flex xl:hidden flex-none border-b border-[#C8B8A8]">
+      <div className="hidden lg:flex xl:hidden flex-none border-b border-brand-border">
         <div className="max-w-5xl mx-auto px-4 w-full flex items-center gap-2 py-3">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
-          <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
+          <div className="w-px h-4 bg-brand-border flex-none mx-1" />
           <ActivityFilters sports={sports} onChange={setSports} toolbar />
         </div>
       </div>
@@ -114,13 +114,13 @@ export default function ActivityFeed({
         <div className="xl:hidden flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-4">
             {!userId && (
-              <div className="mt-3 mb-1 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
+              <div className="mt-3 mb-1 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                 Join to see who&apos;s going and save your spot
               </div>
             )}
 
             {visible.length === 0 ? (
-              <p className="py-20 text-center text-sm text-[#7A6A5A]">
+              <p className="py-20 text-center text-sm text-brand-muted">
                 No open activities
               </p>
             ) : (
@@ -150,11 +150,11 @@ export default function ActivityFeed({
         {/* xl (1280px+): fixed 720px left panel + map fills remaining space */}
         <div className="hidden xl:flex flex-1 overflow-hidden">
           {/* Left panel — 720px fixed, scrolls independently */}
-          <div className="w-180 flex-none flex flex-col overflow-hidden border-r border-[#C8B8A8]">
+          <div className="w-180 flex-none flex flex-col overflow-hidden border-r border-brand-border">
             {/* Filter bar — full width of left panel, date first */}
-            <div className="flex-none border-b border-[#C8B8A8] px-6 flex items-center gap-2 py-3">
+            <div className="flex-none border-b border-brand-border px-6 flex items-center gap-2 py-3">
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
-              <div className="w-px h-4 bg-[#C8B8A8] flex-none mx-1" />
+              <div className="w-px h-4 bg-brand-border flex-none mx-1" />
               <ActivityFilters sports={sports} onChange={setSports} toolbar />
             </div>
 
@@ -162,13 +162,13 @@ export default function ActivityFeed({
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-4">
                 {!userId && (
-                  <div className="mb-3 rounded-xl bg-[#C8E6DC] px-4 py-2.5 text-[12px] text-[#1A6B52] font-medium">
+                  <div className="mb-3 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                     Join to see who&apos;s going and save your spot
                   </div>
                 )}
 
                 {visible.length === 0 ? (
-                  <p className="py-20 text-center text-sm text-[#7A6A5A]">
+                  <p className="py-20 text-center text-sm text-brand-muted">
                     No open activities
                   </p>
                 ) : (
@@ -213,10 +213,10 @@ export default function ActivityFeed({
 
       {/* ── Post activity button — mobile (full width) and md/lg (max-w-xs centered) ── */}
       {userId && (
-        <div className="lg:hidden flex-none border-t border-[#C8B8A8] p-3">
+        <div className="lg:hidden flex-none border-t border-brand-border p-3">
           <Link
             href="/activity/new"
-            className="w-full md:max-w-xs md:mx-auto flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] text-white text-sm font-semibold py-3.5 hover:bg-[#199068] active:bg-[#147a56] transition-colors"
+            className="w-full md:max-w-xs md:mx-auto flex items-center justify-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
           >
             <svg
               width="14"

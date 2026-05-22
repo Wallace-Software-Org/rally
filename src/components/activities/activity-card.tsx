@@ -64,31 +64,31 @@ export function ActivityCardMobile({
       href={`/activity/${activity.id}`}
       className={`rounded-xl p-[13px_14px] flex flex-col gap-2 transition-all ${
         isActive
-          ? "border border-[#1D9E75] bg-[rgba(29,158,117,0.03)]"
-          : "border border-[#C8B8A8] bg-[#F0EAE2]"
+          ? "border border-brand-teal bg-brand-teal/[3%]"
+          : "border border-brand-border bg-brand-bg"
       }`}
     >
       <div className="flex items-start justify-between gap-1">
         <span
-          className="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 flex-none"
+          className="rounded-full px-2 py-0.5 text-xs font-semibold leading-4 flex-none"
           style={{ backgroundColor: colors.bg, color: colors.text }}
         >
           {getSportLabel(activity.sport)}
         </span>
         <div className="flex flex-col items-end shrink-0">
-          <span className="text-[12px] font-medium text-[#2C2C2C] leading-tight">
+          <span className="text-xs font-medium text-brand-text leading-tight">
             {time}
           </span>
-          <span className="text-[11px] text-[#7A6A5A] leading-tight">
+          <span className="text-xs text-brand-muted leading-tight">
             {date}
           </span>
         </div>
       </div>
-      <p className="text-[16px] font-medium text-[#2C2C2C] leading-snug">
+      <p className="text-base font-medium text-brand-text leading-snug">
         {activity.title}
       </p>
       <div className="flex flex-col gap-0.5">
-        <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1 min-w-0">
+        <p className="text-xs text-brand-muted flex items-center gap-1 min-w-0">
           <svg
             width="8"
             height="10"
@@ -102,12 +102,12 @@ export function ActivityCardMobile({
           {userId ? (
             <span className="truncate">{activity.location_name}</span>
           ) : (
-            <span className="rounded px-1.5 bg-[#C8B8A8] text-[#C8B8A8] select-none blur-[2px]">
+            <span className="rounded px-1.5 bg-brand-border text-brand-border select-none blur-[2px]">
               ••••••••••••
             </span>
           )}
         </p>
-        <p className="text-[11px] text-[#7A6A5A]">
+        <p className="text-xs text-brand-muted">
           {"— mi" /* distance placeholder */}
           {activity.skill_level ? ` · ${activity.skill_level}` : ""}
         </p>
@@ -118,7 +118,7 @@ export function ActivityCardMobile({
             {avatars.map((av, i) => (
               <div
                 key={i}
-                className="w-5.5 h-5.5 rounded-full bg-[#D4C4B4] ring-[1.5px] ring-[#F0EAE2] overflow-hidden flex items-center justify-center"
+                className="w-5.5 h-5.5 rounded-full bg-[#D4C4B4] ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
               >
                 {av.avatar_url ? (
                   <img
@@ -135,7 +135,7 @@ export function ActivityCardMobile({
             ))}
           </div>
         )}
-        <span className="text-[11px] text-[#7A6A5A] flex-1">
+        <span className="text-xs text-brand-muted flex-1">
           {activity.max_participants === null
             ? "Open"
             : spotsLeft <= 0
@@ -146,7 +146,7 @@ export function ActivityCardMobile({
           <Link
             href="/login"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium py-1.5 px-4 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+            className="flex items-center justify-center rounded-full border border-brand-border text-brand-muted text-xs font-medium py-1.5 px-4 hover:border-brand-teal hover:text-brand-teal transition-colors"
           >
             Sign in
           </Link>
@@ -159,7 +159,7 @@ export function ActivityCardMobile({
             onJoin={onJoin}
             onLeave={onLeave}
             stopPropagation
-            className="py-1.5 px-4 text-[11px]"
+            className="py-1.5 px-4 text-xs"
           />
         )}
       </div>
@@ -208,34 +208,34 @@ export function ActivityCardDesktop({
 
   const cardClass = `rounded-xl p-3.5 flex flex-col gap-0 transition-all border  ${
     showDetails && isActive
-      ? "border-[#1D9E75] bg-[#1D9E75]/10"
-      : "border-[#C8B8A8] bg-[#F0EAE2] hover:border-[#B8A898]"
+      ? "border-brand-teal bg-brand-teal/10"
+      : "border-brand-border bg-brand-bg hover:border-brand-border-hover"
   }`;
 
   const inner = (
     <>
       <div className="flex items-start justify-between gap-2">
         <span
-          className="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 flex-none"
+          className="rounded-full px-2 py-0.5 text-xs font-semibold leading-4 flex-none"
           style={{ backgroundColor: colors.bg, color: colors.text }}
         >
           {getSportLabel(activity.sport)}
         </span>
         <div className="flex flex-col items-end shrink-0">
-          <span className="text-[12px] font-medium text-[#2C2C2C] leading-tight">
+          <span className="text-xs font-medium text-brand-text leading-tight">
             {time}
           </span>
-          <span className="text-[11px] text-[#7A6A5A] leading-tight">
+          <span className="text-xs text-brand-muted leading-tight">
             {date}
           </span>
         </div>
       </div>
 
-      <p className="text-lg font-semibold text-[#2C2C2C] leading-snug">
+      <p className="text-lg font-semibold text-brand-text leading-snug">
         {activity.title}
       </p>
 
-      <p className="text-[11px] text-[#7A6A5A] flex items-center gap-1 min-w-0">
+      <p className="text-xs text-brand-muted flex items-center gap-1 min-w-0">
         <svg
           width="8"
           height="10"
@@ -249,12 +249,12 @@ export function ActivityCardDesktop({
         {userId ? (
           <span className="truncate">{activity.location_name}</span>
         ) : (
-          <span className="rounded px-1.5 bg-[#C8B8A8] text-[#C8B8A8] select-none blur-[2px]">
+          <span className="rounded px-1.5 bg-brand-border text-brand-border select-none blur-[2px]">
             ••••••••••••
           </span>
         )}
         {activity.skill_level && (
-          <span className="text-[#7A6A5A] flex-none">
+          <span className="text-brand-muted flex-none">
             · {activity.skill_level}
           </span>
         )}
@@ -266,7 +266,7 @@ export function ActivityCardDesktop({
             {avatars.map((av, i) => (
               <div
                 key={i}
-                className="w-5 h-5 rounded-full bg-[#D4C4B4] ring-[1.5px] ring-[#F0EAE2] overflow-hidden flex items-center justify-center"
+                className="w-5 h-5 rounded-full bg-[#D4C4B4] ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
               >
                 {av.avatar_url ? (
                   <img
@@ -285,7 +285,7 @@ export function ActivityCardDesktop({
             ))}
           </div>
         )}
-        <span className="text-[11px] text-[#7A6A5A] flex-1">
+        <span className="text-xs text-brand-muted flex-1">
           {activity.max_participants === null
             ? "Open"
             : spotsLeft <= 0
@@ -296,7 +296,7 @@ export function ActivityCardDesktop({
           <Link
             href={`/activity/${activity.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="border border-[#C8B8A8] rounded-full px-3 py-1.5 text-[11px] text-[#7A6A5A] hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors flex-none"
+            className="border border-brand-border rounded-full px-3 py-1.5 text-xs text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors flex-none"
           >
             Details
           </Link>
@@ -305,7 +305,7 @@ export function ActivityCardDesktop({
           <Link
             href="/login"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-center rounded-full border border-[#C8B8A8] text-[#7A6A5A] text-[11px] font-medium py-1.5 px-4 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors"
+            className="flex items-center justify-center rounded-full border border-brand-border text-brand-muted text-xs font-medium py-1.5 px-4 hover:border-brand-teal hover:text-brand-teal transition-colors"
           >
             Sign in
           </Link>
@@ -318,7 +318,7 @@ export function ActivityCardDesktop({
             onJoin={onJoin}
             onLeave={onLeave}
             stopPropagation
-            className="py-1.5 px-4 text-[11px]"
+            className="py-1.5 px-4 text-xs"
           />
         )}
       </div>

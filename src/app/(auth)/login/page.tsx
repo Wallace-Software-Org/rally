@@ -16,21 +16,21 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#F0EAE2] px-6">
+    <main className="min-h-screen flex items-center justify-center bg-brand-bg px-6">
       <div className="flex flex-col items-center w-full max-w-xs gap-10">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="block w-3 h-3 rounded-full bg-[#1D9E75]" aria-hidden="true" />
-            <span className="text-2xl font-bold tracking-tight text-[#2C2C2C]">
+            <span className="block w-3 h-3 rounded-full bg-brand-teal" aria-hidden="true" />
+            <span className="text-2xl font-bold tracking-tight text-brand-text">
               Rally
             </span>
           </div>
-          <p className="text-sm text-[#7A6A5A]">Active people, real plans</p>
+          <p className="text-sm text-brand-muted">Active people, real plans</p>
         </div>
 
         <button
           onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-3 rounded-xl bg-[#1D9E75] px-5 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[#199068] active:bg-[#147a56] transition-colors"
+          className="w-full flex items-center justify-center gap-3 rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
         >
           <GoogleIcon />
           Continue with Google

@@ -10,7 +10,7 @@ type JoinButtonProps = {
   onJoin: () => void;
   onLeave: () => void;
   stopPropagation?: boolean; // set true inside clickable cards so the button doesn't also trigger onSelect
-  className?: string; // overrides default w-20 h-7 text-[11px] sizing (e.g. larger tap targets on mobile)
+  className?: string; // overrides default w-20 h-7 text-xs sizing (e.g. larger tap targets on mobile)
 };
 
 export default function JoinButton({
@@ -23,7 +23,7 @@ export default function JoinButton({
   stopPropagation = false,
   className,
 }: JoinButtonProps) {
-  const sizeCls = className ?? "w-20 h-7 text-[11px]";
+  const sizeCls = className ?? "w-20 h-7 text-xs";
   const [confirming, setConfirming] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -60,7 +60,7 @@ export default function JoinButton({
           stop(e);
           setConfirming(true);
         }}
-        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-[#1D9E75] text-white font-semibold transition-colors`}
+        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-brand-teal text-white font-semibold transition-colors`}
       >
         Joined ✓
       </button>
@@ -75,7 +75,7 @@ export default function JoinButton({
           onJoin();
         }}
         disabled={isJoining}
-        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-[#1D9E75] text-white font-semibold hover:bg-[#199068] active:bg-[#147a56] transition-colors disabled:opacity-50`}
+        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-brand-teal text-white font-semibold hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
       >
         {isJoining ? "…" : "Join"}
       </button>
