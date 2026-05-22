@@ -22,7 +22,7 @@ export default async function AppLayout({
     : null;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-brand-bg">
+    <div className="h-screen flex flex-col bg-brand-bg">
       <AppNav profile={profile} userId={user?.id ?? null} />
       {children}
     </div>
