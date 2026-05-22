@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { ActivityWithParticipants, Profile } from "@/types";
+import type { ActivityWithParticipants } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
-import AppNav from "@/components/nav/app-nav";
 import ActivityFilters, {
   DatePickerPill,
 } from "@/components/activities/activity-filters";
@@ -14,11 +13,9 @@ import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
 
 export default function ActivityFeed({
   activities,
-  profile,
   userId,
 }: {
   activities: ActivityWithParticipants[];
-  profile: Profile;
   userId: string | null;
 }) {
   const [sports, setSports] = useState<string[]>([]);
@@ -74,9 +71,7 @@ export default function ActivityFeed({
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#F0EAE2] overflow-hidden">
-      <AppNav profile={profile} userId={userId} />
-
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       {/* ── Map strip — mobile, md, lg: fixed above filter bar, hidden at xl ── */}
       <div className="xl:hidden flex-none">
         <MapPanel activities={activities} userId={userId} variant="strip" />

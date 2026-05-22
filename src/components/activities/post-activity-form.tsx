@@ -104,7 +104,7 @@ export default function PostActivityForm() {
   const reviewStartsAt = startsAt();
 
   return (
-    <div className="min-h-screen bg-[#F0EAE2] flex flex-col">
+    <div className="flex-1 overflow-y-auto flex flex-col bg-[#F0EAE2]">
       {/* ── Header: back arrow + step indicator ─────────────── */}
       <div className="flex items-center px-4 pt-6 pb-4 gap-4 max-w-lg mx-auto w-full">
         <button

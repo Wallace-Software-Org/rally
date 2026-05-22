@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types";
 
@@ -28,12 +29,12 @@ export default function AppNav({
   }
 
   const logo = (
-    <div className="flex items-center gap-2 flex-none">
+    <Link href="/" className="flex items-center gap-2 flex-none">
       <span className="w-2.5 h-2.5 rounded-full bg-[#1D9E75] block" />
       <span className="text-base font-semibold tracking-tight text-[#2C2C2C]">
         Rally
       </span>
-    </div>
+    </Link>
   );
 
   if (!userId) {
@@ -92,9 +93,11 @@ export default function AppNav({
         {/* Avatar */}
         <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-[#D4C4B4] flex items-center justify-center">
           {profile?.avatar_url ? (
-            <img
+            <Image
               src={profile.avatar_url}
               alt=""
+              width={36}
+              height={36}
               className="w-full h-full object-cover"
             />
           ) : (

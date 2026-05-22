@@ -55,15 +55,12 @@ const mockActivity: ActivityDetail = {
   hosted_count: 5,
 };
 
-const userProfile = { full_name: "Wallace Palmer", avatar_url: null, city: "Scottsdale" };
-
 // Helper: renders as a non-host viewer who has not joined
 function renderAsViewer(overrides: Partial<ActivityDetail> = {}) {
   return render(
     <ActivityDetailView
       activity={{ ...mockActivity, ...overrides }}
       userId="viewer-99"
-      userProfile={userProfile}
     />,
   );
 }
@@ -74,7 +71,6 @@ function renderAsHost(overrides: Partial<ActivityDetail> = {}) {
     <ActivityDetailView
       activity={{ ...mockActivity, ...overrides }}
       userId="host-1"
-      userProfile={userProfile}
     />,
   );
 }
@@ -95,7 +91,6 @@ function renderAsJoinedViewer() {
         ],
       }}
       userId="viewer-99"
-      userProfile={userProfile}
     />,
   );
 }
@@ -106,7 +101,6 @@ function renderUnauthenticated() {
     <ActivityDetailView
       activity={mockActivity}
       userId={null}
-      userProfile={null}
     />,
   );
 }

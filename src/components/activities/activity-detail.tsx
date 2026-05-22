@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ActivityDetail, Profile } from "@/types";
+import type { ActivityDetail } from "@/types";
 import {
   joinActivity,
   leaveActivity,
@@ -139,11 +139,9 @@ function MapPlaceholder({
 export default function ActivityDetailView({
   activity,
   userId,
-  userProfile,
 }: {
   activity: ActivityDetail;
   userId: string | null;
-  userProfile: Profile;
 }) {
   const initiallyJoined = activity.participants.some(
     (p) => p.user_id === userId,
@@ -328,77 +326,8 @@ export default function ActivityDetailView({
     </div>
   ) : null;
 
-  const backArrow = (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M10 12L6 8L10 4"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-
   return (
-    <div className="h-screen flex flex-col bg-[#F0EAE2] overflow-hidden">
-      {/* ── Nav ──────────────────────────────────────────────────────────────── */}
-      <header className="flex-none border-b border-[#C8B8A8] bg-[#F0EAE2]">
-        <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center gap-3">
-          {/* Mobile: ← Back on left */}
-          <Link
-            href="/"
-            className="md:hidden flex items-center gap-1 text-sm text-[#7A6A5A] hover:text-[#2C2C2C] transition-colors"
-          >
-            {backArrow}
-            Back
-          </Link>
-
-          {/* md+: Rally logo on left */}
-          <div className="hidden md:flex items-center gap-2 flex-none">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#1D9E75] block" />
-            <span className="text-base font-semibold tracking-tight text-[#2C2C2C]">
-              Rally
-            </span>
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Mobile only: Manage pill — host only */}
-          {isHost && (
-            <button
-              onClick={() => setShowSheet(true)}
-              className="md:hidden border border-[#C8B8A8] rounded-full px-3 py-1 text-[11px] text-[#7A6A5A] bg-[#F0EAE2] flex-none"
-            >
-              Manage ···
-            </button>
-          )}
-
-          {/* md/lg only: ← Back to feed — hidden at xl where breadcrumb takes over */}
-          <Link
-            href="/"
-            className="hidden md:flex xl:hidden items-center gap-1 text-sm text-[#7A6A5A] hover:text-[#2C2C2C] transition-colors flex-none"
-          >
-            {backArrow}
-            Back to feed
-          </Link>
-
-          {/* Avatar */}
-          {userProfile && (
-            <Avatar
-              url={userProfile.avatar_url}
-              name={userProfile.full_name}
-              size="md"
-            />
-          )}
-        </div>
-      </header>
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#F0EAE2]">
 
       {/* ── Breadcrumb — xl only ────────────────────────────────────────────── */}
       <div className="hidden xl:flex flex-none items-center gap-1.5 text-[12px] text-[#7A6A5A] px-8 py-2">
@@ -705,6 +634,14 @@ export default function ActivityDetailView({
           joinBtn
         )}
         {shareBtn}
+        {isHost && (
+          <button
+            onClick={() => setShowSheet(true)}
+            className="border border-[#C8B8A8] rounded-xl px-3 py-2.5 text-[13px] text-[#7A6A5A]"
+          >
+            Manage ···
+          </button>
+        )}
       </div>
 
       {/* ── Toast ───────────────────────────────────────────────────────────── */}

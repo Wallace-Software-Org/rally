@@ -15,16 +15,7 @@ export default async function ActivityPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [activity, profileResult] = await Promise.all([
-    getActivityById(id),
-    user
-      ? supabase
-          .from("profiles")
-          .select("avatar_url, full_name, city")
-          .eq("id", user.id)
-          .single()
-      : Promise.resolve({ data: null }),
-  ]);
+  const activity = await getActivityById(id);
 
   if (!activity) notFound();
 
@@ -32,7 +23,6 @@ export default async function ActivityPage({
     <ActivityDetailView
       activity={activity}
       userId={user?.id ?? null}
-      userProfile={profileResult.data ?? null}
     />
   );
 }
