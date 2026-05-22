@@ -122,7 +122,12 @@ export function ActivityCardMobile({
                 className="relative w-5.5 h-5.5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
               >
                 {av.avatar_url ? (
-                  <Image src={av.avatar_url} alt="" fill className="object-cover" />
+                  <Image
+                    src={av.avatar_url}
+                    alt=""
+                    fill
+                    className="object-cover"
+                  />
                 ) : (
                   <span className="text-[8px] font-semibold text-brand-avatar-text">
                     {av.full_name ? initials(av.full_name) : "?"}
@@ -159,7 +164,7 @@ export function ActivityCardMobile({
             onJoin={onJoin}
             onLeave={onLeave}
             stopPropagation
-            className="py-1.5 px-4 text-xs"
+            className="py-2 w-20 text-xs"
           />
         )}
       </div>
@@ -321,7 +326,7 @@ export function ActivityCardDesktop({
             onJoin={onJoin}
             onLeave={onLeave}
             stopPropagation
-            className="py-1.5 px-4 text-xs"
+            className="py-2 w-20 text-xs"
           />
         )}
       </div>

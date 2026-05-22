@@ -75,7 +75,7 @@ export default function JoinButton({
           onJoin();
         }}
         disabled={isJoining}
-        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-brand-teal text-white font-semibold hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
+        className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-brand-muted text-white font-semibold hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
       >
         {isJoining ? "…" : "Join"}
       </button>
