@@ -9,8 +9,8 @@ type JoinButtonProps = {
   spotsLeft: number;
   onJoin: () => void;
   onLeave: () => void;
-  stopPropagation?: boolean; // set true inside clickable cards so the button doesn't also trigger onSelect
-  className?: string; // overrides default w-20 h-7 text-xs sizing (e.g. larger tap targets on mobile)
+  stopPropagation?: boolean;
+  className?: string;
 };
 
 export default function JoinButton({
@@ -36,18 +36,13 @@ export default function JoinButton({
     return () => document.removeEventListener("mousedown", onOutside);
   }, [confirming]);
 
-  function stop(e: React.MouseEvent) {
-    if (stopPropagation) e.stopPropagation();
-  }
+  let button: React.ReactNode = null;
 
   if (isJoined) {
-    return confirming ? (
+    button = confirming ? (
       <button
         ref={btnRef}
-        onClick={(e) => {
-          stop(e);
-          onLeave();
-        }}
+        onClick={() => onLeave()}
         disabled={isLeaving}
         className={`${sizeCls} flex items-center justify-center rounded-full border border-red-500 text-red-500 font-semibold transition-colors disabled:opacity-50`}
       >
@@ -56,24 +51,16 @@ export default function JoinButton({
     ) : (
       <button
         ref={btnRef}
-        onClick={(e) => {
-          stop(e);
-          setConfirming(true);
-        }}
+        onClick={() => setConfirming(true)}
         className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-brand-teal text-white font-semibold transition-colors`}
       >
         Joined ✓
       </button>
     );
-  }
-
-  if (spotsLeft > 0) {
-    return (
+  } else if (spotsLeft > 0) {
+    button = (
       <button
-        onClick={(e) => {
-          stop(e);
-          onJoin();
-        }}
+        onClick={() => onJoin()}
         disabled={isJoining}
         className={`${sizeCls} flex items-center justify-center rounded-full border border-transparent bg-brand-teal text-white font-semibold hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
       >
@@ -82,5 +69,15 @@ export default function JoinButton({
     );
   }
 
-  return null;
+  if (!button) return null;
+
+  if (stopPropagation) {
+    return (
+      <span onClick={(e) => e.stopPropagation()}>
+        {button}
+      </span>
+    );
+  }
+
+  return button;
 }

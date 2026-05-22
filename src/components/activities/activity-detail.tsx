@@ -53,7 +53,9 @@ function Avatar({
       {url ? (
         <Image src={url} alt="" fill className="object-cover" />
       ) : (
-        <span className="font-semibold text-brand-avatar-text">{initials(name)}</span>
+        <span className="font-semibold text-brand-avatar-text">
+          {initials(name)}
+        </span>
       )}
     </div>
   );
@@ -271,7 +273,7 @@ export default function ActivityDetailView({
   const shareBtn = (
     <button
       onClick={handleInstagram}
-      className="flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-border-hover hover:text-brand-text transition-colors"
+      className="flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary transition-colors"
     >
       <svg
         width="15"
@@ -300,7 +302,7 @@ export default function ActivityDetailView({
     <div className="flex gap-3">
       <Link
         href={`/activity/${activity.id}/edit`}
-        className="flex-1 flex items-center justify-center rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-border-hover hover:text-brand-text transition-colors"
+        className="flex-1 flex items-center justify-center rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-text/60 hover:text-brand-text transition-colors"
       >
         Edit activity
       </Link>
@@ -329,7 +331,6 @@ export default function ActivityDetailView({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
-
       {/* ── Breadcrumb — xl only ────────────────────────────────────────────── */}
       <div className="hidden xl:flex flex-none items-center gap-1.5 text-xs text-brand-muted px-8 py-2">
         <Link
@@ -498,7 +499,12 @@ export default function ActivityDetailView({
                               }`}
                             >
                               {p.profiles?.avatar_url ? (
-                                <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
+                                <Image
+                                  src={p.profiles.avatar_url}
+                                  alt=""
+                                  fill
+                                  className="object-cover"
+                                />
                               ) : (
                                 <span
                                   className={`text-xs font-semibold ${
@@ -545,7 +551,12 @@ export default function ActivityDetailView({
                               }`}
                             >
                               {p.profiles?.avatar_url ? (
-                                <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
+                                <Image
+                                  src={p.profiles.avatar_url}
+                                  alt=""
+                                  fill
+                                  className="object-cover"
+                                />
                               ) : (
                                 <span
                                   className={`text-xs font-semibold ${
