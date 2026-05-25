@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
+
+const ActivityMiniMap = dynamic(
+  () => import("@/components/map/activity-mini-map"),
+  { ssr: false },
+);
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ActivityDetail } from "@/types";
@@ -73,32 +79,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function MapPlaceholder({
-  locationName,
-  height,
-}: {
-  locationName: string;
-  height: "h-36" | "h-48" | "h-50";
-}) {
-  return (
-    <div
-      className={`${height} rounded-xl bg-brand-map-bg relative overflow-hidden`}
-    >
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(139,120,100,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(139,120,100,0.15) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-        }}
-      />
-      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-brand-teal" />
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 max-w-[80%] truncate text-center text-xs font-medium text-brand-avatar-text bg-brand-bg/90 px-2.5 py-1 rounded-full border border-brand-border">
-        {locationName}
-      </div>
-    </div>
-  );
-}
 
 export default function ActivityDetailView({
   activity,
@@ -411,10 +391,15 @@ export default function ActivityDetailView({
             <div className="xl:hidden flex flex-col gap-3">
               <div className="h-px bg-brand-border" />
               <SectionLabel>Location</SectionLabel>
-              <MapPlaceholder
-                locationName={activity.location_name}
-                height="h-36"
-              />
+              {typeof activity.lat === "number" && typeof activity.lng === "number" ? (
+                <div className="rounded-xl overflow-hidden h-44">
+                  <ActivityMiniMap lat={activity.lat} lng={activity.lng} />
+                </div>
+              ) : (
+                <div className="rounded-xl h-44 bg-brand-map-bg flex items-center justify-center">
+                  <span className="text-sm text-brand-muted">Location not available</span>
+                </div>
+              )}
             </div>
 
             <Divider />
@@ -544,10 +529,15 @@ export default function ActivityDetailView({
 
           {/* ── Right sticky panel — xl only ────────────────────────────────── */}
           <div className="hidden xl:flex flex-col gap-4 w-72 flex-none sticky top-8 py-6">
-            <MapPlaceholder
-              locationName={activity.location_name}
-              height="h-50"
-            />
+            {typeof activity.lat === "number" && typeof activity.lng === "number" ? (
+              <div className="rounded-xl overflow-hidden h-52">
+                <ActivityMiniMap lat={activity.lat} lng={activity.lng} />
+              </div>
+            ) : (
+              <div className="rounded-xl h-52 bg-brand-map-bg flex items-center justify-center">
+                <span className="text-sm text-brand-muted">Location not available</span>
+              </div>
+            )}
             <div className="flex flex-col gap-3">
               {ctaButton}
               {shareBtn}

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
-import { joinActivity } from "@/lib/actions/activities";
+import { joinActivity, leaveActivity } from "@/lib/actions/activities";
+import MapPreviewCard from "@/components/map/map-preview-card";
 import ActivityFilters, {
   DatePickerPill,
 } from "@/components/activities/activity-filters";
@@ -36,6 +37,8 @@ export default function ActivityFeed({
       ),
   );
   const [joining, setJoining] = useState<Set<string>>(new Set());
+  const [leaving, setLeaving] = useState<Set<string>>(new Set());
+  const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const visible = activities.filter(
     (a) =>
@@ -43,6 +46,14 @@ export default function ActivityFeed({
         sports.some((s) => s.toLowerCase() === a.sport.toLowerCase())) &&
       matchesDateFilter(a.starts_at, dateFilter),
   );
+
+  const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const el = cardRefs.current.get(selectedId);
+    el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedId]);
 
   // Optimistic updates: local state is mutated immediately so the UI responds instantly.
   // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
@@ -52,6 +63,23 @@ export default function ActivityFeed({
     const { error } = await joinActivity(activityId);
     if (!error) setJoined((prev) => new Set(prev).add(activityId));
     setJoining((prev) => {
+      const next = new Set(prev);
+      next.delete(activityId);
+      return next;
+    });
+  }
+
+  async function handleLeave(activityId: string) {
+    if (!userId || !joined.has(activityId) || leaving.has(activityId)) return;
+    setLeaving((prev) => new Set(prev).add(activityId));
+    const { error } = await leaveActivity(activityId);
+    if (!error)
+      setJoined((prev) => {
+        const next = new Set(prev);
+        next.delete(activityId);
+        return next;
+      });
+    setLeaving((prev) => {
       const next = new Set(prev);
       next.delete(activityId);
       return next;
@@ -122,19 +150,26 @@ export default function ActivityFeed({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4 items-start">
                 {visible.map((a) => (
-                  <ActivityCardDesktop
+                  <div
                     key={a.id}
-                    activity={a}
-                    userId={userId}
-                    isActive={false}
-                    showDetails={false}
-                    isJoined={joined.has(a.id)}
-                    isJoining={joining.has(a.id)}
-                    onSelect={() =>
-                      setSelectedId((prev) => (prev === a.id ? null : a.id))
-                    }
-                    onJoin={() => handleJoin(a.id)}
-                  />
+                    ref={(el) => {
+                      if (el) cardRefs.current.set(a.id, el);
+                      else cardRefs.current.delete(a.id);
+                    }}
+                  >
+                    <ActivityCardDesktop
+                      activity={a}
+                      userId={userId}
+                      isActive={selectedId === a.id}
+                      showDetails={false}
+                      isJoined={joined.has(a.id)}
+                      isJoining={joining.has(a.id)}
+                      onSelect={() =>
+                        setSelectedId((prev) => (prev === a.id ? null : a.id))
+                      }
+                      onJoin={() => handleJoin(a.id)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -200,7 +235,20 @@ export default function ActivityFeed({
               }
               userLat={userLat}
               userLng={userLng}
-            />
+            >
+              {selectedActivity && (
+                <MapPreviewCard
+                  activity={selectedActivity}
+                  userId={userId}
+                  isJoined={joined.has(selectedActivity.id)}
+                  isJoining={joining.has(selectedActivity.id)}
+                  isLeaving={leaving.has(selectedActivity.id)}
+                  onJoin={() => handleJoin(selectedActivity.id)}
+                  onLeave={() => handleLeave(selectedActivity.id)}
+                  onDismiss={() => setSelectedId(null)}
+                />
+              )}
+            </MapPanel>
           </div>
         </div>
       </div>
