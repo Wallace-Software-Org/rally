@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import Map, { Marker, type MapRef } from "react-map-gl";
+import Map, { type MapRef } from "react-map-gl";
 import type { ActivityWithParticipants } from "@/types";
+import ActivityPin from "@/components/map/activity-pin";
 import { MAP_STYLE, TOKEN } from "@/lib/utils/map-config";
 
 const DEFAULT_VIEW = {
@@ -51,12 +52,12 @@ export default function MapPanel({
     if (selectedId) {
       const activity = activities.find((a) => a.id === selectedId);
       if (typeof activity?.lat !== "number" || typeof activity?.lng !== "number") return;
-      map.flyTo({ center: [activity.lng, activity.lat], zoom: 14, duration: 800 });
+      map.flyTo({ center: [activity.lng, activity.lat], duration: 600, essential: true });
     } else if (prev) {
       map.flyTo({
         center: [DEFAULT_VIEW.longitude, DEFAULT_VIEW.latitude],
-        zoom: DEFAULT_VIEW.zoom,
-        duration: 800,
+        duration: 600,
+        essential: true,
       });
     }
   }, [selectedId, activities, variant]);
@@ -77,23 +78,14 @@ export default function MapPanel({
 
   const pins = mapLoaded
     ? withCoords.map((a) => (
-        <Marker
+        <ActivityPin
           key={a.id}
-          longitude={a.lng as number}
-          latitude={a.lat as number}
-        >
-          <div
-            onClick={() => onDotClick?.(a.id)}
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: "50%",
-              background: "#1D9E75",
-              border: "2px solid white",
-              cursor: "pointer",
-            }}
-          />
-        </Marker>
+          lat={a.lat as number}
+          lng={a.lng as number}
+          isSelected={selectedId === a.id}
+          onClick={() => onDotClick?.(a.id)}
+          label={a.location_name}
+        />
       ))
     : null;
 
