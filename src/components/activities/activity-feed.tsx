@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
-import { joinActivity, leaveActivity } from "@/lib/actions/activities";
+import { joinActivity } from "@/lib/actions/activities";
 import ActivityFilters, {
   DatePickerPill,
 } from "@/components/activities/activity-filters";
@@ -30,7 +30,6 @@ export default function ActivityFeed({
       ),
   );
   const [joining, setJoining] = useState<Set<string>>(new Set());
-  const [leaving, setLeaving] = useState<Set<string>>(new Set());
 
   const visible = activities.filter(
     (a) =>
@@ -47,23 +46,6 @@ export default function ActivityFeed({
     const { error } = await joinActivity(activityId);
     if (!error) setJoined((prev) => new Set(prev).add(activityId));
     setJoining((prev) => {
-      const next = new Set(prev);
-      next.delete(activityId);
-      return next;
-    });
-  }
-
-  async function handleLeave(activityId: string) {
-    if (!userId || !joined.has(activityId) || leaving.has(activityId)) return;
-    setLeaving((prev) => new Set(prev).add(activityId));
-    const { error } = await leaveActivity(activityId);
-    if (!error)
-      setJoined((prev) => {
-        const next = new Set(prev);
-        next.delete(activityId);
-        return next;
-      });
-    setLeaving((prev) => {
       const next = new Set(prev);
       next.delete(activityId);
       return next;
@@ -134,12 +116,10 @@ export default function ActivityFeed({
                     showDetails={false}
                     isJoined={joined.has(a.id)}
                     isJoining={joining.has(a.id)}
-                    isLeaving={leaving.has(a.id)}
                     onSelect={() =>
                       setSelectedId((prev) => (prev === a.id ? null : a.id))
                     }
                     onJoin={() => handleJoin(a.id)}
-                    onLeave={() => handleLeave(a.id)}
                   />
                 ))}
               </div>
@@ -182,12 +162,10 @@ export default function ActivityFeed({
                         showDetails={true}
                         isJoined={joined.has(a.id)}
                         isJoining={joining.has(a.id)}
-                        isLeaving={leaving.has(a.id)}
                         onSelect={() =>
                           setSelectedId((prev) => (prev === a.id ? null : a.id))
                         }
                         onJoin={() => handleJoin(a.id)}
-                        onLeave={() => handleLeave(a.id)}
                       />
                     ))}
                   </div>

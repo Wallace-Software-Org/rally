@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import type { ActivityWithParticipants } from "@/types";
 import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
 import { formatActivityDate } from "@/lib/utils/format-time";
-import JoinButton from "./join-button";
 
 function initials(name: string): string {
   return name
@@ -22,12 +21,71 @@ type CardProps = {
   userId: string | null;
   isJoined: boolean;
   isJoining: boolean;
-  isLeaving: boolean;
   onJoin: () => void;
-  onLeave: () => void;
 };
 
-// ── Mobile card — always a Link; no Details pill ──────────────────────────────
+// ── Shared action button — same logic for mobile and desktop cards ─────────────
+
+function CardAction({
+  activity,
+  userId,
+  isJoined,
+  isJoining,
+  onJoin,
+  spotsLeft,
+  router,
+}: CardProps & { spotsLeft: number; router: ReturnType<typeof useRouter> }) {
+  const pill =
+    "flex items-center justify-center rounded-full text-xs font-semibold py-2 px-4";
+
+  if (userId === null) {
+    return (
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          router.push("/login");
+        }}
+        className={`${pill} border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors`}
+      >
+        Sign in
+      </button>
+    );
+  }
+
+  if (userId === activity.creator_id) {
+    return <span className={`${pill} bg-brand-teal text-white`}>Hosting</span>;
+  }
+
+  if (isJoined) {
+    return (
+      <span
+        className={`${pill} border border-brand-teal text-brand-teal bg-transparent`}
+      >
+        Going ✓
+      </span>
+    );
+  }
+
+  if (spotsLeft <= 0) {
+    return <span className="text-sm text-brand-muted font-medium">Full</span>;
+  }
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onJoin();
+      }}
+      disabled={isJoining}
+      className={`${pill} bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
+    >
+      {isJoining ? "…" : "Join"}
+    </button>
+  );
+}
+
+// ── Mobile card ───────────────────────────────────────────────────────────────
 
 type MobileCardProps = CardProps & {
   isActive: boolean;
@@ -40,9 +98,7 @@ export function ActivityCardMobile({
   isActive,
   isJoined,
   isJoining,
-  isLeaving,
   onJoin,
-  onLeave,
 }: MobileCardProps) {
   const router = useRouter();
   const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
@@ -144,37 +200,23 @@ export function ActivityCardMobile({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
-        {userId === null ? (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              router.push("/login");
-            }}
-            className="flex items-center justify-center rounded-full border border-brand-border text-brand-muted text-xs font-medium py-1.5 px-4 hover:border-brand-teal hover:text-brand-teal transition-colors"
-          >
-            Sign in
-          </button>
-        ) : (
-          <JoinButton
-            isJoined={isJoined}
-            isJoining={isJoining}
-            isLeaving={isLeaving}
-            spotsLeft={spotsLeft}
-            onJoin={onJoin}
-            onLeave={onLeave}
-            stopPropagation
-            className="py-2 w-20 text-xs"
-          />
-        )}
+        <CardAction
+          activity={activity}
+          userId={userId}
+          isJoined={isJoined}
+          isJoining={isJoining}
+          onJoin={onJoin}
+          spotsLeft={spotsLeft}
+          router={router}
+        />
       </div>
     </Link>
   );
 }
 
 // ── Desktop card ──────────────────────────────────────────────────────────────
-// showDetails=true (xl): div wrapper + onSelect + Details pill
-// showDetails=false (< xl): Link wrapper, no Details pill
+// showDetails=true (xl): div + onSelect + Details pill
+// showDetails=false (< xl): div + router.push navigation
 
 type DesktopCardProps = CardProps & {
   isActive: boolean;
@@ -189,10 +231,8 @@ export function ActivityCardDesktop({
   showDetails,
   isJoined,
   isJoining,
-  isLeaving,
   onSelect,
   onJoin,
-  onLeave,
 }: DesktopCardProps) {
   const router = useRouter();
   const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
@@ -212,7 +252,7 @@ export function ActivityCardDesktop({
     .map((p) => p.profiles!);
   const { time, date } = formatActivityDate(activity.starts_at);
 
-  const cardClass = `rounded-xl p-3.5 flex flex-col gap-0 transition-all border  ${
+  const cardClass = `rounded-xl p-3.5 flex flex-col gap-0 transition-all border ${
     showDetails && isActive
       ? "border-brand-teal bg-brand-teal/10"
       : "border-brand-border bg-brand-bg hover:border-brand-border-hover"
@@ -306,29 +346,15 @@ export function ActivityCardDesktop({
             Details
           </Link>
         )}
-        {userId === null ? (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              router.push("/login");
-            }}
-            className="flex items-center justify-center rounded-full border border-brand-border text-brand-muted text-xs font-medium py-1.5 px-4 hover:border-brand-teal hover:text-brand-teal transition-colors"
-          >
-            Sign in
-          </button>
-        ) : (
-          <JoinButton
-            isJoined={isJoined}
-            isJoining={isJoining}
-            isLeaving={isLeaving}
-            spotsLeft={spotsLeft}
-            onJoin={onJoin}
-            onLeave={onLeave}
-            stopPropagation
-            className="py-2 w-20 text-xs"
-          />
-        )}
+        <CardAction
+          activity={activity}
+          userId={userId}
+          isJoined={isJoined}
+          isJoining={isJoining}
+          onJoin={onJoin}
+          spotsLeft={spotsLeft}
+          router={router}
+        />
       </div>
     </>
   );

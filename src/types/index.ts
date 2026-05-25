@@ -11,6 +11,7 @@ export type Participant = {
 
 export type Activity = {
   id: string;
+  creator_id: string;
   title: string;
   sport: string;
   location_name: string;

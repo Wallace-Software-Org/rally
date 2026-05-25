@@ -8,7 +8,7 @@ export async function getActivities(): Promise<ActivityWithParticipants[]> {
     .from("activities")
     .select(
       `
-      id, title, sport, location_name, starts_at,
+      id, creator_id, title, sport, location_name, starts_at,
       max_participants, skill_level, lat, lng,
       participants ( id, user_id, profiles ( full_name, avatar_url ) )
     `,

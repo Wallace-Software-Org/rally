@@ -61,45 +61,6 @@ function Avatar({
   );
 }
 
-function JoinedPill({
-  confirming,
-  onFirstTap,
-  onConfirm,
-  leaving,
-  isHost,
-}: {
-  confirming: boolean;
-  onFirstTap: () => void;
-  onConfirm: () => void;
-  leaving: boolean;
-  isHost: boolean;
-}) {
-  if (isHost) {
-    return (
-      <div className="w-full bg-brand-teal-muted text-brand-teal-text rounded-xl py-3 text-sm font-medium text-center">
-        ✓ You&apos;re going
-      </div>
-    );
-  }
-  return (
-    <button
-      data-joined-pill
-      onClick={() => (confirming ? onConfirm() : onFirstTap())}
-      className={`w-full rounded-xl py-3 text-sm font-bold text-center transition-colors ${
-        confirming
-          ? " text-red-600 bg-red-400/10 border border-red-400"
-          : "bg-brand-teal-muted text-brand-teal-text"
-      }`}
-    >
-      {leaving
-        ? "Leaving…"
-        : confirming
-          ? "Leave activity?"
-          : "You're going ✓ "}
-    </button>
-  );
-}
-
 function Divider() {
   return <div className="h-px bg-brand-border" />;
 }
@@ -159,18 +120,6 @@ export default function ActivityDetailView({
   const [showToast, setShowToast] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [pillConfirm, setPillConfirm] = useState(false);
-
-  useEffect(() => {
-    if (!pillConfirm) return;
-    function onOutside(e: MouseEvent) {
-      if (!(e.target as Element).closest?.("[data-joined-pill]")) {
-        setPillConfirm(false);
-      }
-    }
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
-  }, [pillConfirm]);
 
   useEffect(() => {
     if (!leaveConfirm) return;
@@ -182,6 +131,17 @@ export default function ActivityDetailView({
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
   }, [leaveConfirm]);
+
+  useEffect(() => {
+    if (!cancelConfirm) return;
+    function onOutside(e: MouseEvent) {
+      if (!(e.target as Element).closest?.("[data-cancel-btn]")) {
+        setCancelConfirm(false);
+      }
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [cancelConfirm]);
 
   const isHost = userId === activity.creator_id;
   const participantCount = activity.participants.length;
@@ -213,7 +173,6 @@ export default function ActivityDetailView({
     if (!error) setIsJoined(false);
     setLeaving(false);
     setLeaveConfirm(false);
-    setPillConfirm(false);
   }
 
   async function handleCancel() {
@@ -229,46 +188,39 @@ export default function ActivityDetailView({
     setTimeout(() => setShowToast(false), 2000);
   }
 
-  // ── CTA buttons — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
-  const joinBtn =
-    userId === null ? (
-      <Link
-        href="/login"
-        className="flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
-      >
-        Sign in to join
-      </Link>
-    ) : isJoined ? (
-      <button
-        data-leave-btn
-        onClick={() => {
-          if (leaveConfirm) {
-            handleLeave();
-          } else {
-            setLeaveConfirm(true);
-          }
-        }}
-        className={`flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
-          leaveConfirm
-            ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
-            : "border-brand-border text-brand-muted bg-transparent hover:border-brand-border-hover"
-        }`}
-      >
-        {leaving
-          ? "Leaving…"
-          : leaveConfirm
-            ? "Confirm leave?"
-            : "Leave activity"}
-      </button>
-    ) : (
-      <button
-        onClick={handleJoin}
-        disabled={joining}
-        className="flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
-      >
-        {joining ? "Joining…" : "Join activity"}
-      </button>
-    );
+  // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
+  const ctaButton = isHost ? (
+    <div className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5">
+      Hosting
+    </div>
+  ) : isJoined ? (
+    <button
+      data-leave-btn
+      onClick={() => (leaveConfirm ? handleLeave() : setLeaveConfirm(true))}
+      className={`w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
+        leaveConfirm
+          ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
+          : "border-brand-teal text-brand-teal bg-transparent hover:bg-brand-teal/5"
+      }`}
+    >
+      {leaving ? "Leaving…" : leaveConfirm ? "Leave activity?" : "Going ✓"}
+    </button>
+  ) : userId === null ? (
+    <Link
+      href="/login"
+      className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+    >
+      Sign in to join
+    </Link>
+  ) : (
+    <button
+      onClick={handleJoin}
+      disabled={joining}
+      className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
+    >
+      {joining ? "Joining…" : "Join activity"}
+    </button>
+  );
 
   const shareBtn = (
     <button
@@ -307,6 +259,7 @@ export default function ActivityDetailView({
         Edit activity
       </Link>
       <button
+        data-cancel-btn
         onClick={() => {
           if (cancelConfirm) {
             handleCancel();
@@ -584,17 +537,7 @@ export default function ActivityDetailView({
 
             {/* 6. CTAs — md/lg inline (hidden on mobile and xl) */}
             <div className="hidden md:flex xl:hidden flex-col gap-3 pt-2 pb-4">
-              {isJoined ? (
-                <JoinedPill
-                  confirming={pillConfirm}
-                  onFirstTap={() => setPillConfirm(true)}
-                  onConfirm={handleLeave}
-                  leaving={leaving}
-                  isHost={isHost}
-                />
-              ) : (
-                joinBtn
-              )}
+              {ctaButton}
               {shareBtn}
             </div>
           </div>
@@ -606,17 +549,7 @@ export default function ActivityDetailView({
               height="h-50"
             />
             <div className="flex flex-col gap-3">
-              {isJoined ? (
-                <JoinedPill
-                  confirming={pillConfirm}
-                  onFirstTap={() => setPillConfirm(true)}
-                  onConfirm={handleLeave}
-                  leaving={leaving}
-                  isHost={isHost}
-                />
-              ) : (
-                joinBtn
-              )}
+              {ctaButton}
               {shareBtn}
               {hostActions && <div>{hostActions}</div>}
             </div>
@@ -626,17 +559,7 @@ export default function ActivityDetailView({
 
       {/* ── Bottom CTA bar — mobile only ────────────────────────────────────── */}
       <div className="md:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
-        {isJoined ? (
-          <JoinedPill
-            confirming={pillConfirm}
-            onFirstTap={() => setPillConfirm(true)}
-            onConfirm={handleLeave}
-            leaving={leaving}
-            isHost={isHost}
-          />
-        ) : (
-          joinBtn
-        )}
+        {ctaButton}
         {shareBtn}
         {isHost && (
           <button
@@ -681,7 +604,7 @@ export default function ActivityDetailView({
                   setShowSheet(false);
                   setShowConfirm(true);
                 }}
-                className="w-full flex items-center justify-center bg-transparent border border-red-200 rounded-xl p-3.5 text-sm text-red-400 hover:border-red-300 transition-colors"
+                className="cursor-pointer w-full flex items-center justify-center bg-transparent border border-red-200 rounded-xl p-3.5 text-sm text-red-400 hover:border-red-300 transition-colors"
               >
                 Cancel activity
               </button>

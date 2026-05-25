@@ -5,6 +5,7 @@ import type { ActivityWithParticipants } from "@/types";
 
 const mockActivity: ActivityWithParticipants = {
   id: "act-1",
+  creator_id: "creator-999",
   title: "Morning Run at Papago Park",
   sport: "running",
   location_name: "Papago Park",
