@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { SearchBox } from "@mapbox/search-js-react";
 import {
   SPORT_COLORS,
   getSportLabel,
@@ -9,6 +10,21 @@ import {
 } from "@/lib/utils/sport-config";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import { createActivity } from "@/lib/actions/activities";
+
+const SEARCH_BOX_THEME = {
+  variables: {
+    fontFamily: "inherit",
+    unit: "14px",
+    borderRadius: "0.75rem",
+    border: "1px solid #C8B8A8",
+    colorBackground: "#ffffff",
+    colorText: "#2C2C2C",
+    colorPrimary: "#1D9E75",
+    colorSecondary: "#7A6A5A",
+    boxShadow: "none",
+    padding: "0.75em 1em",
+  },
+} as const;
 
 type FormState = {
   sport: string;
@@ -58,6 +74,8 @@ export default function PostActivityForm() {
   const [stepperValue, setStepperValue] = useState(4);
   const [submitting, setSubmitting] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   function patch(update: Partial<FormState>) {
     setForm((f) => ({ ...f, ...update }));
@@ -73,17 +91,24 @@ export default function PostActivityForm() {
     return new Date(`${date}T${time}:00`).toISOString();
   }
 
-  function handleUseLocation() {
+  async function handleUseLocation() {
     if (!navigator.geolocation || geoLoading) return;
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm((f) => ({
-          ...f,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          location_name: f.location_name || "Current location",
-        }));
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        let locationName = "Current location";
+        try {
+          const res = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json` +
+              `?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=poi,neighborhood,place&limit=1`,
+          );
+          const data = await res.json();
+          if (data.features?.[0]?.text) locationName = data.features[0].text;
+        } catch {
+          // fall through to "Current location"
+        }
+        setForm((f) => ({ ...f, lat, lng, location_name: locationName }));
         setGeoLoading(false);
       },
       () => setGeoLoading(false),
@@ -92,7 +117,7 @@ export default function PostActivityForm() {
 
   async function handleSubmit() {
     const starts = startsAt();
-    if (!form.location_name.trim() || !starts || submitting) return;
+    if (!form.lat || !form.lng || !form.location_name.trim() || !starts || submitting) return;
     setSubmitting(true);
     const { error } = await createActivity({ ...form, starts_at: starts });
     setSubmitting(false);
@@ -100,7 +125,7 @@ export default function PostActivityForm() {
   }
 
   const step2Valid = Boolean(form.title.trim() && date && time && form.description.trim().length >= 20);
-  const step3Valid = Boolean(form.location_name.trim());
+  const step3Valid = Boolean(form.lat != null && form.lng != null);
   const reviewStartsAt = startsAt();
 
   return (
@@ -337,13 +362,41 @@ export default function PostActivityForm() {
               <label className="text-sm font-medium text-brand-text">
                 Location
               </label>
-              <input
-                type="text"
-                value={form.location_name}
-                onChange={(e) => patch({ location_name: e.target.value })}
-                placeholder="e.g. Balboa Park Tennis Courts"
-                className={inputCls}
-              />
+              <div className="w-full">
+                {mounted ? (
+                  <SearchBox
+                    accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ""}
+                    value={form.location_name}
+                    onChange={(value) =>
+                      patch({ location_name: value, lat: null, lng: null })
+                    }
+                    onRetrieve={(result) => {
+                      const feat = result.features[0];
+                      if (!feat) return;
+                      const [lng, lat] = feat.geometry.coordinates;
+                      patch({ location_name: feat.properties.name, lat, lng });
+                    }}
+                    onClear={() =>
+                      patch({ location_name: "", lat: null, lng: null })
+                    }
+                    options={{
+                      language: "en",
+                      country: "US",
+                      proximity: { lng: -111.94, lat: 33.4995 },
+                    }}
+                    placeholder="e.g. Balboa Park Tennis Courts"
+                    theme={SEARCH_BOX_THEME}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={form.location_name}
+                    onChange={(e) => patch({ location_name: e.target.value })}
+                    placeholder="e.g. Balboa Park Tennis Courts"
+                    className={inputCls}
+                  />
+                )}
+              </div>
             </div>
 
             <button

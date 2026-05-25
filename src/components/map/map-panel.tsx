@@ -1,67 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useRef, useEffect, useState } from "react";
+import Map, { Marker, type MapRef } from "react-map-gl";
 import type { ActivityWithParticipants } from "@/types";
+import { MAP_STYLE, TOKEN } from "@/lib/utils/map-config";
 
-type DotPosition = { x: number; y: number };
-
-function useDotPositions(
-  activities: ActivityWithParticipants[],
-): Map<string, DotPosition> {
-  return useMemo(() => {
-    const PAD = 15;
-    const withCoords = activities.filter((a) => a.lat != null && a.lng != null);
-    if (withCoords.length === 0) return new Map();
-
-    const lats = withCoords.map((a) => a.lat!);
-    const lngs = withCoords.map((a) => a.lng!);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const latRange = maxLat - minLat || 1; // || 1 prevents division by zero when all activities share the same coordinates
-    const lngRange = maxLng - minLng || 1;
-    const scale = 100 - PAD * 2;
-
-    const map = new Map<string, DotPosition>();
-    for (const a of withCoords) {
-      map.set(a.id, {
-        x: PAD + ((a.lng! - minLng) / lngRange) * scale,
-        // invert lat: higher lat = further up = lower y%
-        y: PAD + ((maxLat - a.lat!) / latRange) * scale,
-      });
-    }
-
-    // Nudge dots that are too close together so labels don't overlap
-    const COLLISION_RADIUS = 6;
-    const posArray = Array.from(map.values());
-    for (let pass = 0; pass < 10; pass++) {
-      for (let i = 0; i < posArray.length; i++) {
-        for (let j = i + 1; j < posArray.length; j++) {
-          const a = posArray[i];
-          const b = posArray[j];
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist === 0) {
-            a.y -= COLLISION_RADIUS / 2;
-            b.y += COLLISION_RADIUS / 2;
-          } else if (dist < COLLISION_RADIUS) {
-            const push = (COLLISION_RADIUS - dist) / 2;
-            const nx = dx / dist;
-            const ny = dy / dist;
-            a.x += nx * push;
-            a.y += ny * push;
-            b.x -= nx * push;
-            b.y -= ny * push;
-          }
-        }
-      }
-    }
-
-    return map;
-  }, [activities]);
-}
+const DEFAULT_VIEW = {
+  longitude: -111.9261,
+  latitude: 33.4942,
+  zoom: 11,
+} as const;
 
 type MapPanelProps = {
   activities: ActivityWithParticipants[];
@@ -70,41 +18,100 @@ type MapPanelProps = {
   selectedId?: string | null;
   onDotClick?: (id: string) => void;
   children?: React.ReactNode;
+  userLat?: number | null;
+  userLng?: number | null;
 };
 
 export default function MapPanel({
   activities,
-  userId,
+  userId: _userId,
   variant = "full",
   selectedId,
   onDotClick,
   children,
+  userLat: _userLat,
+  userLng: _userLng,
 }: MapPanelProps) {
-  const dotPositions = useDotPositions(activities);
+  const mapRef = useRef<MapRef>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [isMobile] = useState(() => window.innerWidth < 768);
+  const prevSelectedId = useRef<string | null>(null);
+
+  // Fly to selected activity at zoom 14; fly back to default view on deselect
+  useEffect(() => {
+    if (variant !== "full") return;
+    if (selectedId === prevSelectedId.current) return;
+
+    const prev = prevSelectedId.current;
+    prevSelectedId.current = selectedId ?? null;
+
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (selectedId) {
+      const activity = activities.find((a) => a.id === selectedId);
+      if (typeof activity?.lat !== "number" || typeof activity?.lng !== "number") return;
+      map.flyTo({ center: [activity.lng, activity.lat], zoom: 14, duration: 800 });
+    } else if (prev) {
+      map.flyTo({
+        center: [DEFAULT_VIEW.longitude, DEFAULT_VIEW.latitude],
+        zoom: DEFAULT_VIEW.zoom,
+        duration: 800,
+      });
+    }
+  }, [selectedId, activities, variant]);
+
+  const stripInteractionOff =
+    variant === "strip" && isMobile
+      ? { dragPan: false, scrollZoom: false, doubleClickZoom: false }
+      : {};
+
+  const withCoords = activities.filter(
+    (a) => typeof a.lat === "number" && typeof a.lng === "number",
+  );
+  console.log(
+    "Activities with coords:",
+    withCoords.length,
+    withCoords.map((a) => ({ title: a.title, lat: a.lat, lng: a.lng })),
+  );
+
+  const pins = mapLoaded
+    ? withCoords.map((a) => (
+        <Marker
+          key={a.id}
+          longitude={a.lng as number}
+          latitude={a.lat as number}
+        >
+          <div
+            onClick={() => onDotClick?.(a.id)}
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: "#1D9E75",
+              border: "2px solid white",
+              cursor: "pointer",
+            }}
+          />
+        </Marker>
+      ))
+    : null;
 
   if (variant === "strip") {
     return (
-      <div className="h-20 bg-brand-map-bg relative overflow-hidden flex items-end px-3 pb-2">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(139,120,100,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(139,120,100,0.2) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        {activities.map((a) => {
-          const pos = dotPositions.get(a.id);
-          if (!pos) return null;
-          return (
-            <span
-              key={a.id}
-              className="absolute w-2 h-2 rounded-full bg-brand-teal"
-              style={{ top: `${pos.y}%`, left: `${pos.x}%` }}
-            />
-          );
-        })}
-        <button className="relative z-10 flex items-center gap-1 rounded-full bg-brand-bg border border-brand-border px-3 py-1 text-xs font-medium text-brand-muted shadow-sm">
+      <div className="w-full h-40 md:h-48 relative overflow-hidden">
+        <Map
+          ref={mapRef}
+          mapboxAccessToken={TOKEN}
+          mapStyle={MAP_STYLE}
+          initialViewState={DEFAULT_VIEW}
+          onLoad={() => setMapLoaded(true)}
+          {...stripInteractionOff}
+          style={{ width: "100%", height: "100%" }}
+        >
+          {pins}
+        </Map>
+        <button className="absolute bottom-2 left-3 z-10 flex items-center gap-1 rounded-full bg-brand-bg border border-brand-border px-3 py-1 text-xs font-medium text-brand-muted shadow-sm">
           <svg
             width="10"
             height="10"
@@ -126,55 +133,17 @@ export default function MapPanel({
   }
 
   return (
-    <div className="flex-1 relative bg-brand-map-bg overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(139,120,100,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(139,120,100,0.15) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-      {activities.map((a) => {
-        const pos = dotPositions.get(a.id);
-        if (!pos) return null;
-        const isActive = selectedId === a.id;
-        return (
-          <button
-            key={a.id}
-            onClick={() => onDotClick?.(a.id)}
-            className="absolute -translate-x-1/2 flex flex-col items-center gap-0.5 group"
-            style={{ top: `${pos.y}%`, left: `${pos.x}%` }}
-          >
-            {userId && (
-              <span className="text-xs font-medium text-brand-muted bg-brand-bg/80 px-1.5 py-0.5 rounded backdrop-blur-sm leading-tight max-w-25 truncate">
-                {a.location_name}
-              </span>
-            )}
-            <span
-              className="rounded-full transition-all"
-              style={
-                isActive
-                  ? {
-                      width: 14,
-                      height: 14,
-                      borderRadius: "50%",
-                      background: "#1D9E75",
-                      outline: "2px solid white",
-                      outlineOffset: "1px",
-                      boxShadow: "0 0 0 1px #1D9E75",
-                    }
-                  : {
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background: "#1D9E75",
-                    }
-              }
-            />
-          </button>
-        );
-      })}
+    <div className="flex-1 relative overflow-hidden">
+      <Map
+        ref={mapRef}
+        mapboxAccessToken={TOKEN}
+        mapStyle={MAP_STYLE}
+        initialViewState={DEFAULT_VIEW}
+        onLoad={() => setMapLoaded(true)}
+        style={{ width: "100%", height: "100%" }}
+      >
+        {pins}
+      </Map>
       {children}
     </div>
   );

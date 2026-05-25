@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
 import { joinActivity } from "@/lib/actions/activities";
@@ -8,8 +9,12 @@ import ActivityFilters, {
   DatePickerPill,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
-import MapPanel from "@/components/map/map-panel";
+import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
+
+const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
+  ssr: false,
+});
 
 export default function ActivityFeed({
   activities,
@@ -18,6 +23,7 @@ export default function ActivityFeed({
   activities: ActivityWithParticipants[];
   userId: string | null;
 }) {
+  const { lat: userLat, lng: userLng } = useLocation();
   const [sports, setSports] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -56,7 +62,15 @@ export default function ActivityFeed({
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       {/* ── Map strip — mobile, md, lg: fixed above filter bar, hidden at xl ── */}
       <div className="xl:hidden flex-none">
-        <MapPanel activities={activities} userId={userId} variant="strip" />
+        <MapPanel
+          activities={activities}
+          userId={userId}
+          variant="strip"
+          selectedId={selectedId}
+          onDotClick={(id) =>
+            setSelectedId((prev) => (prev === id ? null : id))
+          }
+        />
       </div>
 
       {/* ── Filter bar — mobile + md (< lg): date pill left, sport pills scroll right ── */}
@@ -184,6 +198,8 @@ export default function ActivityFeed({
               onDotClick={(id) =>
                 setSelectedId((prev) => (prev === id ? null : id))
               }
+              userLat={userLat}
+              userLng={userLng}
             />
           </div>
         </div>
