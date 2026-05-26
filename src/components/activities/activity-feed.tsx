@@ -87,7 +87,7 @@ export default function ActivityFeed({
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-brand-bg overflow-hidden">
+    <div className="flex-1 min-h-0 flex flex-col bg-brand-bg overflow-hidden">
       {/* ── Map strip — mobile, md, lg: fixed above filter bar, hidden at xl ── */}
       <div className="xl:hidden flex-none">
         <MapPanel

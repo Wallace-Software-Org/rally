@@ -40,9 +40,11 @@
   --color-map-bg: var(--color-brand-map-bg);
 }
 
-html,
-body {
+html {
   height: 100%;
+}
+
+body {
   overscroll-behavior: none;
 }
 
