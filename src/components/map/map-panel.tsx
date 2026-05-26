@@ -36,8 +36,7 @@ export default function MapPanel({
 }: MapPanelProps) {
   const mapRef = useRef<MapRef>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [isMobile] = useState(() => window.innerWidth < 768);
-  const [expanded, setExpanded] = useState(false);
+const [expanded, setExpanded] = useState(false);
   const prevSelectedId = useRef<string | null>(null);
 
   // Fly to selected activity at zoom 14; fly back to default view on deselect
@@ -65,8 +64,8 @@ export default function MapPanel({
   }, [selectedId, activities, variant]);
 
   const stripInteractionOff =
-    variant === "strip" && isMobile && !expanded
-      ? { dragPan: false, scrollZoom: false, doubleClickZoom: false }
+    variant === "strip"
+      ? { scrollZoom: false, doubleClickZoom: false }
       : {};
 
   const withCoords = activities.filter(

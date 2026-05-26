@@ -36,7 +36,7 @@ function CardAction({
   router,
 }: CardProps & { spotsLeft: number; router: ReturnType<typeof useRouter> }) {
   const pill =
-    "flex items-center justify-center rounded-full text-xs font-semibold py-2 px-4";
+    "w-20 h-9 flex items-center justify-center rounded-full text-xs font-semibold";
 
   if (userId === null) {
     return (
@@ -54,7 +54,7 @@ function CardAction({
   }
 
   if (userId === activity.creator_id) {
-    return <span className={`${pill} bg-brand-teal text-white`}>Hosting</span>;
+    return <span className={`${pill} border border-brand-teal text-brand-teal bg-transparent`}>Hosting</span>;
   }
 
   if (isJoined) {
@@ -275,7 +275,7 @@ export function ActivityCardDesktop({
         </div>
       </div>
 
-      <p className="text-lg font-semibold text-brand-text leading-snug">
+      <p className="text-lg font-semibold text-brand-text leading-snug truncate">
         {activity.title}
       </p>
 
