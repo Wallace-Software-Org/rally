@@ -91,7 +91,7 @@ export default function ActivityFeed({
       {/* ── Map strip — mobile, md, lg: fixed above filter bar, hidden at xl ── */}
       <div className="xl:hidden flex-none">
         <MapPanel
-          activities={activities}
+          activities={visible}
           userId={userId}
           variant="strip"
           selectedId={selectedId}
