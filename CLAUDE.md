@@ -15,15 +15,25 @@ Supabase (auth + postgres + realtime). Mapbox GL. Deployed on Vercel.
 
 ## Brand
 
-- Primary accent: #1D9E75 (teal green)
+- Clay bg: #F0EAE2
+- Border: #C8B8A8
+- Teal accent: #1D9E75
+- Text: #2C2C2C
+- Muted: #7A6A5A
 - Logo: green dot + Rally wordmark, font-weight 600
 - Cards: white bg, 0.5px border, rounded-xl, no shadows
 - Buttons: teal filled (primary), ghost outline (secondary)
-- Sport pills: pickleball=#E1F5EE/#0F6E56, running=#EAF3DE/#3B6D11, boxing=#FAEEDA/#854F0B, hiking=#EAF3DE/#3B6D11, gym=#E6F1FB/#185FA5, paddleboard=#E1F5EE/#0F6E56
+- Activity tag pills: unified single palette defined in sport-config.ts
+
+## Copy Rules
+
+- Never use em dashes or double dashes in any UI copy. Use a period or comma instead.
+- Use "activities" not "sports" in all UI copy and labels.
+- No AI-sounding language in titles or copy.
 
 ## File Structure Rules
 
-Before writing any new code, place it in the correct location:
+Before writing any new code, check the existing structure and place code in the correct location:
 
 - Reusable UI primitives → src/components/ui/
 - Activity components → src/components/activities/
@@ -45,8 +55,13 @@ participants: id, activity_id, user_id, status, joined_at
 
 ## Key Decisions
 
-- No communities table — community emerges through sport tags + location
+- creator_id not host_id on activities table
+- No communities table. Community emerges through activity tags and location.
 - Auth: Google OAuth via Supabase
 - Location: browser geolocation (not profile city) for feed distance
 - proxy.ts not middleware.ts (Next.js 16)
 - Supabase publishable key (sb*publishable*...) not legacy anon key
+- profiles.sports text[] is the source of truth for user activity preferences
+- Filter bar pins the user's first 5 selected activities. Remaining user activities and all others go into a More dropdown with two sections: "Your activities" and "Other activities"
+- Activities list is hardcoded in src/lib/utils/sport-config.ts. Migration to a Supabase lookup table planned when the list stabilizes.
+- Activity chat planned after realtime spots. Each activity gets its own Supab

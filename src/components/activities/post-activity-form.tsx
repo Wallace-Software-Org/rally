@@ -17,7 +17,7 @@ const SEARCH_BOX_THEME = {
     unit: "14px",
     borderRadius: "0.75rem",
     border: "1px solid #C8B8A8",
-    colorBackground: "#ffffff",
+    colorBackground: "#F0EAE2",
     colorText: "#2C2C2C",
     colorPrimary: "#1D9E75",
     colorSecondary: "#7A6A5A",
@@ -39,16 +39,11 @@ type FormState = {
 };
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-white px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
+  "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
 
 const primaryBtn =
   "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40";
 
-const STEP_LABELS = [
-  "Choose a sport",
-  "Activity details",
-  "Location & review",
-] as const;
 
 const SKILL_LEVELS = ["All levels", "Beginner", "Advanced"] as const;
 
@@ -124,7 +119,7 @@ export default function PostActivityForm() {
     if (!error) router.push("/");
   }
 
-  const step2Valid = Boolean(form.title.trim() && date && time && form.description.trim().length >= 20);
+  const step2Valid = Boolean(form.title.trim() && date && time && form.description.trim().length >= 50);
   const step3Valid = Boolean(form.lat != null && form.lng != null);
   const reviewStartsAt = startsAt();
 
@@ -154,19 +149,19 @@ export default function PostActivityForm() {
           </svg>
         </button>
 
-        <div className="flex-1 flex flex-col items-center gap-2">
-          <div className="flex items-center gap-2">
-            {([1, 2, 3] as const).map((n) => (
-              <span
-                key={n}
-                className="w-2 h-2 rounded-full transition-colors"
-                style={{ backgroundColor: n <= step ? "#1D9E75" : "#C8B8A8" }}
-              />
-            ))}
-          </div>
-          <span className="text-xs font-medium text-brand-muted">
-            {STEP_LABELS[step - 1]}
-          </span>
+        <div className="flex-1 flex items-center justify-center gap-1.5">
+          {([1, 2, 3] as const).map((n) => (
+            <div
+              key={n}
+              className={`h-1 rounded-full transition-all duration-300 ${
+                n === step
+                  ? "w-8 bg-brand-teal"
+                  : n < step
+                    ? "w-4 bg-brand-teal/50"
+                    : "w-4 bg-brand-border"
+              }`}
+            />
+          ))}
         </div>
 
         {/* balances the back button so dots stay centered */}
@@ -178,34 +173,21 @@ export default function PostActivityForm() {
 
         {/* ── Step 1: Choose a sport ──────────────────────────── */}
         {step === 1 && (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              {SPORTS.map((sport) => (
-                <button
-                  key={sport}
-                  onClick={() => {
-                    patch({ sport: sport.toLowerCase() });
-                    setStep(2);
-                  }}
-                  className="rounded-xl border border-brand-border bg-white p-3 flex items-center gap-2.5 cursor-pointer active:bg-brand-bg transition-colors"
-                >
-                  <div
-                    className="w-2 h-2 rounded-full flex-none"
-                    style={{
-                      backgroundColor:
-                        SPORT_COLORS[sport.toLowerCase()]?.text ?? "#1D9E75",
-                    }}
-                  />
-                  <span className="text-sm font-medium text-brand-text">
-                    {getSportLabel(sport)}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-brand-muted text-center">
-              Tap a sport to continue
-            </p>
-          </>
+          <div className="grid grid-cols-3 gap-2">
+            {SPORTS.map((sport) => (
+              <button
+                key={sport}
+                type="button"
+                onClick={() => {
+                  patch({ sport: sport.toLowerCase() });
+                  setStep(2);
+                }}
+                className="rounded-xl py-3 px-2 text-sm font-medium border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg transition-colors text-center"
+              >
+                {getSportLabel(sport)}
+              </button>
+            ))}
+          </div>
         )}
 
         {/* ── Step 2: Activity details ────────────────────────── */}
@@ -249,13 +231,13 @@ export default function PostActivityForm() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border border-brand-border bg-white rounded-xl px-4 py-3">
+            <div className="flex items-center justify-between border border-brand-border bg-brand-bg rounded-xl px-4 py-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm text-brand-text">Limit spots</span>
                 <span className="text-xs text-brand-muted">
                   {limitSpots
                     ? `Max ${stepperValue} participants`
-                    : "Off — open to all"}
+                    : "Off, open to all"}
                 </span>
               </div>
               <button
@@ -332,14 +314,20 @@ export default function PostActivityForm() {
                 <label className="text-sm font-medium text-brand-text">
                   Description
                 </label>
-                <span className="text-xs text-brand-muted">
-                  {form.description.trim().length}/20 min
-                </span>
+                {(() => {
+                  const len = form.description.trim().length;
+                  const remaining = Math.max(0, 50 - len);
+                  return (
+                    <span className="text-xs text-brand-muted">
+                      {remaining > 0 ? `${remaining} more needed` : `${len} chars`}
+                    </span>
+                  );
+                })()}
               </div>
               <textarea
                 value={form.description}
                 onChange={(e) => patch({ description: e.target.value })}
-                placeholder="Tell people what to expect — pace, gear, meetup spot, anything useful."
+                placeholder="Tell people what to expect: pace, gear, meetup spot, anything useful."
                 rows={4}
                 className={`${inputCls} resize-none`}
               />
@@ -445,7 +433,7 @@ function ReviewCard({
   const colors = SPORT_COLORS[form.sport] ?? { bg: "#C8E6DC", text: "#1A6B52" };
 
   return (
-    <div className="rounded-xl border border-brand-border bg-white p-3 flex flex-col gap-2">
+    <div className="rounded-xl border border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
         <span
           className="rounded-full px-2 py-0.5 text-xs font-semibold leading-4 flex-none"
@@ -501,7 +489,7 @@ function ReviewCard({
           />
         </svg>
         {form.max_participants === null
-          ? "Open — no spot limit"
+          ? "Open, no spot limit"
           : `Max ${form.max_participants} participant${form.max_participants === 1 ? "" : "s"}`}
       </p>
     </div>
