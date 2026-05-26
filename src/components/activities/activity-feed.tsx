@@ -150,10 +150,11 @@ export default function ActivityFeed({
                 No open activities
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4 items-start">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
                 {visible.map((a) => (
                   <div
                     key={a.id}
+                    className="h-full"
                     ref={(el) => {
                       if (el) cardRefs.current.set(a.id, el);
                       else cardRefs.current.delete(a.id);
@@ -203,7 +204,7 @@ export default function ActivityFeed({
                     No open activities
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 items-start">
+                  <div className="grid grid-cols-2 gap-3">
                     {visible.map((a) => (
                       <ActivityCardDesktop
                         key={a.id}

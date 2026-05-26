@@ -126,9 +126,9 @@ export default function MapPreviewCard({
 
       {/* CTA */}
       {isHost ? (
-        <div className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3 pointer-events-none">
-          Hosting
-        </div>
+        <p className="w-full flex items-center justify-center py-3 text-sm text-brand-muted">
+          You&apos;re hosting
+        </p>
       ) : userId === null ? (
         <Link
           href="/login"

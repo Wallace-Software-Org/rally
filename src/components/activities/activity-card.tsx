@@ -24,7 +24,9 @@ type CardProps = {
   onJoin: () => void;
 };
 
-// ── Shared action button — same logic for mobile and desktop cards ─────────────
+// ── CardAction ────────────────────────────────────────────────────────────────
+// Shared CTA pill used by both card variants. Priority order:
+//   logged-out → Sign in  |  host → null  |  joined → Going ✓  |  full → Full  |  → Join
 
 function CardAction({
   activity,
@@ -42,6 +44,8 @@ function CardAction({
     return (
       <button
         onClick={(e) => {
+          // Both preventDefault and stopPropagation needed: card root is a
+          // tappable div/Link that would also fire without these.
           e.preventDefault();
           e.stopPropagation();
           router.push("/login");
@@ -54,7 +58,11 @@ function CardAction({
   }
 
   if (userId === activity.creator_id) {
-    return <span className={`${pill} border border-brand-teal text-brand-teal bg-transparent`}>Hosting</span>;
+    return (
+      <span className="h-9 flex items-center text-xs font-medium text-brand-muted">
+        Hosting
+      </span>
+    );
   }
 
   if (isJoined) {
@@ -85,7 +93,9 @@ function CardAction({
   );
 }
 
-// ── Mobile card ───────────────────────────────────────────────────────────────
+// ── ActivityCardMobile ────────────────────────────────────────────────────────
+// Full-width Link card used on xs screens. Tapping navigates directly to the
+// detail page — no map popup interaction.
 
 type MobileCardProps = CardProps & {
   isActive: boolean;
@@ -156,6 +166,7 @@ export function ActivityCardMobile({
           >
             <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
           </svg>
+          {/* Location is blurred for logged-out users as a sign-up nudge */}
           {userId ? (
             <span className="truncate">{activity.location_name}</span>
           ) : (
@@ -169,6 +180,7 @@ export function ActivityCardMobile({
           {activity.skill_level ? ` · ${activity.skill_level}` : ""}
         </p>
       </div>
+      {/* mt-auto pushes this row to the bottom when the grid stretches cards to equal height */}
       <div className="flex items-center gap-2 mt-auto pt-0.5">
         {avatars.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
@@ -214,9 +226,10 @@ export function ActivityCardMobile({
   );
 }
 
-// ── Desktop card ──────────────────────────────────────────────────────────────
-// showDetails=true (xl): div + onSelect + Details pill
-// showDetails=false (< xl): div + router.push navigation
+// ── ActivityCardDesktop ───────────────────────────────────────────────────────
+// Used at all breakpoints in the feed grid.
+// showDetails=true  (xl left panel): clicking fires onSelect → opens map popup
+// showDetails=false (< xl grid):     clicking navigates to the detail page
 
 type DesktopCardProps = CardProps & {
   isActive: boolean;
@@ -252,7 +265,7 @@ export function ActivityCardDesktop({
     .map((p) => p.profiles!);
   const { time, date } = formatActivityDate(activity.starts_at);
 
-  const cardClass = `rounded-xl p-3.5 flex flex-col gap-0 transition-all border ${
+  const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-2 transition-all border ${
     isActive
       ? "border-brand-teal bg-brand-teal/10"
       : "border-brand-border bg-brand-bg hover:border-brand-border-hover"
@@ -275,35 +288,38 @@ export function ActivityCardDesktop({
         </div>
       </div>
 
-      <p className="text-lg font-semibold text-brand-text leading-snug truncate">
-        {activity.title}
-      </p>
+      <div className="flex flex-col gap-1">
+        <p className="text-lg font-semibold text-brand-text leading-snug truncate">
+          {activity.title}
+        </p>
 
-      <p className="text-xs text-brand-muted flex items-center gap-1 min-w-0">
-        <svg
-          width="8"
-          height="10"
-          viewBox="0 0 8 10"
-          fill="currentColor"
-          className="flex-none"
-          aria-hidden="true"
-        >
-          <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
-        </svg>
-        {userId ? (
-          <span className="truncate">{activity.location_name}</span>
-        ) : (
-          <span className="rounded px-1.5 bg-brand-border text-brand-border select-none blur-[2px]">
-            ••••••••••••
-          </span>
-        )}
-        {activity.skill_level && (
-          <span className="text-brand-muted flex-none">
-            · {activity.skill_level}
-          </span>
-        )}
-      </p>
-
+        <p className="text-xs text-brand-muted flex items-center gap-1 min-w-0">
+          <svg
+            width="8"
+            height="10"
+            viewBox="0 0 8 10"
+            fill="currentColor"
+            className="flex-none"
+            aria-hidden="true"
+          >
+            <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
+          </svg>
+          {/* Location and avatars are blurred for logged-out users as a sign-up nudge */}
+          {userId ? (
+            <span className="truncate">{activity.location_name}</span>
+          ) : (
+            <span className="rounded px-1.5 bg-brand-border text-brand-border select-none blur-[2px]">
+              ••••••••••••
+            </span>
+          )}
+          {activity.skill_level && (
+            <span className="text-brand-muted flex-none">
+              · {activity.skill_level}
+            </span>
+          )}
+        </p>
+      </div>
+      {/* mt-auto pushes this row to the bottom when the grid stretches cards to equal height */}
       <div className="flex items-center gap-2 mt-auto pt-1.5">
         {avatars.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
@@ -337,15 +353,6 @@ export function ActivityCardDesktop({
               ? "Full"
               : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
         </span>
-        {showDetails && (
-          <Link
-            href={`/activity/${activity.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="border border-brand-border rounded-full px-4 py-2 text-xs text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors flex-none"
-          >
-            Details
-          </Link>
-        )}
         <CardAction
           activity={activity}
           userId={userId}
