@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
 import { checkUsername, createProfile } from "./actions";
 
@@ -140,20 +139,20 @@ export default function OnboardingFlow({
   return (
     <div className="h-dvh flex flex-col bg-brand-bg overflow-hidden">
       {/* Nav header — matches app-nav structure */}
-      <header className="flex-none border-b border-brand-border bg-brand-bg">
+      <header className="flex-none bg-brand-bg">
         <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center">
-          <Link href="/" className="flex items-center gap-2 flex-none">
+          <div className="flex items-center gap-2 flex-none">
             <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
             <span className="text-base font-semibold tracking-tight text-brand-text">
               Rally
             </span>
-          </Link>
+          </div>
         </div>
       </header>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-sm mx-auto px-6 pt-8 pb-12">
+        <div className="max-w-sm mx-auto px-6 pt-8 pb-12 mt-[10vh]">
           {/* Back navigation */}
           <div className="h-6 mb-4">
             {step > 1 && (
@@ -182,7 +181,7 @@ export default function OnboardingFlow({
           </div>
 
           {/* Progress */}
-          <div className="flex items-center gap-1.5 mb-8">
+          <div className="flex items-center gap-1.5 mb-4">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
@@ -201,7 +200,7 @@ export default function OnboardingFlow({
           {step === 1 && (
             <div className="flex flex-col gap-6">
               <div>
-                <h1 className="text-xl font-semibold text-brand-text">
+                <h1 className="text-2xl font-bold text-brand-text">
                   What should we call you?
                 </h1>
                 <p className="mt-1 text-sm text-brand-muted">
@@ -322,7 +321,7 @@ export default function OnboardingFlow({
           {step === 2 && (
             <div className="flex flex-col gap-6">
               <div>
-                <h1 className="text-xl font-semibold text-brand-text">
+                <h1 className="text-2xl font-bold text-brand-text">
                   What are you into?
                 </h1>
                 <p className="mt-1 text-sm text-brand-muted">
@@ -365,7 +364,7 @@ export default function OnboardingFlow({
           {step === 3 && (
             <div className="flex flex-col gap-6">
               <div>
-                <h1 className="text-xl font-semibold text-brand-text">
+                <h1 className="text-2xl font-bold text-brand-text">
                   A bit about you
                 </h1>
                 <p className="mt-1 text-sm text-brand-muted">

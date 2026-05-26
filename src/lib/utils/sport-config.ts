@@ -2,17 +2,21 @@
 const TAG = { bg: "#C8E6DC", text: "#1A6B52" };
 
 export const SPORT_COLORS: Record<string, { bg: string; text: string }> = {
-  pickleball:  TAG,
   running:     TAG,
-  boxing:      TAG,
+  walking:     TAG,
   hiking:      TAG,
   gym:         TAG,
-  paddleboard: TAG,
+  yoga:        TAG,
   cycling:     TAG,
+  pickleball:  TAG,
   tennis:      TAG,
   swimming:    TAG,
-  yoga:        TAG,
+  soccer:      TAG,
   basketball:  TAG,
+  boxing:      TAG,
+  golf:        TAG,
+  pilates:     TAG,
+  paddleboard: TAG,
 };
 
 export function getSportLabel(sport: string): string {
@@ -21,15 +25,19 @@ export function getSportLabel(sport: string): string {
 
 export const SPORTS_LIST = [
   "All",
-  "Pickleball",
   "Running",
-  "Boxing",
+  "Walking",
   "Hiking",
   "Gym",
-  "Paddleboard",
+  "Yoga",
   "Cycling",
+  "Pickleball",
   "Tennis",
   "Swimming",
-  "Yoga",
+  "Soccer",
   "Basketball",
+  "Boxing",
+  "Golf",
+  "Pilates",
+  "Paddleboard",
 ];
