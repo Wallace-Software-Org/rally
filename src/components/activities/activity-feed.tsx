@@ -104,7 +104,7 @@ export default function ActivityFeed({
       </div>
 
       {/* ── Filter bar — mobile + md (< lg): date pill left, sport pills scroll right ── */}
-      <div className="lg:hidden flex-none flex items-center border-b border-brand-border">
+      <div className="lg:hidden flex-none relative z-10 flex items-center border-b border-brand-border">
         <div className="pl-4 pr-2 py-3 flex-none">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
         </div>
@@ -126,7 +126,7 @@ export default function ActivityFeed({
       </div>
 
       {/* ── Filter bar — lg only (1024–1279px): toolbar with overflow, date first ── */}
-      <div className="hidden lg:flex xl:hidden flex-none border-b border-brand-border">
+      <div className="hidden lg:flex xl:hidden flex-none relative z-10 border-b border-brand-border">
         <div className="max-w-5xl mx-auto px-4 w-full flex items-center gap-2 py-3">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
           <div className="w-px h-4 bg-brand-border flex-none mx-1" />
@@ -181,9 +181,9 @@ export default function ActivityFeed({
         {/* xl (1280px+): fixed 720px left panel + map fills remaining space */}
         <div className="hidden xl:flex flex-1 overflow-hidden">
           {/* Left panel — 720px fixed, scrolls independently */}
-          <div className="w-180 flex-none flex flex-col overflow-hidden border-r border-brand-border">
+          <div className="w-180 flex-none flex flex-col border-r border-brand-border">
             {/* Filter bar — full width of left panel, date first */}
-            <div className="flex-none border-b border-brand-border px-6 flex items-center gap-2 py-3">
+            <div className="flex-none relative z-10 border-b border-brand-border px-6 flex items-center gap-2 py-3">
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
               <div className="w-px h-4 bg-brand-border flex-none mx-1" />
               <ActivityFilters sports={sports} onChange={setSports} toolbar userActivities={userActivities} />
