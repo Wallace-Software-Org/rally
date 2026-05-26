@@ -123,7 +123,7 @@ export function ActivityCardMobile({
       href={`/activity/${activity.id}`}
       className={`rounded-xl p-[13px_14px] flex flex-col gap-2 transition-all ${
         isActive
-          ? "border border-brand-teal bg-brand-teal/3"
+          ? "border-[1.5px] border-brand-teal bg-brand-teal/10"
           : "border border-brand-border bg-brand-bg"
       }`}
     >
@@ -253,7 +253,7 @@ export function ActivityCardDesktop({
   const { time, date } = formatActivityDate(activity.starts_at);
 
   const cardClass = `rounded-xl p-3.5 flex flex-col gap-0 transition-all border ${
-    showDetails && isActive
+    isActive
       ? "border-brand-teal bg-brand-teal/10"
       : "border-brand-border bg-brand-bg hover:border-brand-border-hover"
   }`;

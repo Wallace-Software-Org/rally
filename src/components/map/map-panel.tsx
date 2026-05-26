@@ -65,7 +65,7 @@ export default function MapPanel({
   }, [selectedId, activities, variant]);
 
   const stripInteractionOff =
-    variant === "strip" && isMobile
+    variant === "strip" && isMobile && !expanded
       ? { dragPan: false, scrollZoom: false, doubleClickZoom: false }
       : {};
 
@@ -97,20 +97,21 @@ export default function MapPanel({
         initial={{ height: "10rem" }}
         animate={{ height: expanded ? "50vh" : "10rem" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        onAnimationComplete={() => mapRef.current?.resize()}
         className="w-full relative overflow-hidden bg-[#0d1b2a]"
       >
-        <Map
-          ref={mapRef}
-          mapboxAccessToken={TOKEN}
-          mapStyle={MAP_STYLE}
-          initialViewState={DEFAULT_VIEW}
-          onLoad={() => setMapLoaded(true)}
-          {...stripInteractionOff}
-          style={{ width: "100%", height: "100%" }}
-        >
-          {pins}
-        </Map>
+        <div style={{ height: "50vh", width: "100%" }}>
+          <Map
+            ref={mapRef}
+            mapboxAccessToken={TOKEN}
+            mapStyle={MAP_STYLE}
+            initialViewState={DEFAULT_VIEW}
+            onLoad={() => setMapLoaded(true)}
+            {...stripInteractionOff}
+            style={{ width: "100%", height: "100%" }}
+          >
+            {pins}
+          </Map>
+        </div>
         <button
           onClick={() => setExpanded((prev) => !prev)}
           className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-white/90 border border-brand-border px-3 py-1 text-xs font-medium text-brand-text"

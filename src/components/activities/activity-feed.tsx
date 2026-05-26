@@ -87,7 +87,7 @@ export default function ActivityFeed({
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+    <div className="h-dvh flex flex-col bg-brand-bg overflow-hidden">
       {/* ── Map strip — mobile, md, lg: fixed above filter bar, hidden at xl ── */}
       <div className="xl:hidden flex-none">
         <MapPanel
@@ -255,7 +255,7 @@ export default function ActivityFeed({
 
       {/* ── Post activity button — mobile (full width) and md/lg (max-w-xs centered) ── */}
       {userId && (
-        <div className="lg:hidden flex-none border-t border-brand-border p-3">
+        <div className="lg:hidden flex-none border-t border-brand-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <Link
             href="/activity/new"
             className="w-full md:max-w-xs md:mx-auto flex items-center justify-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
