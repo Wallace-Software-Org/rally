@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import Map, { type MapRef } from "react-map-gl";
 import type { ActivityWithParticipants } from "@/types";
 import ActivityPin from "@/components/map/activity-pin";
@@ -36,6 +37,7 @@ export default function MapPanel({
   const mapRef = useRef<MapRef>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isMobile] = useState(() => window.innerWidth < 768);
+  const [expanded, setExpanded] = useState(false);
   const prevSelectedId = useRef<string | null>(null);
 
   // Fly to selected activity at zoom 14; fly back to default view on deselect
@@ -91,7 +93,13 @@ export default function MapPanel({
 
   if (variant === "strip") {
     return (
-      <div className="w-full h-40 md:h-48 relative overflow-hidden">
+      <motion.div
+        initial={{ height: "10rem" }}
+        animate={{ height: expanded ? "50vh" : "10rem" }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        onAnimationComplete={() => mapRef.current?.resize()}
+        className="w-full relative overflow-hidden bg-[#0d1b2a]"
+      >
         <Map
           ref={mapRef}
           mapboxAccessToken={TOKEN}
@@ -103,7 +111,10 @@ export default function MapPanel({
         >
           {pins}
         </Map>
-        <button className="absolute bottom-2 left-3 z-10 flex items-center gap-1 rounded-full bg-brand-bg border border-brand-border px-3 py-1 text-xs font-medium text-brand-muted shadow-sm">
+        <button
+          onClick={() => setExpanded((prev) => !prev)}
+          className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-white/90 border border-brand-border px-3 py-1 text-xs font-medium text-brand-text"
+        >
           <svg
             width="10"
             height="10"
@@ -111,16 +122,25 @@ export default function MapPanel({
             fill="none"
             aria-hidden="true"
           >
-            <path
-              d="M1.5 5H8.5M5 1.5V8.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
+            {expanded ? (
+              <path
+                d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            ) : (
+              <path
+                d="M1.5 5H8.5M5 1.5V8.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            )}
           </svg>
-          Expand map
+          {expanded ? "Collapse map" : "Expand map"}
         </button>
-      </div>
+      </motion.div>
     );
   }
 

@@ -29,6 +29,7 @@ export default function MapPreviewCard({
 }: MapPreviewCardProps) {
   const [confirming, setConfirming] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const isHost = userId === activity.creator_id;
 
   useEffect(() => {
     if (!confirming) return;
@@ -124,7 +125,11 @@ export default function MapPreviewCard({
       </div>
 
       {/* CTA */}
-      {userId === null ? (
+      {isHost ? (
+        <div className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3 pointer-events-none">
+          Hosting
+        </div>
+      ) : userId === null ? (
         <Link
           href="/login"
           className="w-full flex items-center justify-center rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-teal hover:text-brand-teal transition-colors"
@@ -132,24 +137,18 @@ export default function MapPreviewCard({
           Sign in to join
         </Link>
       ) : isJoined ? (
-        confirming ? (
-          <button
-            ref={btnRef}
-            onClick={() => onLeave()}
-            disabled={isLeaving}
-            className="w-full rounded-xl border border-red-500 text-red-500 text-sm font-semibold py-3 transition-colors disabled:opacity-50"
-          >
-            {isLeaving ? "Leaving…" : "Leave activity"}
-          </button>
-        ) : (
-          <button
-            ref={btnRef}
-            onClick={() => setConfirming(true)}
-            className="w-full rounded-xl border border-transparent bg-brand-teal-muted text-brand-teal text-sm font-semibold py-3 transition-colors"
-          >
-            You&apos;re in ✓
-          </button>
-        )
+        <button
+          ref={btnRef}
+          onClick={() => (confirming ? onLeave() : setConfirming(true))}
+          disabled={isLeaving}
+          className={`w-full rounded-xl text-sm font-semibold py-3 transition-colors disabled:opacity-50 border ${
+            confirming
+              ? "border-red-400 text-red-500 bg-transparent"
+              : "border-transparent bg-brand-teal-muted text-brand-teal"
+          }`}
+        >
+          {isLeaving ? "Leaving…" : confirming ? "Leave activity?" : "You're in ✓"}
+        </button>
       ) : spotsLeft > 0 ? (
         <button
           onClick={onJoin}
@@ -165,6 +164,14 @@ export default function MapPreviewCard({
           </span>
         </div>
       )}
+
+      {/* Details link */}
+      <Link
+        href={`/activity/${activity.id}`}
+        className="w-full flex items-center justify-center rounded-xl border border-brand-border text-brand-muted text-sm py-2.5 hover:border-brand-teal hover:text-brand-teal transition-colors"
+      >
+        View details
+      </Link>
     </div>
   );
 }
