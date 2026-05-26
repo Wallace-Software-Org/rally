@@ -20,9 +20,11 @@ const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
 export default function ActivityFeed({
   activities,
   userId,
+  userActivities = [],
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
+  userActivities?: string[];
 }) {
   const { lat: userLat, lng: userLng } = useLocation();
   const [sports, setSports] = useState<string[]>([]);
@@ -117,7 +119,7 @@ export default function ActivityFeed({
               } as React.CSSProperties
             }
           >
-            <ActivityFilters sports={sports} onChange={setSports} />
+            <ActivityFilters sports={sports} onChange={setSports} userActivities={userActivities} />
           </div>
           <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-brand-bg to-transparent" />
         </div>
@@ -128,7 +130,7 @@ export default function ActivityFeed({
         <div className="max-w-5xl mx-auto px-4 w-full flex items-center gap-2 py-3">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
           <div className="w-px h-4 bg-brand-border flex-none mx-1" />
-          <ActivityFilters sports={sports} onChange={setSports} toolbar />
+          <ActivityFilters sports={sports} onChange={setSports} toolbar userActivities={userActivities} />
         </div>
       </div>
 
@@ -184,7 +186,7 @@ export default function ActivityFeed({
             <div className="flex-none border-b border-brand-border px-6 flex items-center gap-2 py-3">
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
               <div className="w-px h-4 bg-brand-border flex-none mx-1" />
-              <ActivityFilters sports={sports} onChange={setSports} toolbar />
+              <ActivityFilters sports={sports} onChange={setSports} toolbar userActivities={userActivities} />
             </div>
 
             {/* Scrollable card area */}

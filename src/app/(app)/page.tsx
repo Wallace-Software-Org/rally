@@ -9,12 +9,18 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const activities = await getActivities()
+  const [activities, profileResult] = await Promise.all([
+    getActivities(),
+    user
+      ? supabase.from('profiles').select('sports').eq('id', user.id).single()
+      : Promise.resolve({ data: null }),
+  ])
 
   return (
     <ActivityFeed
       activities={activities}
       userId={user?.id ?? null}
+      userActivities={(profileResult.data?.sports as string[]) ?? []}
     />
   )
 }

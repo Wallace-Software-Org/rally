@@ -4,11 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { type DateFilter, DATE_FILTER_OPTIONS } from "@/lib/utils/date-filters";
 
-// Sport items without the "All" sentinel
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
 // ── OverflowPill ──────────────────────────────────────────────────────────────
-// "+N ▾" pill that reveals hidden sports in a popover.
 function OverflowPill({
   sports,
   activeSports,
@@ -77,13 +75,7 @@ function OverflowPill({
             >
               {s}
               {activeSports.includes(s) && (
-                <svg
-                  width="12"
-                  height="10"
-                  viewBox="0 0 12 10"
-                  fill="none"
-                  aria-hidden="true"
-                >
+                <svg width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden="true">
                   <path
                     d="M1 5L4.5 8.5L11 1.5"
                     stroke="#1D9E75"
@@ -102,7 +94,6 @@ function OverflowPill({
 }
 
 // ── DatePickerPill ────────────────────────────────────────────────────────────
-// Exported so activity-feed.tsx can place it in the correct position per breakpoint.
 export function DatePickerPill({
   value,
   onChange,
@@ -171,13 +162,7 @@ export function DatePickerPill({
             >
               {opt.label}
               {value === opt.value && (
-                <svg
-                  width="12"
-                  height="10"
-                  viewBox="0 0 12 10"
-                  fill="none"
-                  aria-hidden="true"
-                >
+                <svg width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden="true">
                   <path
                     d="M1 5L4.5 8.5L11 1.5"
                     stroke="#1D9E75"
@@ -196,19 +181,22 @@ export function DatePickerPill({
 }
 
 // ── ActivityFilters ───────────────────────────────────────────────────────────
-// Sports is a multi-select array; empty means "All". "All" pill clears the selection.
-// toolbar=false (default): plain fragment for mobile scroll row.
-// toolbar=true: pill strip with "+N ▾" overflow pill for toolbar placement.
-const MAX_TOOLBAR_VISIBLE = 4; // shown sport pills; "All" is always rendered separately
+// sports: currently selected (empty = All).
+// userActivities: logged-in user's saved activities, pinned first with a separator.
+// toolbar=false: plain fragment for mobile scroll row.
+// toolbar=true: pill strip with "+N" overflow pill for toolbar placement.
+const MAX_TOOLBAR_OTHERS = 4;
 
 export default function ActivityFilters({
   sports,
   onChange,
   toolbar = false,
+  userActivities,
 }: {
   sports: string[];
   onChange: (s: string[]) => void;
   toolbar?: boolean;
+  userActivities?: string[];
 }) {
   function toggle(s: string) {
     if (sports.includes(s)) {
@@ -220,35 +208,45 @@ export default function ActivityFilters({
 
   const allActive = sports.length === 0;
 
+  // Pinned items: user's saved activities in SPORT_ITEMS order
+  const pinned = userActivities?.length
+    ? SPORT_ITEMS.filter((s) =>
+        userActivities.some((u) => u.toLowerCase() === s.toLowerCase()),
+      )
+    : [];
+  const others = SPORT_ITEMS.filter((s) => !pinned.includes(s));
+
+  const visibleOthers = toolbar ? others.slice(0, MAX_TOOLBAR_OTHERS) : others;
+  const hiddenOthers = toolbar ? others.slice(MAX_TOOLBAR_OTHERS) : [];
+
+  const showSeparator = pinned.length > 0 && others.length > 0;
+
+  function pillCls(active: boolean) {
+    return `flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+      active
+        ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
+        : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
+    }`;
+  }
+
   const allPill = (
-    <button
-      key="All"
-      onClick={() => onChange([])}
-      className={`flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-        allActive
-          ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
-          : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
-      }`}
-    >
+    <button key="All" onClick={() => onChange([])} className={pillCls(allActive)}>
       All
     </button>
   );
 
-  const visibleItems = toolbar
-    ? SPORT_ITEMS.slice(0, MAX_TOOLBAR_VISIBLE)
-    : SPORT_ITEMS;
-  const hiddenItems = toolbar ? SPORT_ITEMS.slice(MAX_TOOLBAR_VISIBLE) : [];
+  const pinnedPills = pinned.map((s) => (
+    <button key={s} onClick={() => toggle(s)} className={pillCls(sports.includes(s))}>
+      {s}
+    </button>
+  ));
 
-  const sportPills = visibleItems.map((s) => (
-    <button
-      key={s}
-      onClick={() => toggle(s)}
-      className={`flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-        sports.includes(s)
-          ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
-          : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
-      }`}
-    >
+  const separator = showSeparator ? (
+    <div key="sep" className="w-px h-4 bg-brand-border flex-none self-center" />
+  ) : null;
+
+  const otherPills = visibleOthers.map((s) => (
+    <button key={s} onClick={() => toggle(s)} className={pillCls(sports.includes(s))}>
       {s}
     </button>
   ));
@@ -257,7 +255,9 @@ export default function ActivityFilters({
     return (
       <>
         {allPill}
-        {sportPills}
+        {pinnedPills}
+        {separator}
+        {otherPills}
       </>
     );
   }
@@ -265,13 +265,11 @@ export default function ActivityFilters({
   return (
     <div className="flex items-center gap-2">
       {allPill}
-      {sportPills}
-      {hiddenItems.length > 0 && (
-        <OverflowPill
-          sports={hiddenItems}
-          activeSports={sports}
-          onSelect={toggle}
-        />
+      {pinnedPills}
+      {separator}
+      {otherPills}
+      {hiddenOthers.length > 0 && (
+        <OverflowPill sports={hiddenOthers} activeSports={sports} onSelect={toggle} />
       )}
     </div>
   );
