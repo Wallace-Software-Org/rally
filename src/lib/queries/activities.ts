@@ -40,7 +40,7 @@ export async function getActivityById(id: string): Promise<ActivityDetail | null
       max_participants, skill_level, lat, lng, status, creator_id,
       participants (
         id, user_id,
-        profiles ( full_name, avatar_url, instagram_handle )
+        profiles ( full_name, avatar_url, instagram_handle, username )
       )
     `,
     )
@@ -52,7 +52,7 @@ export async function getActivityById(id: string): Promise<ActivityDetail | null
   const [{ data: host }, { count: hostedCount }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, instagram_handle")
+      .select("id, full_name, avatar_url, instagram_handle, username")
       .eq("id", data.creator_id)
       .single(),
     supabase

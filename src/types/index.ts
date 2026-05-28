@@ -26,10 +26,12 @@ export type ActivityWithParticipants = Activity & {
   participants: Participant[];
 };
 
+// Used by AppNav — includes username so the avatar can link to own profile
 export type Profile = {
   avatar_url: string | null;
   full_name: string;
   city: string | null;
+  username: string | null;
 } | null;
 
 // ── Detail page types ────────────────────────────────────────────────────────
@@ -38,6 +40,7 @@ export type DetailParticipantProfile = {
   full_name: string;
   avatar_url: string | null;
   instagram_handle: string | null;
+  username: string | null;
 };
 
 export type DetailParticipant = {
@@ -51,6 +54,32 @@ export type HostProfile = {
   full_name: string;
   avatar_url: string | null;
   instagram_handle: string | null;
+  username: string | null;
+};
+
+// ── Profile page types ───────────────────────────────────────────────────────
+
+export type ProfileActivity = {
+  id: string;
+  title: string;
+  sport: string;
+  location_name: string;
+  skill_level: string | null;
+  starts_at: string;
+};
+
+export type ProfilePage = {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  instagram_handle: string | null;
+  sports: string[];
+  hosted_count: number;
+  attended_count: number;
+  going: ProfileActivity[];
+  hosting: ProfileActivity[];
 };
 
 export type ActivityDetail = {

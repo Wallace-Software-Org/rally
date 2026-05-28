@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types";
 
 function initials(name: string): string {
@@ -21,13 +20,6 @@ export default function AppNav({
   profile: Profile;
   userId: string | null;
 }) {
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    // Full reload so all client state and cached server components are cleared
-    window.location.href = "/login";
-  }
-
   const logo = (
     <Link href="/" className="flex items-center gap-2 flex-none">
       <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
@@ -90,46 +82,44 @@ export default function AppNav({
           Post activity
         </Link>
 
-        {/* Avatar */}
-        <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
-          {profile?.avatar_url ? (
-            <Image
-              src={profile.avatar_url}
-              alt=""
-              width={36}
-              height={36}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-xs font-semibold text-brand-avatar-text">
-              {profile?.full_name ? initials(profile.full_name) : "?"}
-            </span>
-          )}
-        </div>
-
-        {/* Logout — icon only on mobile, icon + label on desktop */}
-        <button
-          onClick={handleLogout}
-          aria-label="Sign out"
-          className="flex-none flex items-center gap-1.5 rounded-lg border border-brand-border bg-transparent text-sm text-brand-muted hover:border-brand-border-hover hover:text-brand-text transition-colors px-3 py-1.5"
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 15 15"
-            fill="none"
-            aria-hidden="true"
+        {/* Avatar — links to own profile when username is set */}
+        {profile?.username ? (
+          <Link
+            href={`/profile/${profile.username}`}
+            className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center"
           >
-            <path
-              d="M5.5 2H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2.5M10 10.5l3-3-3-3M13 7.5H5.5"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="hidden lg:inline">Sign out</span>
-        </button>
+            {profile.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt=""
+                width={36}
+                height={36}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-semibold text-brand-avatar-text">
+                {initials(profile.full_name)}
+              </span>
+            )}
+          </Link>
+        ) : (
+          <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
+            {profile?.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt=""
+                width={36}
+                height={36}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-semibold text-brand-avatar-text">
+                {profile?.full_name ? initials(profile.full_name) : "?"}
+              </span>
+            )}
+          </div>
+        )}
+
       </div>
     </header>
   );

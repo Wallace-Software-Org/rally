@@ -18,6 +18,8 @@
   --color-brand-avatar-bg: #D4C4B4;
   --color-brand-avatar-text: #5C4A38;
   --color-brand-map-bg: #E8DFCF;
+  --color-brand-surface: #E8DFD5;
+  --color-brand-surface-deep: #DDD0C4;
   --color-brand-danger: #CC3333;
   --color-brand-danger-dark: #C0392B;
   /* ── Fonts ────────────────────────────────────────────────────────────────── */
@@ -38,6 +40,8 @@
   --color-tag-bg: var(--color-brand-teal-muted);
   --color-tag-text: var(--color-brand-teal-text);
   --color-map-bg: var(--color-brand-map-bg);
+  --color-surface: var(--color-brand-surface);
+  --color-surface-deep: var(--color-brand-surface-deep);
 }
 
 html {

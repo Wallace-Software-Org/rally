@@ -342,11 +342,13 @@ export default function ActivityDetailView({
             <div>
               <SectionLabel>Hosted by</SectionLabel>
               <div className="flex items-center gap-3">
-                <Avatar
-                  url={activity.host.avatar_url}
-                  name={activity.host.full_name}
-                  size="md"
-                />
+                {userId && activity.host.username ? (
+                  <Link href={`/profile/${activity.host.username}`}>
+                    <Avatar url={activity.host.avatar_url} name={activity.host.full_name} size="md" />
+                  </Link>
+                ) : (
+                  <Avatar url={activity.host.avatar_url} name={activity.host.full_name} size="md" />
+                )}
                 <div className="flex flex-col gap-1 min-w-0">
                   <p className="text-sm font-semibold text-brand-text leading-none">
                     {activity.host.full_name}
@@ -420,41 +422,29 @@ export default function ActivityDetailView({
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
-                        const isParticipantHost =
-                          p.user_id === activity.creator_id;
+                        const isParticipantHost = p.user_id === activity.creator_id;
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
-                        return (
+                        const avatarEl = (
                           <div
-                            key={p.id}
-                            className="flex flex-col items-center gap-1.5 flex-none w-13"
+                            className={`relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ${
+                              isParticipantHost ? "bg-brand-teal-muted" : "bg-brand-avatar-bg"
+                            }`}
                           >
-                            <div
-                              className={`relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ${
-                                isParticipantHost
-                                  ? "bg-brand-teal-muted"
-                                  : "bg-brand-avatar-bg"
-                              }`}
-                            >
-                              {p.profiles?.avatar_url ? (
-                                <Image
-                                  src={p.profiles.avatar_url}
-                                  alt=""
-                                  fill
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <span
-                                  className={`text-xs font-semibold ${
-                                    isParticipantHost
-                                      ? "text-brand-teal-text"
-                                      : "text-brand-avatar-text"
-                                  }`}
-                                >
-                                  {initials(name)}
-                                </span>
-                              )}
-                            </div>
+                            {p.profiles?.avatar_url ? (
+                              <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
+                            ) : (
+                              <span className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}>
+                                {initials(name)}
+                              </span>
+                            )}
+                          </div>
+                        );
+                        return (
+                          <div key={p.id} className="flex flex-col items-center gap-1.5 flex-none w-13">
+                            {userId && p.profiles?.username
+                              ? <Link href={`/profile/${p.profiles.username}`}>{avatarEl}</Link>
+                              : avatarEl}
                             <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
                               {firstName}
                             </span>
@@ -472,41 +462,29 @@ export default function ActivityDetailView({
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
-                        const isParticipantHost =
-                          p.user_id === activity.creator_id;
+                        const isParticipantHost = p.user_id === activity.creator_id;
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
-                        return (
+                        const avatarEl = (
                           <div
-                            key={p.id}
-                            className="flex flex-col items-center gap-1.5 flex-none w-13"
+                            className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
+                              isParticipantHost ? "bg-brand-teal-muted" : "bg-brand-avatar-bg"
+                            }`}
                           >
-                            <div
-                              className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
-                                isParticipantHost
-                                  ? "bg-brand-teal-muted"
-                                  : "bg-brand-avatar-bg"
-                              }`}
-                            >
-                              {p.profiles?.avatar_url ? (
-                                <Image
-                                  src={p.profiles.avatar_url}
-                                  alt=""
-                                  fill
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <span
-                                  className={`text-xs font-semibold ${
-                                    isParticipantHost
-                                      ? "text-brand-teal-text"
-                                      : "text-brand-avatar-text"
-                                  }`}
-                                >
-                                  {initials(name)}
-                                </span>
-                              )}
-                            </div>
+                            {p.profiles?.avatar_url ? (
+                              <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
+                            ) : (
+                              <span className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}>
+                                {initials(name)}
+                              </span>
+                            )}
+                          </div>
+                        );
+                        return (
+                          <div key={p.id} className="flex flex-col items-center gap-1.5 flex-none w-13">
+                            {userId && p.profiles?.username
+                              ? <Link href={`/profile/${p.profiles.username}`}>{avatarEl}</Link>
+                              : avatarEl}
                             <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
                               {firstName}
                             </span>

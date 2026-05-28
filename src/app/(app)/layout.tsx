@@ -15,7 +15,7 @@ export default async function AppLayout({
     ? (
         await supabase
           .from("profiles")
-          .select("avatar_url, full_name, city")
+          .select("avatar_url, full_name, city, username")
           .eq("id", user.id)
           .single()
       ).data
