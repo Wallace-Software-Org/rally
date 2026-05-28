@@ -59,7 +59,7 @@ function CardAction({
 
   if (userId === activity.creator_id) {
     return (
-      <span className="h-9 flex items-center text-xs font-medium text-brand-muted">
+      <span className="h-9 w-20 border border-brand-muted/40 rounded-full flex justify-center items-center text-xs font-medium text-brand-muted/80">
         Hosting
       </span>
     );

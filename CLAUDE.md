@@ -65,3 +65,17 @@ participants: id, activity_id, user_id, status, joined_at
 - Filter bar pins the user's first 5 selected activities. Remaining user activities and all others go into a More dropdown with two sections: "Your activities" and "Other activities"
 - Activities list is hardcoded in src/lib/utils/sport-config.ts. Migration to a Supabase lookup table planned when the list stabilizes.
 - Activity chat planned after realtime spots. Each activity gets its own Supab
+- signup_url text column planned on activities table for external registration links
+- Repeat event is a one-click clone with 7 day offset, not full recurring/RRULE logic
+
+## Roadmap (in order)
+
+1. Profile page /profile/[username] — avatar, bio, activities, hosted count, hosted and joined activity lists
+2. Reputation/badge system — design tiers before building, streak and quality signals not just volume
+3. Instagram share card — shareable activity image for Stories, deep link back to activity, frictionless signup for new users
+4. Realtime spots — Supabase realtime on participants table
+5. Activity chat — per-event chat, Supabase Realtime channel per activity
+6. Repeat activity — "Repeat next week" button on hosted activity detail page, clones activity with starts_at bumped 7 days, review step before posting
+7. External signup link — signup_url field on activities, when present Join becomes "Register" and opens external link, show "Rally members going" avatar stack separately from external headcount
+8. Edit activity page /activity/[id]/edit
+9. Instagram OAuth on profile
