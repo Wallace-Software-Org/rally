@@ -3,23 +3,23 @@
 
 @theme {
   /* ── Brand colors ─────────────────────────────────────────────────────────── */
-  --color-brand-bg: #F0EAE2;
-  --color-brand-card: #F0EAE2;
-  --color-brand-border: #C8B8A8;
-  --color-brand-border-hover: #B8A898;
-  --color-brand-teal: #1D9E75;
-  --color-brand-teal-hover: #199068;
-  --color-brand-teal-active: #147A56;
-  --color-brand-teal-muted: #C8E6DC;
-  --color-brand-teal-text: #1A6B52;
+  --color-brand-bg: #E8DFD1;
+  --color-brand-card: #D4C5B3;
+  --color-brand-border: rgba(90, 74, 58, 0.25);
+  --color-brand-border-hover: rgba(90, 74, 58, 0.4);
+  --color-brand-teal: #4A9B8E;
+  --color-brand-teal-hover: #3D8A7E;
+  --color-brand-teal-active: #326F66;
+  --color-brand-teal-muted: #C2DDD9;
+  --color-brand-teal-text: #2A6B64;
   --color-brand-secondary: #7A5A8A;
-  --color-brand-text: #2C2C2C;
-  --color-brand-muted: #7A6A5A;
-  --color-brand-avatar-bg: #D4C4B4;
-  --color-brand-avatar-text: #5C4A38;
-  --color-brand-map-bg: #E8DFCF;
-  --color-brand-surface: #E8DFD5;
-  --color-brand-surface-deep: #DDD0C4;
+  --color-brand-text: #5A4A3A;
+  --color-brand-muted: #7A6854;
+  --color-brand-avatar-bg: #B8A491;
+  --color-brand-avatar-text: #2D2319;
+  --color-brand-map-bg: #D4C5B3;
+  --color-brand-surface: #DFD3C0;
+  --color-brand-surface-deep: #D4C5B3;
   --color-brand-danger: #CC3333;
   --color-brand-danger-dark: #C0392B;
   /* ── Fonts ────────────────────────────────────────────────────────────────── */
