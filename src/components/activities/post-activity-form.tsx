@@ -10,6 +10,8 @@ import {
 import { formatActivityTime } from "@/lib/utils/format-time";
 import { createActivity } from "@/lib/actions/activities";
 import SportPill from "@/components/ui/sport-pill";
+import DatePicker from "@/components/ui/date-picker";
+import TimePicker from "@/components/ui/time-picker";
 
 const SEARCH_BOX_THEME = {
   variables: {
@@ -211,22 +213,20 @@ export default function PostActivityForm() {
                 <label className="text-sm font-medium text-brand-text">
                   Date
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className={inputCls}
+                  onChange={setDate}
+                  placeholder="Select a date"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-brand-text">
                   Time
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className={inputCls}
+                  onChange={setTime}
+                  placeholder="Select a time"
                 />
               </div>
             </div>
