@@ -79,7 +79,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-
 export default function ActivityDetailView({
   activity,
   userId,
@@ -170,14 +169,14 @@ export default function ActivityDetailView({
 
   // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
   const ctaButton = isHost ? (
-    <div className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5">
+    <div className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5">
       Hosting
     </div>
   ) : isJoined ? (
     <button
       data-leave-btn
       onClick={() => (leaveConfirm ? handleLeave() : setLeaveConfirm(true))}
-      className={`w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
+      className={`w-full max-w-156 flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
         leaveConfirm
           ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
           : "border-brand-teal text-brand-teal bg-transparent hover:bg-brand-teal/5"
@@ -188,7 +187,7 @@ export default function ActivityDetailView({
   ) : userId === null ? (
     <Link
       href="/login"
-      className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
     >
       Sign in to join
     </Link>
@@ -196,7 +195,7 @@ export default function ActivityDetailView({
     <button
       onClick={handleJoin}
       disabled={joining}
-      className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
+      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
     >
       {joining ? "Joining…" : "Join activity"}
     </button>
@@ -205,7 +204,7 @@ export default function ActivityDetailView({
   const shareBtn = (
     <button
       onClick={handleInstagram}
-      className="flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary transition-colors"
+      className="w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary transition-colors"
     >
       <svg
         width="15"
@@ -265,7 +264,7 @@ export default function ActivityDetailView({
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
       {/* ── Breadcrumb — xl only ────────────────────────────────────────────── */}
-      <div className="hidden xl:flex flex-none items-center gap-1.5 text-xs text-brand-muted px-8 py-2">
+      <div className="flex flex-none items-center gap-1.5 text-xs text-brand-muted px-4 md:px-8 py-2">
         <Link
           href="/"
           className="hover:text-brand-teal transition-colors flex-none"
@@ -344,10 +343,18 @@ export default function ActivityDetailView({
               <div className="flex items-center gap-3">
                 {userId && activity.host.username ? (
                   <Link href={`/profile/${activity.host.username}`}>
-                    <Avatar url={activity.host.avatar_url} name={activity.host.full_name} size="md" />
+                    <Avatar
+                      url={activity.host.avatar_url}
+                      name={activity.host.full_name}
+                      size="md"
+                    />
                   </Link>
                 ) : (
-                  <Avatar url={activity.host.avatar_url} name={activity.host.full_name} size="md" />
+                  <Avatar
+                    url={activity.host.avatar_url}
+                    name={activity.host.full_name}
+                    size="md"
+                  />
                 )}
                 <div className="flex flex-col gap-1 min-w-0">
                   <p className="text-sm font-semibold text-brand-text leading-none">
@@ -393,13 +400,16 @@ export default function ActivityDetailView({
             <div className="xl:hidden flex flex-col gap-3">
               <div className="h-px bg-brand-border" />
               <SectionLabel>Location</SectionLabel>
-              {typeof activity.lat === "number" && typeof activity.lng === "number" ? (
+              {typeof activity.lat === "number" &&
+              typeof activity.lng === "number" ? (
                 <div className="rounded-xl overflow-hidden h-44">
                   <ActivityMiniMap lat={activity.lat} lng={activity.lng} />
                 </div>
               ) : (
                 <div className="rounded-xl h-44 bg-brand-map-bg flex items-center justify-center">
-                  <span className="text-sm text-brand-muted">Location not available</span>
+                  <span className="text-sm text-brand-muted">
+                    Location not available
+                  </span>
                 </div>
               )}
             </div>
@@ -422,29 +432,46 @@ export default function ActivityDetailView({
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
-                        const isParticipantHost = p.user_id === activity.creator_id;
+                        const isParticipantHost =
+                          p.user_id === activity.creator_id;
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
                           <div
                             className={`relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ${
-                              isParticipantHost ? "bg-brand-teal-muted" : "bg-brand-avatar-bg"
+                              isParticipantHost
+                                ? "bg-brand-teal-muted"
+                                : "bg-brand-avatar-bg"
                             }`}
                           >
                             {p.profiles?.avatar_url ? (
-                              <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
+                              <Image
+                                src={p.profiles.avatar_url}
+                                alt=""
+                                fill
+                                className="object-cover"
+                              />
                             ) : (
-                              <span className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}>
+                              <span
+                                className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}
+                              >
                                 {initials(name)}
                               </span>
                             )}
                           </div>
                         );
                         return (
-                          <div key={p.id} className="flex flex-col items-center gap-1.5 flex-none w-13">
-                            {userId && p.profiles?.username
-                              ? <Link href={`/profile/${p.profiles.username}`}>{avatarEl}</Link>
-                              : avatarEl}
+                          <div
+                            key={p.id}
+                            className="flex flex-col items-center gap-1.5 flex-none w-13"
+                          >
+                            {userId && p.profiles?.username ? (
+                              <Link href={`/profile/${p.profiles.username}`}>
+                                {avatarEl}
+                              </Link>
+                            ) : (
+                              avatarEl
+                            )}
                             <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
                               {firstName}
                             </span>
@@ -462,29 +489,46 @@ export default function ActivityDetailView({
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
-                        const isParticipantHost = p.user_id === activity.creator_id;
+                        const isParticipantHost =
+                          p.user_id === activity.creator_id;
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
                           <div
                             className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
-                              isParticipantHost ? "bg-brand-teal-muted" : "bg-brand-avatar-bg"
+                              isParticipantHost
+                                ? "bg-brand-teal-muted"
+                                : "bg-brand-avatar-bg"
                             }`}
                           >
                             {p.profiles?.avatar_url ? (
-                              <Image src={p.profiles.avatar_url} alt="" fill className="object-cover" />
+                              <Image
+                                src={p.profiles.avatar_url}
+                                alt=""
+                                fill
+                                className="object-cover"
+                              />
                             ) : (
-                              <span className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}>
+                              <span
+                                className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}
+                              >
                                 {initials(name)}
                               </span>
                             )}
                           </div>
                         );
                         return (
-                          <div key={p.id} className="flex flex-col items-center gap-1.5 flex-none w-13">
-                            {userId && p.profiles?.username
-                              ? <Link href={`/profile/${p.profiles.username}`}>{avatarEl}</Link>
-                              : avatarEl}
+                          <div
+                            key={p.id}
+                            className="flex flex-col items-center gap-1.5 flex-none w-13"
+                          >
+                            {userId && p.profiles?.username ? (
+                              <Link href={`/profile/${p.profiles.username}`}>
+                                {avatarEl}
+                              </Link>
+                            ) : (
+                              avatarEl
+                            )}
                             <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
                               {firstName}
                             </span>
@@ -499,21 +543,24 @@ export default function ActivityDetailView({
             </div>
 
             {/* 6. CTAs — md/lg inline (hidden on mobile and xl) */}
-            <div className="hidden md:flex xl:hidden flex-col gap-3 pt-2 pb-4">
+            {/* <div className="hidden md:flex xl:hidden flex-col gap-3 pt-2 pb-4">
               {ctaButton}
               {shareBtn}
-            </div>
+            </div> */}
           </div>
 
           {/* ── Right sticky panel — xl only ────────────────────────────────── */}
           <div className="hidden xl:flex flex-col gap-4 w-72 flex-none sticky top-8 py-6">
-            {typeof activity.lat === "number" && typeof activity.lng === "number" ? (
+            {typeof activity.lat === "number" &&
+            typeof activity.lng === "number" ? (
               <div className="rounded-xl overflow-hidden h-52">
                 <ActivityMiniMap lat={activity.lat} lng={activity.lng} />
               </div>
             ) : (
               <div className="rounded-xl h-52 bg-brand-map-bg flex items-center justify-center">
-                <span className="text-sm text-brand-muted">Location not available</span>
+                <span className="text-sm text-brand-muted">
+                  Location not available
+                </span>
               </div>
             )}
             <div className="flex flex-col gap-3">
@@ -525,8 +572,8 @@ export default function ActivityDetailView({
         </div>
       </div>
 
-      {/* ── Bottom CTA bar — mobile only ────────────────────────────────────── */}
-      <div className="md:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
+      {/* ── Bottom CTA bar — mobile/tablet only ────────────────────────────────────── */}
+      <div className="xl:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col items-center gap-2">
         {ctaButton}
         {shareBtn}
         {isHost && (

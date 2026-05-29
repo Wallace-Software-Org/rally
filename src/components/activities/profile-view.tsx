@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
-import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
+import { getSportLabel } from "@/lib/utils/sport-config";
 import { createClient } from "@/lib/supabase/client";
 
 function initials(name: string): string {
@@ -35,10 +35,6 @@ function formatCardDate(startsAt: string): { date: string; time: string } {
 // ── Activity card ─────────────────────────────────────────────────────────────
 
 function ActivityCard({ activity }: { activity: ProfileActivity }) {
-  const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
-    bg: "#C2DDD9",
-    text: "#2A6B64",
-  };
   const { date, time } = formatCardDate(activity.starts_at);
 
   return (
@@ -160,7 +156,8 @@ export default function ProfileView({
   }
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto bg-brand-bg">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
+      <div className="flex-1 overflow-y-auto">
       <div className="max-w-120 mx-auto">
         {/* ── Hero (brand-surface) ──────────────────────────────────────── */}
         <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
@@ -311,9 +308,9 @@ export default function ProfileView({
           )}
         </div>
 
-        {/* ── Sign out ──────────────────────────────────────────────────── */}
+        {/* ── Sign out — desktop only ───────────────────────────────────── */}
         {isLoggedIn && (
-          <div className="px-4 pt-12 pb-6 flex flex-col items-center gap-2">
+          <div className="hidden md:flex px-4 pt-12 pb-6 flex-col items-center gap-2">
             {signOutConfirm ? (
               <>
                 <button
@@ -339,7 +336,34 @@ export default function ProfileView({
             )}
           </div>
         )}
+
       </div>
+      </div>
+
+      {/* ── Sign out — mobile pinned bottom bar ───────────────────────── */}
+      {isLoggedIn && (
+        <div className="md:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
+          <button
+            onClick={() => (signOutConfirm ? handleSignOut() : setSignOutConfirm(true))}
+            className={`w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors ${
+              signOutConfirm
+                ? "border border-brand-danger text-brand-danger hover:bg-brand-danger/10"
+                : "bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
+            }`}
+          >
+            {signOutConfirm ? "Confirm sign out?" : "Sign out"}
+          </button>
+          {signOutConfirm && (
+            <button
+              onClick={() => setSignOutConfirm(false)}
+              className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }
