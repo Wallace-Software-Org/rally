@@ -44,16 +44,13 @@ function ActivityCard({ activity }: { activity: ProfileActivity }) {
   return (
     <Link
       href={`/activity/${activity.id}`}
-      className="bg-brand-surface rounded-xl border border-brand-border p-4 flex flex-col gap-3"
+      className="bg-brand-surface rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
     >
-      <span
-        className="rounded-full px-2.5 py-0.5 text-xs font-medium self-start"
-        style={{ backgroundColor: colors.bg, color: colors.text }}
-      >
+      <span className="rounded-full px-2.5 py-0.5 text-xs font-medium self-start flex-none bg-brand-teal/20 text-brand-teal border border-brand-teal/30 hover:bg-brand-teal/30">
         {getSportLabel(activity.sport)}
       </span>
 
-      <p className="text-sm font-semibold text-brand-text leading-snug">
+      <p className="text-base font-semibold text-brand-text leading-snug">
         {activity.title}
       </p>
 
@@ -227,19 +224,19 @@ export default function ProfileView({
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-brand-surface rounded-xl p-4 flex flex-col gap-0.5 text-center">
+            <div className="h-24 bg-brand-surface border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
               <span className="text-2xl font-bold text-brand-text leading-none">
                 {profile.attended_count}
               </span>
-              <span className="text-xs text-brand-muted">
+              <span className="text-sm text-brand-muted">
                 Activities Attended
               </span>
             </div>
-            <div className="bg-brand-surface rounded-xl p-4 flex flex-col gap-0.5 text-center">
+            <div className="h-24 bg-brand-surface border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
               <span className="text-2xl font-bold text-brand-text leading-none">
                 {profile.hosted_count}
               </span>
-              <span className="text-xs text-brand-muted">
+              <span className="text-sm text-brand-muted">
                 Activities Hosted
               </span>
             </div>
