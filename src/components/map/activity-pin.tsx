@@ -46,7 +46,7 @@ export default function ActivityPin({ lat, lng, isSelected, onClick, label }: Ac
             borderRadius: "50%",
             flexShrink: 0,
             boxSizing: "border-box",
-            backgroundColor: isSelected ? PIN_COLOR : "#F0EAE2",
+            backgroundColor: isSelected ? PIN_COLOR : "#E8DFD1",
             border: isSelected ? "none" : `2px solid ${PIN_COLOR}`,
             ...(isSelected && {
               boxShadow: `0 0 0 2px white, 0 0 0 4px ${PIN_COLOR}`,

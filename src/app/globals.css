@@ -64,7 +64,7 @@ body {
 
 @layer utilities {
   .tag-teal {
-    background-color: color-mix(in srgb, var(--color-brand-teal) 20%, transparent);
+    background-color: color-mix(in srgb, var(--color-brand-teal) 15%, transparent);
     color: var(--color-brand-teal);
     border: 1px solid color-mix(in srgb, var(--color-brand-teal) 30%, transparent);
   }

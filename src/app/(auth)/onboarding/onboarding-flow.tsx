@@ -275,7 +275,7 @@ export default function OnboardingFlow({
                         >
                           <path
                             d="M3 8.5L6.5 12L13 5"
-                            stroke="#1D9E75"
+                            stroke="currentColor"
                             strokeWidth="1.8"
                             strokeLinecap="round"
                             strokeLinejoin="round"

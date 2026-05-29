@@ -405,17 +405,11 @@ export default function ActivityDetailView({
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
-                        const isParticipantHost =
-                          p.user_id === activity.creator_id;
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
                           <div
-                            className={`relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ${
-                              isParticipantHost
-                                ? "bg-brand-teal-muted"
-                                : "bg-brand-avatar-bg"
-                            }`}
+                            className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg"
                           >
                             {p.profiles?.avatar_url ? (
                               <Image
@@ -426,7 +420,7 @@ export default function ActivityDetailView({
                               />
                             ) : (
                               <span
-                                className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}
+                                className="text-xs font-semibold text-brand-avatar-text"
                               >
                                 {initials(name)}
                               </span>
@@ -462,17 +456,11 @@ export default function ActivityDetailView({
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
-                        const isParticipantHost =
-                          p.user_id === activity.creator_id;
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
                           <div
-                            className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center ${
-                              isParticipantHost
-                                ? "bg-brand-teal-muted"
-                                : "bg-brand-avatar-bg"
-                            }`}
+                            className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg"
                           >
                             {p.profiles?.avatar_url ? (
                               <Image
@@ -483,7 +471,7 @@ export default function ActivityDetailView({
                               />
                             ) : (
                               <span
-                                className={`text-xs font-semibold ${isParticipantHost ? "text-brand-teal-text" : "text-brand-avatar-text"}`}
+                                className="text-xs font-semibold text-brand-avatar-text"
                               >
                                 {initials(name)}
                               </span>

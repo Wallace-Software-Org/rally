@@ -16,11 +16,11 @@ const SEARCH_BOX_THEME = {
     fontFamily: "inherit",
     unit: "14px",
     borderRadius: "0.75rem",
-    border: "1px solid #C8B8A8",
-    colorBackground: "#F0EAE2",
-    colorText: "#2C2C2C",
-    colorPrimary: "#1D9E75",
-    colorSecondary: "#7A6A5A",
+    border: "1px solid rgba(90, 74, 58, 0.25)",
+    colorBackground: "#E8DFD1",
+    colorText: "#5A4A3A",
+    colorPrimary: "#4A9B8E",
+    colorSecondary: "#7A6854",
     boxShadow: "none",
     padding: "0.75em 1em",
   },
@@ -141,7 +141,7 @@ export default function PostActivityForm() {
           >
             <path
               d="M11 14L6 9l5-5"
-              stroke="#2C2C2C"
+              stroke="currentColor"
               strokeWidth="1.6"
               strokeLinecap="round"
               strokeLinejoin="round"
