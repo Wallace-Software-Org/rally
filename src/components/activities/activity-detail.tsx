@@ -17,6 +17,7 @@ import {
   cancelActivity,
 } from "@/lib/actions/activities";
 import SportPill from "@/components/ui/sport-pill";
+import MetaPill from "@/components/ui/meta-pill";
 
 function initials(name: string): string {
   return name
@@ -343,9 +344,7 @@ export default function ActivityDetailView({
                       @{activity.host.instagram_handle}
                     </p>
                   )}
-                  <span className="inline-flex self-start items-center rounded-full px-3 py-1 text-xs font-medium bg-[#E8DCC8] text-[#6B5430] border border-[#C4A870]/40">
-                    {activity.hosted_count} activities hosted
-                  </span>
+                  <MetaPill>{activity.hosted_count} activities hosted</MetaPill>
                 </div>
               </div>
             </div>
@@ -359,16 +358,14 @@ export default function ActivityDetailView({
                 {activity.description}
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-[#E8DCC8] text-[#6B5430] border border-[#C4A870]/40">
-                  {skillDisplay}
-                </span>
-                <span className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-[#E8DCC8] text-[#6B5430] border border-[#C4A870]/40">
+                <MetaPill>{skillDisplay}</MetaPill>
+                <MetaPill>
                   {activity.max_participants === null
                     ? "Open enrollment"
                     : spotsLeft === 0
                       ? "Full"
                       : `${spotsLeft} spots left`}
-                </span>
+                </MetaPill>
               </div>
             </div>
 
