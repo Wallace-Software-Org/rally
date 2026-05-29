@@ -9,13 +9,8 @@ const ActivityMiniMap = dynamic(
   { ssr: false },
 );
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import type { ActivityDetail } from "@/types";
-import {
-  joinActivity,
-  leaveActivity,
-  cancelActivity,
-} from "@/lib/actions/activities";
+import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { AnimatePresence, motion } from "framer-motion";
 import SportPill from "@/components/ui/sport-pill";
 import MetaPill from "@/components/ui/meta-pill";
@@ -234,16 +229,11 @@ export default function ActivityDetailView({
   const initiallyJoined = activity.participants.some(
     (p) => p.user_id === userId,
   );
-  const router = useRouter();
   const [isJoined, setIsJoined] = useState(initiallyJoined);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
-  const [cancelConfirm, setCancelConfirm] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [showSheet, setShowSheet] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (!leaveConfirm) return;
@@ -255,17 +245,6 @@ export default function ActivityDetailView({
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
   }, [leaveConfirm]);
-
-  useEffect(() => {
-    if (!cancelConfirm) return;
-    function onOutside(e: MouseEvent) {
-      if (!(e.target as Element).closest?.("[data-cancel-btn]")) {
-        setCancelConfirm(false);
-      }
-    }
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
-  }, [cancelConfirm]);
 
   const isHost = userId === activity.creator_id;
   const participantCount = activity.participants.length;
@@ -294,14 +273,6 @@ export default function ActivityDetailView({
     setLeaveConfirm(false);
   }
 
-  async function handleCancel() {
-    if (!userId || cancelling) return;
-    setCancelling(true);
-    await cancelActivity(activity.id);
-    setCancelling(false);
-    setCancelConfirm(false);
-  }
-
   function handleInstagram() {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
@@ -309,9 +280,12 @@ export default function ActivityDetailView({
 
   // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
   const ctaButton = isHost ? (
-    <div className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5">
-      Hosting
-    </div>
+    <Link
+      href={`/activity/${activity.id}/edit`}
+      className="w-full max-w-156 flex items-center justify-center rounded-xl text-sm font-medium py-3 transition-colors bg-transparent border border-brand-teal text-brand-teal hover:bg-brand-teal/10"
+    >
+      Manage
+    </Link>
   ) : isJoined ? (
     <button
       data-leave-btn
@@ -344,7 +318,7 @@ export default function ActivityDetailView({
   const shareBtn = (
     <button
       onClick={handleInstagram}
-      className="w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary transition-colors"
+      className="cursor-pointer! w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary  hover:bg-brand-secondary/10 transition-colors"
     >
       <svg
         width="15"
@@ -368,38 +342,6 @@ export default function ActivityDetailView({
       Share to Instagram
     </button>
   );
-
-  const hostActions = isHost ? (
-    <div className="flex gap-3">
-      <Link
-        href={`/activity/${activity.id}/edit`}
-        className="flex-1 flex items-center justify-center rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-text/60 hover:text-brand-text transition-colors"
-      >
-        Edit activity
-      </Link>
-      <button
-        data-cancel-btn
-        onClick={() => {
-          if (cancelConfirm) {
-            handleCancel();
-          } else {
-            setCancelConfirm(true);
-          }
-        }}
-        className={`flex-1 flex items-center justify-center rounded-xl text-sm font-medium py-3 border transition-colors ${
-          cancelConfirm
-            ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
-            : "border-red-200 text-red-400 bg-transparent hover:border-red-300"
-        }`}
-      >
-        {cancelling
-          ? "Cancelling…"
-          : cancelConfirm
-            ? "Confirm cancel?"
-            : "Cancel activity"}
-      </button>
-    </div>
-  ) : null;
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
@@ -547,9 +489,7 @@ export default function ActivityDetailView({
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
-                          <div
-                            className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg"
-                          >
+                          <div className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
                             {p.profiles?.avatar_url ? (
                               <Image
                                 src={p.profiles.avatar_url}
@@ -558,9 +498,7 @@ export default function ActivityDetailView({
                                 className="object-cover"
                               />
                             ) : (
-                              <span
-                                className="text-xs font-semibold text-brand-avatar-text"
-                              >
+                              <span className="text-xs font-semibold text-brand-avatar-text">
                                 {initials(name)}
                               </span>
                             )}
@@ -598,9 +536,7 @@ export default function ActivityDetailView({
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
-                          <div
-                            className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg"
-                          >
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
                             {p.profiles?.avatar_url ? (
                               <Image
                                 src={p.profiles.avatar_url}
@@ -609,9 +545,7 @@ export default function ActivityDetailView({
                                 className="object-cover"
                               />
                             ) : (
-                              <span
-                                className="text-xs font-semibold text-brand-avatar-text"
-                              >
+                              <span className="text-xs font-semibold text-brand-avatar-text">
                                 {initials(name)}
                               </span>
                             )}
@@ -666,7 +600,6 @@ export default function ActivityDetailView({
             <div className="flex flex-col gap-3">
               {ctaButton}
               {shareBtn}
-              {hostActions && <div>{hostActions}</div>}
             </div>
           </div>
         </div>
@@ -676,97 +609,12 @@ export default function ActivityDetailView({
       <div className="xl:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col items-center gap-2">
         {ctaButton}
         {shareBtn}
-        {isHost && (
-          <button
-            onClick={() => setShowSheet(true)}
-            className="border border-brand-border rounded-xl px-3 py-2.5 text-sm text-brand-muted"
-          >
-            Manage ···
-          </button>
-        )}
       </div>
 
       {/* ── Toast ───────────────────────────────────────────────────────────── */}
       {showToast && (
         <div className="fixed bottom-28 md:bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-brand-text text-white text-xs font-medium px-4 py-2 shadow-lg">
           Coming soon
-        </div>
-      )}
-
-      {/* ── Manage action sheet — mobile, host only ──────────────────────────── */}
-      {showSheet && (
-        <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black/30 z-10"
-            onClick={() => setShowSheet(false)}
-          />
-          {/* Bottom sheet */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 z-20">
-            <div className="w-9 h-1 bg-brand-border rounded-full mx-auto mb-3" />
-            <p className="text-xs text-brand-muted text-center mb-2">
-              Manage activity
-            </p>
-            <div className="flex flex-col gap-2">
-              <Link
-                href={`/activity/${activity.id}/edit`}
-                className="w-full flex items-center justify-center bg-white border border-brand-border rounded-xl p-3.5 text-sm text-brand-text"
-              >
-                Edit activity
-              </Link>
-              <button
-                onClick={() => {
-                  setShowSheet(false);
-                  setShowConfirm(true);
-                }}
-                className="cursor-pointer w-full flex items-center justify-center bg-transparent border border-red-200 rounded-xl p-3.5 text-sm text-red-400 hover:border-red-300 transition-colors"
-              >
-                Cancel activity
-              </button>
-              <button
-                onClick={() => setShowSheet(false)}
-                className="w-full flex items-center justify-center bg-brand-bg rounded-xl p-3.5 text-sm text-brand-muted mt-1"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── Cancel confirmation modal — mobile, host only ────────────────────── */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/40 z-30 flex items-center justify-center px-5">
-          <div className="bg-white rounded-2xl p-5 w-full flex flex-col gap-3">
-            <p className="text-base font-semibold text-brand-text">
-              Cancel this activity?
-            </p>
-            <p className="text-xs text-brand-muted leading-relaxed">
-              All participants will be removed and this activity will be
-              permanently cancelled. This can&apos;t be undone.
-            </p>
-            <button
-              onClick={async () => {
-                setCancelling(true);
-                const { error } = await cancelActivity(activity.id);
-                setCancelling(false);
-                if (!error) {
-                  setShowConfirm(false);
-                  router.push("/");
-                }
-              }}
-              disabled={cancelling}
-              className="w-full flex items-center justify-center bg-brand-danger-dark text-white rounded-xl p-3.5 text-sm font-semibold disabled:opacity-60"
-            >
-              {cancelling ? "Cancelling…" : "Yes, cancel activity"}
-            </button>
-            <button
-              onClick={() => setShowConfirm(false)}
-              className="w-full flex items-center justify-center border border-brand-border text-brand-muted rounded-xl p-3.5 text-sm"
-            >
-              Keep it
-            </button>
-          </div>
         </div>
       )}
     </div>
