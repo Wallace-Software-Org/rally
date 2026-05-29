@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
@@ -16,6 +16,7 @@ import {
   leaveActivity,
   cancelActivity,
 } from "@/lib/actions/activities";
+import { AnimatePresence, motion } from "framer-motion";
 import SportPill from "@/components/ui/sport-pill";
 import MetaPill from "@/components/ui/meta-pill";
 
@@ -77,6 +78,149 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted mb-3">
       {children}
     </p>
+  );
+}
+
+function LocationButton({ locationName }: { locationName: string }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e: MouseEvent) {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [open]);
+
+  async function copyAddress() {
+    await navigator.clipboard.writeText(locationName);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  const appleUrl = `https://maps.apple.com/maps?q=${encodeURIComponent(locationName)}`;
+  const googleUrl = `https://maps.google.com/maps?q=${encodeURIComponent(locationName)}`;
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-2 flex-wrap text-sm">
+        <button
+          onClick={() => setOpen((p) => !p)}
+          className="flex items-center gap-2 text-brand-muted hover:text-brand-teal transition-colors group"
+        >
+          <svg
+            width="10"
+            height="12"
+            viewBox="0 0 8 10"
+            fill="currentColor"
+            className="flex-none text-brand-teal/70 group-hover:text-brand-teal transition-colors"
+            aria-hidden="true"
+          >
+            <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
+          </svg>
+          <span className="group-hover:underline">{locationName}</span>
+        </button>
+        <span className="text-brand-muted/50 select-none">·</span>
+        <button
+          onClick={() => setOpen((p) => !p)}
+          className="text-brand-teal hover:underline cursor-pointer"
+        >
+          Get directions
+        </button>
+      </div>
+
+      {/* Mobile: overlay */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="md:hidden fixed inset-0 bg-black/30 z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile: bottom sheet */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-brand-bg rounded-t-2xl p-4 flex flex-col gap-2"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            <div className="w-9 h-1 bg-brand-border rounded-full mx-auto mb-1" />
+            <button
+              onClick={copyAddress}
+              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors"
+            >
+              {copied ? "Copied" : "Copy address"}
+            </button>
+            <a
+              href={appleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors"
+            >
+              Open in Apple Maps
+            </a>
+            <a
+              href={googleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors"
+            >
+              Open in Google Maps
+            </a>
+            <button
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center justify-center py-3 text-sm text-brand-muted"
+            >
+              Cancel
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop: popover */}
+      {open && (
+        <div className="hidden md:block absolute top-full mt-1.5 left-0 z-50 w-max min-w-48 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-1 overflow-hidden">
+          <button
+            onClick={copyAddress}
+            className="w-full flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors text-left"
+          >
+            {copied ? "Copied" : "Copy address"}
+          </button>
+          <a
+            href={appleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors"
+          >
+            Open in Apple Maps
+          </a>
+          <a
+            href={googleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors"
+          >
+            Open in Google Maps
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -299,19 +443,11 @@ export default function ActivityDetailView({
                 {formatDetailDate(activity.starts_at)}
               </p>
               {/* Location row — xl only (map stays in right panel) */}
-              <p className="hidden xl:flex items-center gap-2 text-sm text-brand-muted">
-                <svg
-                  width="10"
-                  height="12"
-                  viewBox="0 0 8 10"
-                  fill="currentColor"
-                  className="flex-none"
-                  aria-hidden="true"
-                >
-                  <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
-                </svg>
-                {activity.location_name}
-              </p>
+              {activity.location_name && (
+                <div className="hidden xl:flex">
+                  <LocationButton locationName={activity.location_name} />
+                </div>
+              )}
             </div>
 
             <Divider />
@@ -373,6 +509,9 @@ export default function ActivityDetailView({
             <div className="xl:hidden flex flex-col gap-3">
               <div className="h-px bg-brand-border" />
               <SectionLabel>Location</SectionLabel>
+              {activity.location_name && (
+                <LocationButton locationName={activity.location_name} />
+              )}
               {typeof activity.lat === "number" &&
               typeof activity.lng === "number" ? (
                 <div className="rounded-xl overflow-hidden h-44">
