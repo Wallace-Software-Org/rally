@@ -9,7 +9,13 @@ const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 const MAX_PINNED = 5;
 
 const checkIcon = (
-  <svg width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden="true">
+  <svg
+    width="12"
+    height="10"
+    viewBox="0 0 12 10"
+    fill="none"
+    aria-hidden="true"
+  >
     <path
       d="M1 5L4.5 8.5L11 1.5"
       stroke="currentColor"
@@ -27,9 +33,18 @@ const chevron = (open: boolean) => (
     viewBox="0 0 10 6"
     fill="none"
     aria-hidden="true"
-    style={{ transform: open ? "rotate(180deg)" : undefined, transition: "transform 0.15s" }}
+    style={{
+      transform: open ? "rotate(180deg)" : undefined,
+      transition: "transform 0.15s",
+    }}
   >
-    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M1 1L5 5L9 1"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
@@ -84,7 +99,10 @@ function MorePill({
               {yourActivities.map((s) => (
                 <button
                   key={s}
-                  onClick={() => { onSelect(s); setOpen(false); }}
+                  onClick={() => {
+                    onSelect(s);
+                    setOpen(false);
+                  }}
                   className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
                 >
                   {s}
@@ -104,7 +122,10 @@ function MorePill({
               {otherActivities.map((s) => (
                 <button
                   key={s}
-                  onClick={() => { onSelect(s); setOpen(false); }}
+                  onClick={() => {
+                    onSelect(s);
+                    setOpen(false);
+                  }}
                   className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
                 >
                   {s}
@@ -217,7 +238,8 @@ export default function ActivityFilters({
 
   // Show separator only when there are pinned pills and items after them
   const showSeparator =
-    pinnedVisible.length > 0 && (pinnedOverflow.length > 0 || others.length > 0);
+    pinnedVisible.length > 0 &&
+    (pinnedOverflow.length > 0 || others.length > 0);
 
   function pillCls(active: boolean) {
     return `flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
@@ -228,13 +250,21 @@ export default function ActivityFilters({
   }
 
   const allPill = (
-    <button key="All" onClick={() => onChange([])} className={pillCls(allActive)}>
+    <button
+      key="All"
+      onClick={() => onChange([])}
+      className={pillCls(allActive)}
+    >
       All
     </button>
   );
 
   const pinnedVisiblePills = pinnedVisible.map((s) => (
-    <button key={s} onClick={() => toggle(s)} className={pillCls(sports.includes(s))}>
+    <button
+      key={s}
+      onClick={() => toggle(s)}
+      className={pillCls(sports.includes(s))}
+    >
       {s}
     </button>
   ));
@@ -252,7 +282,11 @@ export default function ActivityFilters({
         {pinnedVisiblePills}
         {separator}
         {afterSeparator.map((s) => (
-          <button key={s} onClick={() => toggle(s)} className={pillCls(sports.includes(s))}>
+          <button
+            key={s}
+            onClick={() => toggle(s)}
+            className={pillCls(sports.includes(s))}
+          >
             {s}
           </button>
         ))}

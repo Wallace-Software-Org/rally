@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
-import { getSportLabel } from "@/lib/utils/sport-config";
 import SportPill from "@/components/ui/sport-pill";
 import { createClient } from "@/lib/supabase/client";
 
@@ -41,7 +40,7 @@ function ActivityCard({ activity }: { activity: ProfileActivity }) {
   return (
     <Link
       href={`/activity/${activity.id}`}
-      className="bg-brand-surface rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
+      className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
     >
       <SportPill sport={activity.sport} />
 
@@ -157,193 +156,189 @@ export default function ProfileView({
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
       <div className="flex-1 overflow-y-auto">
-      <div className="max-w-120 mx-auto">
-        {/* ── Hero (brand-surface) ──────────────────────────────────────── */}
-        <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
-          {/* Avatar + identity, centered */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
-              {profile.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  alt=""
-                  width={80}
-                  height={80}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-2xl font-semibold text-brand-avatar-text">
-                  {initials(profile.full_name)}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col items-center gap-1 text-center">
-              <p className="text-lg font-bold text-brand-text leading-tight">
-                {profile.full_name}
-              </p>
-              <p className="text-sm text-brand-muted font-medium">
-                @{profile.username}
-              </p>
-              {profile.instagram_handle && (
-                <a
-                  href={`https://instagram.com/${profile.instagram_handle}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-brand-teal flex items-center gap-1 font-medium hover:opacity-80 transition-opacity"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                  </svg>
-                  Instagram
-                </a>
-              )}
-              {profile.bio && (
-                <p className="text-sm text-brand-text leading-relaxed mt-3">
-                  {profile.bio}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="h-24 bg-brand-surface border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
-              <span className="text-2xl font-bold text-brand-text leading-none">
-                {profile.attended_count}
-              </span>
-              <span className="text-sm text-brand-muted">
-                Activities Attended
-              </span>
-            </div>
-            <div className="h-24 bg-brand-surface border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
-              <span className="text-2xl font-bold text-brand-text leading-none">
-                {profile.hosted_count}
-              </span>
-              <span className="text-sm text-brand-muted">
-                Activities Hosted
-              </span>
-            </div>
-          </div>
-
-          {/* Sport tags — single scrollable row, teal outline style */}
-          {profile.sports.length > 0 && (
-            <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
-              <div className="flex gap-2 w-fit mx-auto">
-                {profile.sports.map((sport) => (
-                  <span
-                    key={sport}
-                    className="flex-none rounded-full px-3 py-1 text-xs font-medium bg-brand-teal/20 text-brand-teal border border-brand-teal/30 hover:bg-brand-teal/30"
-                  >
-                    {getSportLabel(sport)}
+        <div className="max-w-120 mx-auto">
+          {/* ── Hero (brand-surface) ──────────────────────────────────────── */}
+          <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
+            {/* Avatar + identity, centered */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
+                {profile.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt=""
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-semibold text-brand-avatar-text">
+                    {initials(profile.full_name)}
                   </span>
-                ))}
+                )}
+              </div>
+
+              <div className="flex flex-col items-center gap-1 text-center">
+                <p className="text-lg font-bold text-brand-text leading-tight">
+                  {profile.full_name}
+                </p>
+                <p className="text-sm text-brand-muted font-medium">
+                  @{profile.username}
+                </p>
+                {profile.instagram_handle && (
+                  <a
+                    href={`https://instagram.com/${profile.instagram_handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-brand-teal flex items-center gap-1 font-medium hover:opacity-80 transition-opacity"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+                    </svg>
+                    Instagram
+                  </a>
+                )}
+                {profile.bio && (
+                  <p className="text-sm text-brand-text leading-relaxed mt-3">
+                    {profile.bio}
+                  </p>
+                )}
               </div>
             </div>
-          )}
-        </div>
 
-        {/* ── Tab bar ──────────────────────────────────────────────────── */}
-        <div className="sticky top-0 bg-brand-bg z-10 flex border-b border-brand-border">
-          {(["going", "hosting"] as const).map((t) => {
-            const count = profile[t].length;
-            const isActive = tab === t;
-            return (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 py-3 text-sm border-b-2 -mb-px transition-colors duration-300 ${
-                  isActive
-                    ? "border-brand-teal text-brand-text font-semibold"
-                    : "border-transparent text-brand-muted font-semibold hover:text-brand-text"
-                }`}
-              >
-                {TAB_LABELS[t]}{" "}
-                <span className={isActive ? "" : "text-brand-muted"}>
-                  ({count})
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
+                <span className="text-2xl font-bold text-brand-text leading-none">
+                  {profile.attended_count}
                 </span>
-              </button>
-            );
-          })}
-        </div>
+                <span className="text-sm text-brand-muted">
+                  Activities Attended
+                </span>
+              </div>
+              <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
+                <span className="text-2xl font-bold text-brand-text leading-none">
+                  {profile.hosted_count}
+                </span>
+                <span className="text-sm text-brand-muted">
+                  Activities Hosted
+                </span>
+              </div>
+            </div>
 
-        {/* ── Activity cards or empty state ─────────────────────────────── */}
-        <div className="bg-brand-bg px-4 py-4 flex flex-col gap-3">
-          {profile[tab].length === 0 ? (
-            <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
-              {tab === "going" ? (
+            {/* Sport tags — single scrollable row, teal outline style */}
+            {profile.sports.length > 0 && (
+              <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
+                <div className="flex gap-2 w-fit mx-auto">
+                  {profile.sports.map((sport) => (
+                    <SportPill key={sport} sport={sport} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Tab bar ──────────────────────────────────────────────────── */}
+          <div className="sticky top-0 bg-brand-bg z-10 flex border-b border-brand-border">
+            {(["going", "hosting"] as const).map((t) => {
+              const count = profile[t].length;
+              const isActive = tab === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`flex-1 py-3 text-sm border-b-2 -mb-px transition-colors duration-300 ${
+                    isActive
+                      ? "border-brand-teal text-brand-text font-semibold"
+                      : "border-transparent text-brand-muted font-semibold hover:text-brand-text"
+                  }`}
+                >
+                  {TAB_LABELS[t]}{" "}
+                  <span className={isActive ? "" : "text-brand-muted"}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Activity cards or empty state ─────────────────────────────── */}
+          <div className="bg-brand-bg px-4 py-4 flex flex-col gap-3">
+            {profile[tab].length === 0 ? (
+              <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
+                {tab === "going" ? (
+                  <>
+                    Nothing coming up.{" "}
+                    <Link href="/" className="text-brand-teal hover:underline">
+                      Find something on the feed.
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    You haven&apos;t hosted anything yet.{" "}
+                    <Link
+                      href="/activity/new"
+                      className="text-brand-teal hover:underline"
+                    >
+                      Post an activity.
+                    </Link>
+                  </>
+                )}
+              </p>
+            ) : (
+              profile[tab].map((a) => <ActivityCard key={a.id} activity={a} />)
+            )}
+          </div>
+
+          {/* ── Sign out — desktop only ───────────────────────────────────── */}
+          {isLoggedIn && (
+            <div className="hidden md:flex px-4 pt-12 pb-6 flex-col items-center gap-2">
+              {signOutConfirm ? (
                 <>
-                  Nothing coming up.{" "}
-                  <Link href="/" className="text-brand-teal hover:underline">
-                    Find something on the feed.
-                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="rounded-full border border-brand-danger px-5 py-1.5 text-sm font-medium text-brand-danger transition-colors hover:bg-brand-danger/10"
+                  >
+                    Sign out
+                  </button>
+                  <button
+                    onClick={() => setSignOutConfirm(false)}
+                    className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+                  >
+                    Cancel
+                  </button>
                 </>
               ) : (
-                <>
-                  You haven&apos;t hosted anything yet.{" "}
-                  <Link
-                    href="/activity/new"
-                    className="text-brand-teal hover:underline"
-                  >
-                    Post an activity.
-                  </Link>
-                </>
-              )}
-            </p>
-          ) : (
-            profile[tab].map((a) => <ActivityCard key={a.id} activity={a} />)
-          )}
-        </div>
-
-        {/* ── Sign out — desktop only ───────────────────────────────────── */}
-        {isLoggedIn && (
-          <div className="hidden md:flex px-4 pt-12 pb-6 flex-col items-center gap-2">
-            {signOutConfirm ? (
-              <>
                 <button
-                  onClick={handleSignOut}
-                  className="rounded-full border border-brand-danger px-5 py-1.5 text-sm font-medium text-brand-danger transition-colors hover:bg-brand-danger/10"
+                  onClick={() => setSignOutConfirm(true)}
+                  className="text-sm text-brand-muted hover:text-brand-text transition-colors"
                 >
                   Sign out
                 </button>
-                <button
-                  onClick={() => setSignOutConfirm(false)}
-                  className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setSignOutConfirm(true)}
-                className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-              >
-                Sign out
-              </button>
-            )}
-          </div>
-        )}
-
-      </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Sign out — mobile pinned bottom bar ───────────────────────── */}
       {isLoggedIn && (
         <div className="md:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
           <button
-            onClick={() => (signOutConfirm ? handleSignOut() : setSignOutConfirm(true))}
+            onClick={() =>
+              signOutConfirm ? handleSignOut() : setSignOutConfirm(true)
+            }
             className={`w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors ${
               signOutConfirm
                 ? "border border-brand-danger text-brand-danger hover:bg-brand-danger/10"
@@ -362,7 +357,6 @@ export default function ProfileView({
           )}
         </div>
       )}
-
     </div>
   );
 }
