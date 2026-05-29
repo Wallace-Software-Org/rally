@@ -76,7 +76,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LocationButton({ locationName }: { locationName: string }) {
+function LocationButton({ locationName, lat, lng }: { locationName: string; lat: number | null; lng: number | null }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -96,8 +96,12 @@ function LocationButton({ locationName }: { locationName: string }) {
     setTimeout(() => setCopied(false), 1500);
   }
 
-  const appleUrl = `https://maps.apple.com/maps?q=${encodeURIComponent(locationName)}`;
-  const googleUrl = `https://maps.google.com/maps?q=${encodeURIComponent(locationName)}`;
+  const appleUrl = lat != null && lng != null
+    ? `https://maps.apple.com/?ll=${lat},${lng}&q=${encodeURIComponent(locationName)}`
+    : `https://maps.apple.com/?q=${encodeURIComponent(locationName)}`;
+  const googleUrl = lat != null && lng != null
+    ? `https://maps.google.com/?q=${lat},${lng}`
+    : `https://maps.google.com/?q=${encodeURIComponent(locationName)}`;
 
   return (
     <div ref={ref} className="relative">
@@ -387,7 +391,7 @@ export default function ActivityDetailView({
               {/* Location row — xl only (map stays in right panel) */}
               {activity.location_name && (
                 <div className="hidden xl:flex">
-                  <LocationButton locationName={activity.location_name} />
+                  <LocationButton locationName={activity.location_name} lat={activity.lat} lng={activity.lng} />
                 </div>
               )}
             </div>
@@ -452,7 +456,7 @@ export default function ActivityDetailView({
               <div className="h-px bg-brand-border" />
               <SectionLabel>Location</SectionLabel>
               {activity.location_name && (
-                <LocationButton locationName={activity.location_name} />
+                <LocationButton locationName={activity.location_name} lat={activity.lat} lng={activity.lng} />
               )}
               {typeof activity.lat === "number" &&
               typeof activity.lng === "number" ? (
