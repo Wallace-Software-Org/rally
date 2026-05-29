@@ -20,6 +20,8 @@
   --color-brand-map-bg: #D4C5B3;
   --color-brand-surface: #DFD3C0;
   --color-brand-surface-deep: #D4C5B3;
+  --color-brand-warm: #C4956A;
+  --color-brand-warm-muted: #F0E4D4;
   --color-brand-danger: #CC3333;
   --color-brand-danger-dark: #C0392B;
   /* ── Fonts ────────────────────────────────────────────────────────────────── */
@@ -42,6 +44,8 @@
   --color-map-bg: var(--color-brand-map-bg);
   --color-surface: var(--color-brand-surface);
   --color-surface-deep: var(--color-brand-surface-deep);
+  --color-warm: var(--color-brand-warm);
+  --color-warm-muted: var(--color-brand-warm-muted);
 }
 
 html {
@@ -56,4 +60,12 @@ body {
   background: var(--color-bg);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+}
+
+@layer utilities {
+  .tag-teal {
+    background-color: color-mix(in srgb, var(--color-brand-teal) 20%, transparent);
+    color: var(--color-brand-teal);
+    border: 1px solid color-mix(in srgb, var(--color-brand-teal) 30%, transparent);
+  }
 }

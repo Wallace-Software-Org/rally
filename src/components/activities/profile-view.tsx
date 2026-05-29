@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
 import { getSportLabel } from "@/lib/utils/sport-config";
+import SportPill from "@/components/ui/sport-pill";
 import { createClient } from "@/lib/supabase/client";
 
 function initials(name: string): string {
@@ -42,9 +43,7 @@ function ActivityCard({ activity }: { activity: ProfileActivity }) {
       href={`/activity/${activity.id}`}
       className="bg-brand-surface rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
     >
-      <span className="rounded-full px-2.5 py-0.5 text-xs font-medium self-start flex-none bg-brand-teal/20 text-brand-teal border border-brand-teal/30 hover:bg-brand-teal/30">
-        {getSportLabel(activity.sport)}
-      </span>
+      <SportPill sport={activity.sport} />
 
       <p className="text-base font-semibold text-brand-text leading-snug">
         {activity.title}

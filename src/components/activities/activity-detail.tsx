@@ -16,7 +16,7 @@ import {
   leaveActivity,
   cancelActivity,
 } from "@/lib/actions/activities";
-import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
+import SportPill from "@/components/ui/sport-pill";
 
 function initials(name: string): string {
   return name
@@ -132,11 +132,6 @@ export default function ActivityDetailView({
     ? activity.skill_level.charAt(0).toUpperCase() +
       activity.skill_level.slice(1)
     : "All levels";
-  const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
-    bg: "#C8E6DC",
-    text: "#1A6B52",
-  };
-
   async function handleJoin() {
     if (!userId || joining || isJoined) return;
     setJoining(true);
@@ -263,18 +258,6 @@ export default function ActivityDetailView({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
-      {/* ── Breadcrumb — xl only ────────────────────────────────────────────── */}
-      <div className="flex flex-none items-center gap-1.5 text-xs text-brand-muted px-4 md:px-8 py-2">
-        <Link
-          href="/"
-          className="hover:text-brand-teal transition-colors flex-none"
-        >
-          Feed
-        </Link>
-        <span className="text-brand-border">/</span>
-        <span className="truncate">{activity.title}</span>
-      </div>
-
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {/* xl: max-width wrapper with flex row; md/lg: centered single column */}
@@ -283,12 +266,7 @@ export default function ActivityDetailView({
           <div className="flex-1 max-w-2xl mx-auto px-4 md:px-6 xl:max-w-none xl:mx-0 xl:px-0 py-6 flex flex-col gap-6">
             {/* 1. Header */}
             <div className="flex flex-col gap-3">
-              <span
-                className="inline-flex self-start rounded-full px-3 py-1 text-xs font-semibold"
-                style={{ backgroundColor: colors.bg, color: colors.text }}
-              >
-                {getSportLabel(activity.sport)}
-              </span>
+              <SportPill sport={activity.sport} />
               <h1 className="text-2xl font-medium text-brand-text leading-snug">
                 {activity.title}
               </h1>
@@ -365,7 +343,7 @@ export default function ActivityDetailView({
                       @{activity.host.instagram_handle}
                     </p>
                   )}
-                  <span className="inline-flex self-start items-center rounded-full bg-brand-teal-muted px-2 py-0.5 text-xs font-medium text-brand-teal-text">
+                  <span className="inline-flex self-start items-center rounded-full px-3 py-1 text-xs font-medium bg-[#E8DCC8] text-[#6B5430] border border-[#C4A870]/40">
                     {activity.hosted_count} activities hosted
                   </span>
                 </div>
@@ -381,12 +359,10 @@ export default function ActivityDetailView({
                 {activity.description}
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="flex items-center gap-1.5 border border-brand-border rounded-full px-3 py-1 text-xs text-brand-muted bg-brand-bg">
-                  <span className="w-1.25 h-1.25 rounded-full bg-brand-border flex-none" />
+                <span className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-[#E8DCC8] text-[#6B5430] border border-[#C4A870]/40">
                   {skillDisplay}
                 </span>
-                <span className="flex items-center gap-1.5 border border-brand-border rounded-full px-3 py-1 text-xs text-brand-muted bg-brand-bg">
-                  <span className="w-1.25 h-1.25 rounded-full bg-brand-border flex-none" />
+                <span className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-[#E8DCC8] text-[#6B5430] border border-[#C4A870]/40">
                   {activity.max_participants === null
                     ? "Open enrollment"
                     : spotsLeft === 0

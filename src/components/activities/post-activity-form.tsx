@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SearchBox } from "@mapbox/search-js-react";
 import {
-  SPORT_COLORS,
   getSportLabel,
   SPORTS_LIST,
 } from "@/lib/utils/sport-config";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import { createActivity } from "@/lib/actions/activities";
+import SportPill from "@/components/ui/sport-pill";
 
 const SEARCH_BOX_THEME = {
   variables: {
@@ -430,17 +430,10 @@ function ReviewCard({
   form: FormState;
   startsAtIso: string;
 }) {
-  const colors = SPORT_COLORS[form.sport] ?? { bg: "#C8E6DC", text: "#1A6B52" };
-
   return (
     <div className="rounded-xl border border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
-        <span
-          className="rounded-full px-2 py-0.5 text-xs font-semibold leading-4 flex-none"
-          style={{ backgroundColor: colors.bg, color: colors.text }}
-        >
-          {getSportLabel(form.sport)}
-        </span>
+        <SportPill sport={form.sport} />
         {startsAtIso && (
           <span className="text-xs text-brand-muted leading-4 shrink-0">
             {formatActivityTime(startsAtIso)}
