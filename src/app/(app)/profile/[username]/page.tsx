@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfileByUsername } from "@/lib/queries/profiles";
-import ProfileView from "@/components/activities/profile-view";
+import ProfileView from "@/components/profile/profile-view";
 
 export default async function ProfilePage({
   params,

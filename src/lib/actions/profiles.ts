@@ -76,7 +76,7 @@ export async function updateProfile(data: {
       full_name: data.full_name.trim() || null,
       username: data.username.trim() || null,
       bio: data.bio.trim() || null,
-      instagram_handle: data.instagram_handle.trim() || null,
+      instagram_handle: data.instagram_handle.replace(/^@/, "").trim() || null,
     })
     .eq("id", user.id);
 
@@ -90,4 +90,10 @@ export async function updateProfile(data: {
   revalidatePath("/");
 
   return { error: null };
+}
+
+export async function signOut(): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+  return { error: error?.message ?? null };
 }

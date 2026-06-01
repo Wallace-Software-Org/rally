@@ -292,7 +292,7 @@ function Identity({
           className="mt-0.5 flex items-center gap-1.5 bg-brand-teal/10 text-brand-teal text-xs font-semibold px-3 py-1 rounded-full hover:opacity-80 transition-opacity"
         >
           <InstagramIcon size={12} />
-          @{profile.instagram_handle}
+          {profile.instagram_handle}
         </a>
       )}
 

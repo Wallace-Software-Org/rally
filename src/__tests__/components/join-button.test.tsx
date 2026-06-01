@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import JoinButton from "@/components/activities/join-button";
+import JoinButton from "@/components/ui/join-button";
 
 // Defaults describe a joinable activity before the user has joined.
 const base = {
