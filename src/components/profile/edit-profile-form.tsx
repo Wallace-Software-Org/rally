@@ -4,9 +4,19 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { uploadAvatar, updateProfile, checkUsername, signOut } from "@/lib/actions/profiles";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  uploadAvatar,
+  updateProfile,
+  checkUsername,
+  signOut,
+} from "@/lib/actions/profiles";
 import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
+import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
+import SportPill from "@/components/ui/sport-pill";
 import type { UsernameStatus } from "@/types";
+
+const ACTIVITY_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
 type ProfileData = {
   username: string | null;
@@ -14,6 +24,7 @@ type ProfileData = {
   avatar_url: string | null;
   bio: string | null;
   instagram_handle: string | null;
+  sports: string[] | null;
 };
 
 function initials(name: string | null): string {
@@ -41,6 +52,14 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
   const [instagramHandle, setInstagramHandle] = useState(
     (profile.instagram_handle ?? "").replace(/^@/, ""),
   );
+  const [sports, setSports] = useState<string[]>(profile.sports ?? []);
+  const [tagsOpen, setTagsOpen] = useState(false);
+
+  function toggleSport(s: string) {
+    setSports((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
+    );
+  }
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     profile.avatar_url,
   );
@@ -69,7 +88,11 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!username || !USERNAME_RE.test(username) || username === initialUsername)
+    if (
+      !username ||
+      !USERNAME_RE.test(username) ||
+      username === initialUsername
+    )
       return;
 
     debounceRef.current = setTimeout(async () => {
@@ -128,8 +151,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
     e.target.value = "";
   }
 
-  const canSave =
-    usernameStatus === "available" || usernameStatus === "idle";
+  const canSave = usernameStatus === "available" || usernameStatus === "idle";
 
   async function handleSave() {
     if (submitting || !canSave) return;
@@ -140,6 +162,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
       username,
       bio,
       instagram_handle: instagramHandle,
+      sports,
     });
     setSubmitting(false);
     if (error) {
@@ -418,6 +441,78 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
             </p>
           </div>
 
+          {/* Sport tags */}
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => setTagsOpen((o) => !o)}
+              className="flex items-center gap-2 py-1"
+            >
+              <span className="text-sm font-medium text-brand-text flex-none">
+                Sport tags
+              </span>
+              <div className="flex flex-1 flex-wrap gap-1.5 min-w-0 justify-start">
+                {sports.map((s) => (
+                  <SportPill key={s} sport={s} />
+                ))}
+              </div>
+              <motion.div
+                animate={{ rotate: tagsOpen ? 180 : 0 }}
+                transition={{ duration: 0.25 }}
+                className="flex-none text-brand-muted"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 6l4 4 4-4"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </motion.div>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {tagsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-3 gap-2 pt-3">
+                    {ACTIVITY_ITEMS.map((a) => {
+                      const active = sports.includes(a);
+                      return (
+                        <button
+                          key={a}
+                          type="button"
+                          onClick={() => toggleSport(a)}
+                          aria-pressed={active}
+                          className={`rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
+                            active
+                              ? "bg-brand-teal border-brand-teal text-white"
+                              : "border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg"
+                          }`}
+                        >
+                          {getSportLabel(a)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {saveError && (
             <p className="text-xs text-brand-danger text-center">{saveError}</p>
           )}
@@ -429,32 +524,38 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
           >
             {submitting ? "Saving..." : "Save changes"}
           </button>
-        </div>
-      </div>
 
-      {/* Sign out — pinned bottom bar */}
-      <div className="flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
-        <button
-          onClick={() =>
-            signOutConfirm ? handleSignOut() : setSignOutConfirm(true)
-          }
-          disabled={signingOut}
-          className="w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 border border-brand-danger text-brand-danger hover:bg-brand-danger/10 transition-colors disabled:opacity-40"
-        >
-          {signingOut
-            ? "Signing out..."
-            : signOutConfirm
-              ? "Confirm sign out?"
-              : "Sign out"}
-        </button>
-        {signOutConfirm && !signingOut && (
-          <button
-            onClick={() => setSignOutConfirm(false)}
-            className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
-          >
-            Cancel
-          </button>
-        )}
+          {/* Sign out */}
+          <div className="flex flex-col gap-2 pt-2 mb-2">
+            <button
+              onClick={() =>
+                signOutConfirm ? handleSignOut() : setSignOutConfirm(true)
+              }
+              disabled={signingOut}
+              className="w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 border border-brand-danger text-brand-danger hover:bg-brand-danger/10 transition-colors disabled:opacity-40"
+            >
+              {signingOut
+                ? "Signing out..."
+                : signOutConfirm
+                  ? "Confirm sign out?"
+                  : "Sign out"}
+            </button>
+            <AnimatePresence initial={false}>
+              {signOutConfirm && !signingOut && (
+                <motion.button
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 16 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setSignOutConfirm(false)}
+                  className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+                >
+                  Cancel
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </div>
   );

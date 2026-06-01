@@ -266,20 +266,21 @@ function Identity({
   isOwner: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1 text-center relative w-full">
-      {isOwner && (
-        <Link
-          href="/profile/edit"
-          aria-label="Edit profile"
-          className="absolute top-0 right-0 w-7 h-7 flex items-center justify-center rounded-full text-brand-muted hover:text-brand-text hover:bg-brand-border/40 transition-colors"
-        >
-          <PencilIcon />
-        </Link>
-      )}
-
-      <p className="text-lg font-bold text-brand-text leading-tight">
-        {profile.full_name}
-      </p>
+    <div className="flex flex-col items-center gap-1 text-center w-full">
+      <div className="relative inline-flex items-center">
+        <p className="text-lg font-bold text-brand-text leading-tight">
+          {profile.full_name}
+        </p>
+        {isOwner && (
+          <Link
+            href="/profile/edit"
+            aria-label="Edit profile"
+            className="absolute left-full ml-1.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-text transition-colors"
+          >
+            <PencilIcon />
+          </Link>
+        )}
+      </div>
       <p className="text-sm text-brand-muted font-medium">
         @{profile.username}
       </p>
@@ -517,16 +518,7 @@ export default function ProfileView({
           {/* Sidebar */}
           <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4">
             {/* Identity card */}
-            <div className="bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4 max-w-sm xl:max-w-auto xl:w-md relative">
-              {isOwner && (
-                <Link
-                  href="/profile/edit"
-                  aria-label="Edit profile"
-                  className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-brand-muted hover:text-brand-text hover:bg-brand-border/40 transition-colors"
-                >
-                  <PencilIcon />
-                </Link>
-              )}
+            <div className="bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4 max-w-sm xl:max-w-auto xl:w-md">
               <Avatar
                 profile={profile}
                 isOwner={isOwner}

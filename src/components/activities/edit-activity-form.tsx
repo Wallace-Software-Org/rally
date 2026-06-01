@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SearchBox } from "@mapbox/search-js-react";
+import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
 import type { ActivityDetail } from "@/types";
+
+const SearchBox = dynamic(
+  () => import("@mapbox/search-js-react").then((m) => m.SearchBox),
+  { ssr: false },
+);
 import { updateActivity, cancelActivity } from "@/lib/actions/activities";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
@@ -60,17 +66,18 @@ export default function EditActivityForm({
       ? (activity.skill_level as string)
       : "All levels",
   );
-  const [limitSpots, setLimitSpots] = useState(activity.max_participants !== null);
-  const [stepperValue, setStepperValue] = useState(activity.max_participants ?? 4);
+  const [limitSpots, setLimitSpots] = useState(
+    activity.max_participants !== null,
+  );
+  const [stepperValue, setStepperValue] = useState(
+    activity.max_participants ?? 4,
+  );
   const [status, setStatus] = useState<"open" | "closed">(
     activity.status === "closed" ? "closed" : "open",
   );
   const [submitting, setSubmitting] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   function startsAtIso(): string {
     if (!date || !time) return "";
@@ -138,7 +145,6 @@ export default function EditActivityForm({
 
       {/* ── Form fields ─────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-2 pb-12 flex flex-col gap-5 max-w-lg mx-auto w-full">
-
         {/* Title */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-brand-text">
@@ -189,42 +195,35 @@ export default function EditActivityForm({
 
         {/* Location */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-brand-text">Location</label>
+          <label className="text-sm font-medium text-brand-text">
+            Location
+          </label>
           <div className="w-full">
-            {mounted ? (
-              <SearchBox
-                accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ""}
-                value={locationName}
-                onChange={(value) => {
-                  setLocationName(value);
-                  setLat(null);
-                  setLng(null);
-                }}
-                onRetrieve={(result) => {
-                  const feat = result.features[0];
-                  if (!feat) return;
-                  const [lngVal, latVal] = feat.geometry.coordinates;
-                  setLocationName(feat.properties.name);
-                  setLat(latVal);
-                  setLng(lngVal);
-                }}
-                onClear={() => {
-                  setLocationName("");
-                  setLat(null);
-                  setLng(null);
-                }}
-                options={{ language: "en", country: "US" }}
-                placeholder="e.g. Balboa Park Tennis Courts"
-                theme={SEARCH_BOX_THEME}
-              />
-            ) : (
-              <input
-                type="text"
-                value={locationName}
-                readOnly
-                className={inputCls}
-              />
-            )}
+            <SearchBox
+              accessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ""}
+              value={locationName}
+              onChange={(value) => {
+                setLocationName(value);
+                setLat(null);
+                setLng(null);
+              }}
+              onRetrieve={(result) => {
+                const feat = result.features[0];
+                if (!feat) return;
+                const [lngVal, latVal] = feat.geometry.coordinates;
+                setLocationName(feat.properties.name);
+                setLat(latVal);
+                setLng(lngVal);
+              }}
+              onClear={() => {
+                setLocationName("");
+                setLat(null);
+                setLng(null);
+              }}
+              options={{ language: "en", country: "US" }}
+              placeholder="e.g. Balboa Park Tennis Courts"
+              theme={SEARCH_BOX_THEME}
+            />
           </div>
         </div>
 
@@ -256,7 +255,9 @@ export default function EditActivityForm({
           <div className="flex flex-col gap-0.5">
             <span className="text-sm text-brand-text">Limit spots</span>
             <span className="text-xs text-brand-muted">
-              {limitSpots ? `Max ${stepperValue} participants` : "Off, open to all"}
+              {limitSpots
+                ? `Max ${stepperValue} participants`
+                : "Off, open to all"}
             </span>
           </div>
           <button
@@ -265,7 +266,9 @@ export default function EditActivityForm({
             aria-checked={limitSpots}
             onClick={() => setLimitSpots((p) => !p)}
             className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-              limitSpots ? "bg-brand-teal justify-end" : "bg-brand-border justify-start"
+              limitSpots
+                ? "bg-brand-teal justify-end"
+                : "bg-brand-border justify-start"
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
@@ -304,13 +307,16 @@ export default function EditActivityForm({
         </button>
 
         {/* ── Cancel activity ──────────────────────────────── */}
-        <div className="border-t border-brand-border pt-6 mt-2 flex flex-col gap-3">
+        <div
+          // transition={{ layout: { duration: 0.2, ease: "easeInOut" } }}
+          className="border-t border-brand-border pt-6 mt-2 flex flex-col gap-3 transition-all duration-1000"
+        >
           <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted">
             Danger zone
           </p>
 
-          {cancelConfirm ? (
-            <>
+          {cancelConfirm && (
+            <div className="flex flex-col gap-3">
               <p className="text-sm text-brand-muted text-center leading-relaxed">
                 This will remove all participants and cancel the activity. This
                 can&apos;t be undone.
@@ -322,21 +328,18 @@ export default function EditActivityForm({
               >
                 {cancelling ? "Cancelling…" : "Yes, cancel activity"}
               </button>
-              <button
-                onClick={() => setCancelConfirm(false)}
-                className="text-sm text-brand-muted hover:text-brand-text transition-colors py-1 text-center"
-              >
-                Keep it
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => setCancelConfirm(true)}
-              className="w-full rounded-xl border border-brand-danger text-brand-danger text-sm font-medium py-3 hover:bg-brand-danger/5 transition-colors"
-            >
-              Cancel activity
-            </button>
+            </div>
           )}
+
+          <button
+            onClick={() =>
+              cancelConfirm ? setCancelConfirm(false) : setCancelConfirm(true)
+            }
+            disabled={cancelling}
+            className="w-full rounded-xl border border-brand-danger text-brand-danger text-sm font-medium py-3 hover:bg-brand-danger/5 transition-colors disabled:opacity-40"
+          >
+            {cancelConfirm ? "Keep it" : "Cancel activity"}
+          </button>
         </div>
       </div>
     </div>

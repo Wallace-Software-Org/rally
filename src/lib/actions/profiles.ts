@@ -57,6 +57,7 @@ export async function updateProfile(data: {
   username: string;
   bio: string;
   instagram_handle: string;
+  sports: string[];
 }): Promise<{ error: string | null }> {
   const supabase = await createClient();
   const {
@@ -77,6 +78,7 @@ export async function updateProfile(data: {
       username: data.username.trim() || null,
       bio: data.bio.trim() || null,
       instagram_handle: data.instagram_handle.replace(/^@/, "").trim() || null,
+      sports: data.sports,
     })
     .eq("id", user.id);
 
