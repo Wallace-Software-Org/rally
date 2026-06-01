@@ -106,7 +106,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
     }
     setUploadError(null);
     setUploading(true);
-    const { url, error } = await uploadAvatar(file, "");
+    const { url, error } = await uploadAvatar(file);
     setUploading(false);
     if (error) {
       setUploadError(error);
@@ -134,7 +134,6 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
       setSaveError(error);
     } else {
       router.push(username.trim() ? `/profile/${username.trim()}` : "/");
-      router.refresh();
     }
   }
 

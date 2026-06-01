@@ -21,7 +21,6 @@ export async function checkUsername(
 
 export async function uploadAvatar(
   file: File,
-  _userId: string,
 ): Promise<{ url: string | null; error: string | null }> {
   const supabase = await createClient();
   const {

@@ -417,7 +417,7 @@ export default function ProfileView({
     }
     setUploadError(null);
     setUploading(true);
-    const { error } = await uploadAvatar(file, currentUserId ?? "");
+    const { error } = await uploadAvatar(file);
     setUploading(false);
     if (error) {
       setUploadError(error);
