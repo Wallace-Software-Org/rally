@@ -14,6 +14,7 @@ import {
 import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
 import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
 import SportPill from "@/components/ui/sport-pill";
+import { CameraIcon, InstagramIcon } from "@/components/ui/icons";
 import type { UsernameStatus } from "@/types";
 
 const ACTIVITY_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
@@ -231,21 +232,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                   </span>
                 )}
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                    <circle cx="12" cy="13" r="3" />
-                  </svg>
+                  <CameraIcon size={30} />
                 </div>
               </button>
               {/* Camera badge — always visible for touch affordance */}
@@ -255,21 +242,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                 aria-label="Change photo"
                 className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-brand-teal flex items-center justify-center border-2 border-brand-bg hover:bg-brand-teal-hover transition-colors disabled:opacity-60"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                  <circle cx="12" cy="13" r="3" />
-                </svg>
+                <CameraIcon />
               </button>
             </div>
             {uploading && (
@@ -404,22 +377,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
               className="text-sm font-medium flex items-center gap-1.5"
               style={{ color: "#1D9E75" }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-              </svg>
+              <InstagramIcon size={15} />
               Instagram handle
             </label>
             <div className="relative">
@@ -441,7 +399,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
             </p>
           </div>
 
-          {/* Sport tags */}
+          {/* Activities */}
           <div className="flex flex-col">
             <button
               type="button"
@@ -449,9 +407,9 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
               className="flex items-center gap-2 py-1"
             >
               <span className="text-sm font-medium text-brand-text flex-none">
-                Sport tags
+                Activities
               </span>
-              <div className="flex flex-1 flex-wrap gap-1.5 min-w-0 justify-start">
+              <div className="hidden xl:flex flex-1 flex-wrap gap-1.5 min-w-0 justify-start">
                 {sports.map((s) => (
                   <SportPill key={s} sport={s} />
                 ))}
