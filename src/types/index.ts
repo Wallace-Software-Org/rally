@@ -1,3 +1,11 @@
+export type UsernameStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "taken"
+  | "invalid"
+  | "error";
+
 export type ParticipantProfile = {
   full_name: string;
   avatar_url: string | null;
@@ -32,6 +40,7 @@ export type Profile = {
   full_name: string;
   city: string | null;
   username: string | null;
+  instagram_handle: string | null;
 } | null;
 
 // ── Detail page types ────────────────────────────────────────────────────────

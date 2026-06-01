@@ -3,49 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
-import { checkUsername, createProfile } from "./actions";
+import { createProfile } from "./actions";
+import { checkUsername } from "@/lib/actions/profiles";
+import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
+import type { UsernameStatus } from "@/types";
 
 const ACTIVITY_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
-const USERNAME_RE = /^[a-z0-9]{3,20}$/;
-
 const inputCls =
   "w-full rounded-xl border border-brand-border bg-transparent px-3.5 py-2.5 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-teal/40 transition";
-
-type UsernameStatus =
-  | "idle"
-  | "checking"
-  | "available"
-  | "taken"
-  | "invalid"
-  | "error";
-
-function usernameHint(status: UsernameStatus, username: string) {
-  if (!username) return null;
-  if (status === "invalid") {
-    if (username.length < 3)
-      return {
-        color: "text-brand-muted",
-        text: "At least 3 characters required.",
-      };
-    return {
-      color: "text-brand-danger",
-      text: "Lowercase letters and numbers only, no spaces.",
-    };
-  }
-  if (status === "checking")
-    return { color: "text-brand-muted", text: "Checking..." };
-  if (status === "available")
-    return { color: "text-brand-teal-text", text: "Available." };
-  if (status === "taken")
-    return { color: "text-brand-danger", text: "That username is taken." };
-  if (status === "error")
-    return {
-      color: "text-brand-danger",
-      text: "Could not check availability. Try again.",
-    };
-  return null;
-}
 
 export default function OnboardingFlow({
   defaultName,

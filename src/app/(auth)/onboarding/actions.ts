@@ -2,23 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 
-const USERNAME_RE = /^[a-z0-9]{3,20}$/
-
-export async function checkUsername(
-  username: string,
-): Promise<{ available: boolean }> {
-  if (!USERNAME_RE.test(username)) return { available: false }
-
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('username', username)
-    .maybeSingle()
-
-  return { available: data === null }
-}
-
 export async function createProfile({
   full_name,
   username,

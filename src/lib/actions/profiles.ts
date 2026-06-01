@@ -1,0 +1,94 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { USERNAME_RE } from "@/lib/utils/username";
+
+export async function checkUsername(
+  username: string,
+): Promise<{ available: boolean }> {
+  if (!USERNAME_RE.test(username)) return { available: false };
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+
+  return { available: data === null };
+}
+
+export async function uploadAvatar(
+  file: File,
+  _userId: string,
+): Promise<{ url: string | null; error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { url: null, error: "Not authenticated" };
+
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const path = `${user.id}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) return { url: null, error: uploadError.message };
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("avatars").getPublicUrl(path);
+
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({ avatar_url: publicUrl })
+    .eq("id", user.id);
+
+  if (updateError) return { url: null, error: updateError.message };
+
+  revalidatePath("/");
+  return { url: publicUrl, error: null };
+}
+
+export async function updateProfile(data: {
+  full_name: string;
+  username: string;
+  bio: string;
+  instagram_handle: string;
+}): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .single();
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: data.full_name.trim() || null,
+      username: data.username.trim() || null,
+      bio: data.bio.trim() || null,
+      instagram_handle: data.instagram_handle.trim() || null,
+    })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+
+  if (current?.username) revalidatePath(`/profile/${current.username}`);
+  const newUsername = data.username.trim();
+  if (newUsername && newUsername !== current?.username) {
+    revalidatePath(`/profile/${newUsername}`);
+  }
+  revalidatePath("/");
+
+  return { error: null };
+}

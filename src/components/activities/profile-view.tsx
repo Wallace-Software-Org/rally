@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
 import SportPill from "@/components/ui/sport-pill";
-import { createClient } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/actions/profiles";
 
 function initials(name: string): string {
   return name
@@ -32,154 +32,270 @@ function formatCardDate(startsAt: string): { date: string; time: string } {
   return { date, time };
 }
 
-// ── Activity card ─────────────────────────────────────────────────────────────
+// ── SVGs ─────────────────────────────────────────────────────────────────────
 
-function ActivityCard({ activity }: { activity: ProfileActivity }) {
-  const { date, time } = formatCardDate(activity.starts_at);
-
+function CameraIcon() {
   return (
-    <Link
-      href={`/activity/${activity.id}`}
-      className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="white"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
     >
-      <SportPill sport={activity.sport} />
-
-      <p className="text-base font-semibold text-brand-text leading-snug">
-        {activity.title}
-      </p>
-
-      <div className="flex flex-col gap-1.5 text-xs text-brand-muted">
-        {activity.location_name && (
-          <span className="flex items-center gap-1.5">
-            <svg
-              width="10"
-              height="12"
-              viewBox="0 0 8 10"
-              fill="currentColor"
-              className="flex-none"
-              aria-hidden="true"
-            >
-              <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
-            </svg>
-            {activity.location_name}
-          </span>
-        )}
-        <span className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 16 16"
-              fill="none"
-              className="flex-none"
-              aria-hidden="true"
-            >
-              <rect
-                x="1.5"
-                y="3"
-                width="13"
-                height="11.5"
-                rx="1.5"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <path
-                d="M5 1.5V4M11 1.5V4M1.5 7h13"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-              />
-            </svg>
-            {date}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 16 16"
-              fill="none"
-              className="flex-none"
-              aria-hidden="true"
-            >
-              <circle
-                cx="8"
-                cy="8"
-                r="6.5"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              />
-              <path
-                d="M8 4.5V8.5l2.5 1.5"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            {time}
-          </span>
-        </span>
-      </div>
-    </Link>
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
   );
 }
 
-// ── Shared sub-components ─────────────────────────────────────────────────────
-
-function Avatar({ profile }: { profile: ProfilePage }) {
+function PencilIcon() {
   return (
-    <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center flex-none">
-      {profile.avatar_url ? (
-        <Image
-          src={profile.avatar_url}
-          alt=""
-          width={80}
-          height={80}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <span className="text-2xl font-semibold text-brand-avatar-text">
-          {initials(profile.full_name)}
-        </span>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function InstagramIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
+// ── Activity card ─────────────────────────────────────────────────────────────
+
+function ActivityCard({
+  activity,
+  showShare,
+}: {
+  activity: ProfileActivity;
+  showShare?: boolean;
+}) {
+  const { date, time } = formatCardDate(activity.starts_at);
+
+  return (
+    <div className="relative">
+      <Link
+        href={`/activity/${activity.id}`}
+        className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
+      >
+        <SportPill sport={activity.sport} />
+
+        <p className="text-base font-semibold text-brand-text leading-snug">
+          {activity.title}
+        </p>
+
+        <div className="flex flex-col gap-1.5 text-xs text-brand-muted">
+          {activity.location_name && (
+            <span className="flex items-center gap-1.5">
+              <svg
+                width="10"
+                height="12"
+                viewBox="0 0 8 10"
+                fill="currentColor"
+                className="flex-none"
+                aria-hidden="true"
+              >
+                <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
+              </svg>
+              {activity.location_name}
+            </span>
+          )}
+          <span className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="flex-none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="1.5"
+                  y="3"
+                  width="13"
+                  height="11.5"
+                  rx="1.5"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                />
+                <path
+                  d="M5 1.5V4M11 1.5V4M1.5 7h13"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                />
+              </svg>
+              {date}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="flex-none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6.5"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                />
+                <path
+                  d="M8 4.5V8.5l2.5 1.5"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {time}
+            </span>
+          </span>
+        </div>
+      </Link>
+
+      {showShare && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            alert("Share card coming soon");
+          }}
+          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 bg-brand-teal text-white text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+        >
+          <InstagramIcon size={11} />
+          Share
+        </button>
       )}
     </div>
   );
 }
 
-function Identity({ profile }: { profile: ProfilePage }) {
+// ── Shared sub-components ─────────────────────────────────────────────────────
+
+function Avatar({
+  profile,
+  isOwner,
+  uploading,
+  onCameraClick,
+}: {
+  profile: ProfilePage;
+  isOwner: boolean;
+  uploading?: boolean;
+  onCameraClick?: () => void;
+}) {
   return (
-    <div className="flex flex-col items-center gap-1 text-center">
+    <div className="relative flex-none">
+      <button
+        onClick={isOwner ? onCameraClick : undefined}
+        disabled={uploading}
+        aria-label={isOwner ? "Change photo" : undefined}
+        className={`w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center${isOwner ? " cursor-pointer" : ""}`}
+      >
+        {profile.avatar_url ? (
+          <Image
+            src={profile.avatar_url}
+            alt=""
+            width={96}
+            height={96}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-2xl font-semibold text-brand-avatar-text">
+            {initials(profile.full_name)}
+          </span>
+        )}
+      </button>
+
+      {isOwner && (
+        <button
+          onClick={onCameraClick}
+          disabled={uploading}
+          aria-label="Change photo"
+          className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-brand-teal flex items-center justify-center border-2 border-brand-bg hover:bg-brand-teal-hover transition-colors"
+        >
+          <CameraIcon />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Identity({
+  profile,
+  isOwner,
+}: {
+  profile: ProfilePage;
+  isOwner: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 text-center relative w-full">
+      {isOwner && (
+        <Link
+          href="/profile/edit"
+          aria-label="Edit profile"
+          className="absolute top-0 right-0 w-7 h-7 flex items-center justify-center rounded-full text-brand-muted hover:text-brand-text hover:bg-brand-border/40 transition-colors"
+        >
+          <PencilIcon />
+        </Link>
+      )}
+
       <p className="text-lg font-bold text-brand-text leading-tight">
         {profile.full_name}
       </p>
       <p className="text-sm text-brand-muted font-medium">
         @{profile.username}
       </p>
+
       {profile.instagram_handle && (
         <a
           href={`https://instagram.com/${profile.instagram_handle}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-brand-teal flex items-center gap-1 font-medium hover:opacity-80 transition-opacity"
+          className="mt-0.5 flex items-center gap-1.5 bg-brand-teal/10 text-brand-teal text-xs font-semibold px-3 py-1 rounded-full hover:opacity-80 transition-opacity"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-          </svg>
-          Instagram
+          <InstagramIcon size={12} />
+          @{profile.instagram_handle}
         </a>
       )}
+
       {profile.bio && (
         <p className="text-sm text-brand-text leading-relaxed mt-3">
           {profile.bio}
@@ -228,10 +344,12 @@ function TabBar({
 function ActivityList({
   tab,
   profile,
+  showShare,
   gridCols2,
 }: {
   tab: "going" | "hosting";
   profile: ProfilePage;
+  showShare?: boolean;
   gridCols2?: boolean;
 }) {
   if (profile[tab].length === 0) {
@@ -263,7 +381,7 @@ function ActivityList({
       className={gridCols2 ? "grid grid-cols-2 gap-4" : "flex flex-col gap-3"}
     >
       {profile[tab].map((a) => (
-        <ActivityCard key={a.id} activity={a} />
+        <ActivityCard key={a.id} activity={a} showShare={showShare} />
       ))}
     </div>
   );
@@ -279,24 +397,52 @@ export default function ProfileView({
   currentUserId: string | null;
 }) {
   const router = useRouter();
-  const isLoggedIn = currentUserId !== null;
+  const isOwner = currentUserId === profile.id;
 
-  const defaultTab: "going" | "hosting" =
-    profile.going.length > 0 || profile.hosting.length === 0
-      ? "going"
-      : "hosting";
-  const [tab, setTab] = useState<"going" | "hosting">(defaultTab);
-  const [signOutConfirm, setSignOutConfirm] = useState(false);
+  const [tab, setTab] = useState<"going" | "hosting">(
+    isOwner ? "hosting" : "going",
+  );
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("Photo must be under 2MB");
+      e.target.value = "";
+      return;
+    }
+    setUploadError(null);
+    setUploading(true);
+    const { error } = await uploadAvatar(file, currentUserId ?? "");
+    setUploading(false);
+    if (error) {
+      setUploadError(error);
+    } else {
+      router.refresh();
+    }
+    e.target.value = "";
+  }
+
+  function handleCameraClick() {
+    fileInputRef.current?.click();
   }
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
+      {isOwner && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+      )}
+
       {/* ── MOBILE LAYOUT (< lg) ────────────────────────────────────── */}
       <div className="lg:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
@@ -304,8 +450,18 @@ export default function ProfileView({
             {/* Hero */}
             <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
               <div className="flex flex-col items-center gap-4">
-                <Avatar profile={profile} />
-                <Identity profile={profile} />
+                <Avatar
+                  profile={profile}
+                  isOwner={isOwner}
+                  uploading={uploading}
+                  onCameraClick={handleCameraClick}
+                />
+                {uploadError && (
+                  <p className="text-xs text-brand-danger -mt-2">
+                    {uploadError}
+                  </p>
+                )}
+                <Identity profile={profile} isOwner={isOwner} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -345,36 +501,14 @@ export default function ProfileView({
 
             {/* Activity cards */}
             <div className="bg-brand-bg px-4 py-4">
-              <ActivityList tab={tab} profile={profile} />
+              <ActivityList
+                tab={tab}
+                profile={profile}
+                showShare={isOwner && tab === "hosting"}
+              />
             </div>
           </div>
         </div>
-
-        {/* Sign out — mobile pinned bottom bar */}
-        {isLoggedIn && (
-          <div className="flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
-            <button
-              onClick={() =>
-                signOutConfirm ? handleSignOut() : setSignOutConfirm(true)
-              }
-              className={`w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors ${
-                signOutConfirm
-                  ? "border border-brand-danger text-brand-danger hover:bg-brand-danger/10"
-                  : "bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
-              }`}
-            >
-              {signOutConfirm ? "Confirm sign out?" : "Sign out"}
-            </button>
-            {signOutConfirm && (
-              <button
-                onClick={() => setSignOutConfirm(false)}
-                className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── DESKTOP LAYOUT (lg+) ────────────────────────────────────── */}
@@ -383,9 +517,26 @@ export default function ProfileView({
           {/* Sidebar */}
           <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4">
             {/* Identity card */}
-            <div className="bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4 max-w-sm xl:max-w-auto xl:w-md">
-              <Avatar profile={profile} />
-              <Identity profile={profile} />
+            <div className="bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4 max-w-sm xl:max-w-auto xl:w-md relative">
+              {isOwner && (
+                <Link
+                  href="/profile/edit"
+                  aria-label="Edit profile"
+                  className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full text-brand-muted hover:text-brand-text hover:bg-brand-border/40 transition-colors"
+                >
+                  <PencilIcon />
+                </Link>
+              )}
+              <Avatar
+                profile={profile}
+                isOwner={isOwner}
+                uploading={uploading}
+                onCameraClick={handleCameraClick}
+              />
+              {uploadError && (
+                <p className="text-xs text-brand-danger -mt-2">{uploadError}</p>
+              )}
+              <Identity profile={profile} isOwner={isOwner} />
               {profile.sports.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {profile.sports.map((sport) => (
@@ -412,35 +563,6 @@ export default function ProfileView({
                 </div>
               </div>
             </div>
-
-            {/* Sign out */}
-            {isLoggedIn && (
-              <div className="mt-6 flex flex-col items-center gap-2">
-                {signOutConfirm ? (
-                  <>
-                    <button
-                      onClick={handleSignOut}
-                      className="rounded-full border border-brand-danger px-5 py-1.5 text-sm font-medium text-brand-danger transition-colors hover:bg-brand-danger/10"
-                    >
-                      Sign out
-                    </button>
-                    <button
-                      onClick={() => setSignOutConfirm(false)}
-                      className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setSignOutConfirm(true)}
-                    className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-                  >
-                    Sign out
-                  </button>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Main */}
@@ -452,7 +574,12 @@ export default function ProfileView({
 
             {/* Activity cards */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
-              <ActivityList tab={tab} profile={profile} gridCols2 />
+              <ActivityList
+                tab={tab}
+                profile={profile}
+                showShare={isOwner && tab === "hosting"}
+                gridCols2
+              />
             </div>
           </div>
         </div>

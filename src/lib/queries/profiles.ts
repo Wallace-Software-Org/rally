@@ -1,6 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ProfilePage } from "@/types";
 
+export async function getProfileById(userId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, full_name, avatar_url, bio, instagram_handle")
+    .eq("id", userId)
+    .single();
+  return data;
+}
+
 export async function getProfileByUsername(
   username: string,
 ): Promise<ProfilePage | null> {
