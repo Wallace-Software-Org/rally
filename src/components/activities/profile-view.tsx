@@ -124,9 +124,152 @@ function ActivityCard({ activity }: { activity: ProfileActivity }) {
   );
 }
 
-// ── ProfileView ───────────────────────────────────────────────────────────────
+// ── Shared sub-components ─────────────────────────────────────────────────────
 
-const TAB_LABELS = { going: "Attending", hosting: "Hosting" } as const;
+function Avatar({ profile }: { profile: ProfilePage }) {
+  return (
+    <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center flex-none">
+      {profile.avatar_url ? (
+        <Image
+          src={profile.avatar_url}
+          alt=""
+          width={80}
+          height={80}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <span className="text-2xl font-semibold text-brand-avatar-text">
+          {initials(profile.full_name)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function Identity({ profile }: { profile: ProfilePage }) {
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <p className="text-lg font-bold text-brand-text leading-tight">
+        {profile.full_name}
+      </p>
+      <p className="text-sm text-brand-muted font-medium">
+        @{profile.username}
+      </p>
+      {profile.instagram_handle && (
+        <a
+          href={`https://instagram.com/${profile.instagram_handle}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-brand-teal flex items-center gap-1 font-medium hover:opacity-80 transition-opacity"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+          </svg>
+          Instagram
+        </a>
+      )}
+      {profile.bio && (
+        <p className="text-sm text-brand-text leading-relaxed mt-3">
+          {profile.bio}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function TabBar({
+  tab,
+  profile,
+  onTabChange,
+}: {
+  tab: "going" | "hosting";
+  profile: ProfilePage;
+  onTabChange: (t: "going" | "hosting") => void;
+}) {
+  const TAB_LABELS = { going: "Attending", hosting: "Hosting" } as const;
+  return (
+    <>
+      {(["going", "hosting"] as const).map((t) => {
+        const count = profile[t].length;
+        const isActive = tab === t;
+        return (
+          <button
+            key={t}
+            onClick={() => onTabChange(t)}
+            className={`flex-1 py-3 text-sm border-b-2 -mb-px transition-colors duration-300 ${
+              isActive
+                ? "border-brand-teal text-brand-text font-semibold"
+                : "border-transparent text-brand-muted font-semibold hover:text-brand-text"
+            }`}
+          >
+            {TAB_LABELS[t]}{" "}
+            <span className={isActive ? "" : "text-brand-muted"}>
+              ({count})
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+function ActivityList({
+  tab,
+  profile,
+  gridCols2,
+}: {
+  tab: "going" | "hosting";
+  profile: ProfilePage;
+  gridCols2?: boolean;
+}) {
+  if (profile[tab].length === 0) {
+    return (
+      <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
+        {tab === "going" ? (
+          <>
+            Nothing coming up.{" "}
+            <Link href="/" className="text-brand-teal hover:underline">
+              Find something on the feed.
+            </Link>
+          </>
+        ) : (
+          <>
+            You haven&apos;t hosted anything yet.{" "}
+            <Link
+              href="/activity/new"
+              className="text-brand-teal hover:underline"
+            >
+              Post an activity.
+            </Link>
+          </>
+        )}
+      </p>
+    );
+  }
+  return (
+    <div
+      className={gridCols2 ? "grid grid-cols-2 gap-4" : "flex flex-col gap-3"}
+    >
+      {profile[tab].map((a) => (
+        <ActivityCard key={a.id} activity={a} />
+      ))}
+    </div>
+  );
+}
+
+// ── ProfileView ───────────────────────────────────────────────────────────────
 
 export default function ProfileView({
   profile,
@@ -136,7 +279,6 @@ export default function ProfileView({
   currentUserId: string | null;
 }) {
   const router = useRouter();
-  const isOwnProfile = currentUserId === profile.id;
   const isLoggedIn = currentUserId !== null;
 
   const defaultTab: "going" | "hosting" =
@@ -155,208 +297,166 @@ export default function ProfileView({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-120 mx-auto">
-          {/* ── Hero (brand-surface) ──────────────────────────────────────── */}
-          <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
-            {/* Avatar + identity, centered */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
-                {profile.avatar_url ? (
-                  <Image
-                    src={profile.avatar_url}
-                    alt=""
-                    width={80}
-                    height={80}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl font-semibold text-brand-avatar-text">
-                    {initials(profile.full_name)}
+      {/* ── MOBILE LAYOUT (< lg) ────────────────────────────────────── */}
+      <div className="lg:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-120 mx-auto">
+            {/* Hero */}
+            <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
+              <div className="flex flex-col items-center gap-4">
+                <Avatar profile={profile} />
+                <Identity profile={profile} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
+                  <span className="text-2xl font-bold text-brand-text leading-none">
+                    {profile.attended_count}
                   </span>
-                )}
+                  <span className="text-sm text-brand-muted">
+                    Activities Attended
+                  </span>
+                </div>
+                <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
+                  <span className="text-2xl font-bold text-brand-text leading-none">
+                    {profile.hosted_count}
+                  </span>
+                  <span className="text-sm text-brand-muted">
+                    Activities Hosted
+                  </span>
+                </div>
               </div>
 
-              <div className="flex flex-col items-center gap-1 text-center">
-                <p className="text-lg font-bold text-brand-text leading-tight">
-                  {profile.full_name}
-                </p>
-                <p className="text-sm text-brand-muted font-medium">
-                  @{profile.username}
-                </p>
-                {profile.instagram_handle && (
-                  <a
-                    href={`https://instagram.com/${profile.instagram_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-brand-teal flex items-center gap-1 font-medium hover:opacity-80 transition-opacity"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                    </svg>
-                    Instagram
-                  </a>
-                )}
-                {profile.bio && (
-                  <p className="text-sm text-brand-text leading-relaxed mt-3">
-                    {profile.bio}
-                  </p>
-                )}
-              </div>
+              {profile.sports.length > 0 && (
+                <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
+                  <div className="flex gap-2 w-fit mx-auto">
+                    {profile.sports.map((sport) => (
+                      <SportPill key={sport} sport={sport} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
-                <span className="text-2xl font-bold text-brand-text leading-none">
-                  {profile.attended_count}
-                </span>
-                <span className="text-sm text-brand-muted">
-                  Activities Attended
-                </span>
-              </div>
-              <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
-                <span className="text-2xl font-bold text-brand-text leading-none">
-                  {profile.hosted_count}
-                </span>
-                <span className="text-sm text-brand-muted">
-                  Activities Hosted
-                </span>
-              </div>
+            {/* Tab bar */}
+            <div className="sticky top-0 bg-brand-bg z-10 flex border-b border-brand-border">
+              <TabBar tab={tab} profile={profile} onTabChange={setTab} />
             </div>
 
-            {/* Sport tags — single scrollable row, teal outline style */}
-            {profile.sports.length > 0 && (
-              <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
-                <div className="flex gap-2 w-fit mx-auto">
+            {/* Activity cards */}
+            <div className="bg-brand-bg px-4 py-4">
+              <ActivityList tab={tab} profile={profile} />
+            </div>
+          </div>
+        </div>
+
+        {/* Sign out — mobile pinned bottom bar */}
+        {isLoggedIn && (
+          <div className="flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
+            <button
+              onClick={() =>
+                signOutConfirm ? handleSignOut() : setSignOutConfirm(true)
+              }
+              className={`w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors ${
+                signOutConfirm
+                  ? "border border-brand-danger text-brand-danger hover:bg-brand-danger/10"
+                  : "bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
+              }`}
+            >
+              {signOutConfirm ? "Confirm sign out?" : "Sign out"}
+            </button>
+            {signOutConfirm && (
+              <button
+                onClick={() => setSignOutConfirm(false)}
+                className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── DESKTOP LAYOUT (lg+) ────────────────────────────────────── */}
+      <div className="hidden lg:flex flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 max-w-6xl xl:max-w-7xl mx-auto flex flex-cols min-h-0 pt-6 xl:pt-12 gap-6">
+          {/* Sidebar */}
+          <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4">
+            {/* Identity card */}
+            <div className="bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4 max-w-sm xl:max-w-auto xl:w-md">
+              <Avatar profile={profile} />
+              <Identity profile={profile} />
+              {profile.sports.length > 0 && (
+                <div className="flex flex-wrap gap-2 justify-center">
                   {profile.sports.map((sport) => (
                     <SportPill key={sport} sport={sport} />
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Stats card */}
+            <div className="bg-brand-surface border border-brand-border rounded-xl overflow-hidden">
+              <div className="grid grid-cols-2 divide-x divide-brand-border text-center">
+                <div className="py-4 flex flex-col gap-0.5">
+                  <span className="text-2xl font-bold text-brand-text leading-none">
+                    {profile.attended_count}
+                  </span>
+                  <span className="text-sm text-brand-muted">Attended</span>
+                </div>
+                <div className="py-4 flex flex-col gap-0.5">
+                  <span className="text-2xl font-bold text-brand-text leading-none">
+                    {profile.hosted_count}
+                  </span>
+                  <span className="text-sm text-brand-muted">Hosted</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sign out */}
+            {isLoggedIn && (
+              <div className="mt-6 flex flex-col items-center gap-2">
+                {signOutConfirm ? (
+                  <>
+                    <button
+                      onClick={handleSignOut}
+                      className="rounded-full border border-brand-danger px-5 py-1.5 text-sm font-medium text-brand-danger transition-colors hover:bg-brand-danger/10"
+                    >
+                      Sign out
+                    </button>
+                    <button
+                      onClick={() => setSignOutConfirm(false)}
+                      className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setSignOutConfirm(true)}
+                    className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+                  >
+                    Sign out
+                  </button>
+                )}
               </div>
             )}
           </div>
 
-          {/* ── Tab bar ──────────────────────────────────────────────────── */}
-          <div className="sticky top-0 bg-brand-bg z-10 flex border-b border-brand-border">
-            {(["going", "hosting"] as const).map((t) => {
-              const count = profile[t].length;
-              const isActive = tab === t;
-              return (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`flex-1 py-3 text-sm border-b-2 -mb-px transition-colors duration-300 ${
-                    isActive
-                      ? "border-brand-teal text-brand-text font-semibold"
-                      : "border-transparent text-brand-muted font-semibold hover:text-brand-text"
-                  }`}
-                >
-                  {TAB_LABELS[t]}{" "}
-                  <span className={isActive ? "" : "text-brand-muted"}>
-                    ({count})
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* ── Activity cards or empty state ─────────────────────────────── */}
-          <div className="bg-brand-bg px-4 py-4 flex flex-col gap-3">
-            {profile[tab].length === 0 ? (
-              <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
-                {tab === "going" ? (
-                  <>
-                    Nothing coming up.{" "}
-                    <Link href="/" className="text-brand-teal hover:underline">
-                      Find something on the feed.
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    You haven&apos;t hosted anything yet.{" "}
-                    <Link
-                      href="/activity/new"
-                      className="text-brand-teal hover:underline"
-                    >
-                      Post an activity.
-                    </Link>
-                  </>
-                )}
-              </p>
-            ) : (
-              profile[tab].map((a) => <ActivityCard key={a.id} activity={a} />)
-            )}
-          </div>
-
-          {/* ── Sign out — desktop only ───────────────────────────────────── */}
-          {isLoggedIn && (
-            <div className="hidden md:flex px-4 pt-12 pb-6 flex-col items-center gap-2">
-              {signOutConfirm ? (
-                <>
-                  <button
-                    onClick={handleSignOut}
-                    className="rounded-full border border-brand-danger px-5 py-1.5 text-sm font-medium text-brand-danger transition-colors hover:bg-brand-danger/10"
-                  >
-                    Sign out
-                  </button>
-                  <button
-                    onClick={() => setSignOutConfirm(false)}
-                    className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setSignOutConfirm(true)}
-                  className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-                >
-                  Sign out
-                </button>
-              )}
+          {/* Main */}
+          <div className="flex flex-col min-h-0 overflow-hidden px-6 xl:w-2xl 2xl:w-3xl">
+            {/* Tab bar */}
+            <div className="flex-none flex border-b border-brand-border bg-brand-bg">
+              <TabBar tab={tab} profile={profile} onTabChange={setTab} />
             </div>
-          )}
+
+            {/* Activity cards */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <ActivityList tab={tab} profile={profile} gridCols2 />
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* ── Sign out — mobile pinned bottom bar ───────────────────────── */}
-      {isLoggedIn && (
-        <div className="md:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
-          <button
-            onClick={() =>
-              signOutConfirm ? handleSignOut() : setSignOutConfirm(true)
-            }
-            className={`w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors ${
-              signOutConfirm
-                ? "border border-brand-danger text-brand-danger hover:bg-brand-danger/10"
-                : "bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
-            }`}
-          >
-            {signOutConfirm ? "Confirm sign out?" : "Sign out"}
-          </button>
-          {signOutConfirm && (
-            <button
-              onClick={() => setSignOutConfirm(false)}
-              className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
