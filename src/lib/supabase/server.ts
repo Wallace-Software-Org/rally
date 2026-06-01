@@ -15,13 +15,13 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        // Supabase calls setAll when it refreshes a token; writes the updated cookies to the response
-        setAll(cookiesToSet, headers) {
+        // Supabase calls setAll when it refreshes a token; writes the updated cookies to the response.
+        // sameSite: 'lax' is required — 'strict' blocks Safari from receiving cookies on cross-site
+        // OAuth redirects (Google → your domain), which silently breaks the PKCE code exchange.
+        setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
+            cookieStore.set(name, value, { ...options, sameSite: "lax" }),
           );
-          // headers contain Cache-Control directives — not needed here, middleware handles them
-          void headers;
         },
       },
     },
