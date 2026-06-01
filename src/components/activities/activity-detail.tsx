@@ -12,7 +12,7 @@ import Image from "next/image";
 import type { ActivityDetail } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { AnimatePresence, motion } from "framer-motion";
-import SportPill from "@/components/ui/sport-pill";
+import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 
 function initials(name: string): string {
@@ -357,7 +357,7 @@ export default function ActivityDetailView({
           <div className="flex-1 max-w-2xl mx-auto px-4 md:px-6 xl:max-w-none xl:mx-0 xl:px-0 py-6 flex flex-col gap-6">
             {/* 1. Header */}
             <div className="flex flex-col gap-3">
-              <SportPill sport={activity.sport} />
+              <ActivityPill sport={activity.sport} />
               <h1 className="text-2xl font-medium text-brand-text leading-snug">
                 {activity.title}
               </h1>

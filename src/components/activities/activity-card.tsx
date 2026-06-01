@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ActivityWithParticipants } from "@/types";
 import { formatActivityDate } from "@/lib/utils/format-time";
-import SportPill from "@/components/ui/sport-pill";
+import ActivityPill from "@/components/ui/activity-pill";
 
 function initials(name: string): string {
   return name
@@ -134,7 +134,7 @@ export function ActivityCardMobile({
       }`}
     >
       <div className="flex items-start justify-between gap-1">
-        <SportPill sport={activity.sport} />
+        <ActivityPill sport={activity.sport} />
         <div className="flex flex-col items-end shrink-0">
           <span className="text-xs font-medium text-brand-text leading-tight">
             {time}
@@ -261,7 +261,7 @@ export function ActivityCardDesktop({
   const inner = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <SportPill sport={activity.sport} />
+        <ActivityPill sport={activity.sport} />
         <div className="flex flex-col items-end shrink-0">
           <span className="text-xs font-medium text-brand-text leading-tight">
             {time}

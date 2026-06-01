@@ -13,7 +13,7 @@ import {
 } from "@/lib/actions/profiles";
 import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
 import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
-import SportPill from "@/components/ui/sport-pill";
+import ActivityPill from "@/components/ui/activity-pill";
 import { CameraIcon, InstagramIcon } from "@/components/ui/icons";
 import type { UsernameStatus } from "@/types";
 
@@ -411,7 +411,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
               </span>
               <div className="hidden xl:flex flex-1 flex-wrap gap-1.5 min-w-0 justify-start">
                 {sports.map((s) => (
-                  <SportPill key={s} sport={s} />
+                  <ActivityPill key={s} sport={s} />
                 ))}
               </div>
               <motion.div

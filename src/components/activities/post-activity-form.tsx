@@ -9,7 +9,7 @@ import {
 } from "@/lib/utils/sport-config";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import { createActivity } from "@/lib/actions/activities";
-import SportPill from "@/components/ui/sport-pill";
+import ActivityPill from "@/components/ui/activity-pill";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
 
@@ -433,7 +433,7 @@ function ReviewCard({
   return (
     <div className="rounded-xl border border-brand-border bg-brand-bg p-3 flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
-        <SportPill sport={form.sport} />
+        <ActivityPill sport={form.sport} />
         {startsAtIso && (
           <span className="text-xs text-brand-muted leading-4 shrink-0">
             {formatActivityTime(startsAtIso)}

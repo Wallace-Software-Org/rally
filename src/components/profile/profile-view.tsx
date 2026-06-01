@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
-import SportPill from "@/components/ui/sport-pill";
+import ActivityPill from "@/components/ui/activity-pill";
 import { CameraIcon, PencilIcon, InstagramIcon } from "@/components/ui/icons";
 import { uploadAvatar } from "@/lib/actions/profiles";
 
@@ -50,7 +50,7 @@ function ActivityCard({
         href={`/activity/${activity.id}`}
         className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
       >
-        <SportPill sport={activity.sport} />
+        <ActivityPill sport={activity.sport} />
 
         <p className="text-base font-semibold text-brand-text leading-snug">
           {activity.title}
@@ -426,7 +426,7 @@ export default function ProfileView({
                 <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
                   <div className="flex gap-2 w-fit mx-auto">
                     {profile.sports.map((sport) => (
-                      <SportPill key={sport} sport={sport} />
+                      <ActivityPill key={sport} sport={sport} />
                     ))}
                   </div>
                 </div>
@@ -470,7 +470,7 @@ export default function ProfileView({
               {profile.sports.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {profile.sports.map((sport) => (
-                    <SportPill key={sport} sport={sport} />
+                    <ActivityPill key={sport} sport={sport} />
                   ))}
                 </div>
               )}

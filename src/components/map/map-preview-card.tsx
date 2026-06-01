@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ActivityWithParticipants } from "@/types";
-import { SPORT_COLORS, getSportLabel } from "@/lib/utils/sport-config";
 import { formatActivityTime } from "@/lib/utils/format-time";
+import ActivityPill from "@/components/ui/activity-pill";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
@@ -40,10 +40,6 @@ export default function MapPreviewCard({
     return () => document.removeEventListener("mousedown", onOutside);
   }, [confirming]);
 
-  const colors = SPORT_COLORS[activity.sport.toLowerCase()] ?? {
-    bg: "#C8E6DC",
-    text: "#1A6B52",
-  };
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
     : 0;
@@ -76,14 +72,9 @@ export default function MapPreviewCard({
         </svg>
       </button>
 
-      {/* Sport pill + time */}
+      {/* Activity pill + time */}
       <div className="flex items-center gap-2 pr-8">
-        <span
-          className="rounded-full px-2 py-0.5 text-xs font-semibold leading-4"
-          style={{ backgroundColor: colors.bg, color: colors.text }}
-        >
-          {getSportLabel(activity.sport)}
-        </span>
+        <ActivityPill sport={activity.sport} />
         <span className="text-xs text-brand-muted">
           {formatActivityTime(activity.starts_at)}
         </span>
