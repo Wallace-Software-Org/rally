@@ -48,7 +48,7 @@ function ActivityCard({
     <div className="relative xl:h-44">
       <Link
         href={`/activity/${activity.id}`}
-        className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col justify-between h-full"
+        className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col justify-between h-full transition-all hover:border-brand-border-hover"
       >
         <div className="flex flex-col gap-2">
           <ActivityPill sport={activity.sport} />

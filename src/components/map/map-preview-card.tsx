@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ActivityWithParticipants } from "@/types";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
+import { InstagramIcon } from "@/components/ui/icons";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
@@ -117,9 +118,13 @@ export default function MapPreviewCard({
 
       {/* CTA */}
       {isHost ? (
-        <p className="w-full flex items-center justify-center py-3 text-sm text-brand-muted">
-          You&apos;re hosting
-        </p>
+        <button
+          onClick={() => alert("Share card coming soon")}
+          className="w-full rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 flex items-center justify-center gap-2 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+        >
+          <InstagramIcon size={15} />
+          Share to Instagram
+        </button>
       ) : userId === null ? (
         <Link
           href="/login"
