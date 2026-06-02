@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import type { Profile } from "@/types";
+import { signOut } from "@/lib/actions/profiles";
 
 function initials(name: string): string {
   return name
@@ -20,6 +22,7 @@ export default function AppNav({
   profile: Profile;
   userId: string | null;
 }) {
+  const router = useRouter();
   const logo = (
     <Link href="/" className="flex items-center gap-2 flex-none">
       <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
@@ -81,6 +84,14 @@ export default function AppNav({
           </svg>
           Post activity
         </Link>
+
+        {/* TEMP: emergency sign-out for debugging */}
+        <button
+          onClick={async () => { await signOut(); router.push("/login"); }}
+          className="text-xs text-brand-muted hover:text-brand-danger transition-colors flex-none"
+        >
+          Sign out
+        </button>
 
         {/* Avatar — links to own profile when username is set */}
         {profile?.username ? (

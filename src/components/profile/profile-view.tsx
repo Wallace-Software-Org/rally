@@ -45,16 +45,17 @@ function ActivityCard({
   const { date, time } = formatCardDate(activity.starts_at);
 
   return (
-    <div className="relative">
+    <div className="relative xl:h-44">
       <Link
         href={`/activity/${activity.id}`}
-        className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3"
+        className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col justify-between h-full"
       >
-        <ActivityPill sport={activity.sport} />
-
-        <p className="text-base font-semibold text-brand-text leading-snug">
-          {activity.title}
-        </p>
+        <div className="flex flex-col gap-2">
+          <ActivityPill sport={activity.sport} />
+          <p className="text-base font-semibold text-brand-text leading-snug line-clamp-2">
+            {activity.title}
+          </p>
+        </div>
 
         <div className="flex flex-col gap-1.5 text-xs text-brand-muted">
           {activity.location_name && (
@@ -69,7 +70,7 @@ function ActivityCard({
               >
                 <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
               </svg>
-              {activity.location_name}
+              <span className="truncate">{activity.location_name}</span>
             </span>
           )}
           <span className="flex items-center gap-4">
