@@ -88,7 +88,9 @@ export default function EditActivityForm({
   const [date, setDate] = useState(initDT.date);
   const [time, setTime] = useState(initDT.time);
   const [locationName, setLocationName] = useState(activity.location_name);
-  const [externalLink, setExternalLink] = useState(activity.external_link ?? "");
+  const [externalLink, setExternalLink] = useState(
+    activity.external_link ?? "",
+  );
   const [lat, setLat] = useState<number | null>(activity.lat);
   const [lng, setLng] = useState<number | null>(activity.lng);
   const [skillLevel, setSkillLevel] = useState(
@@ -110,6 +112,7 @@ export default function EditActivityForm({
   const [cancelling, setCancelling] = useState(false);
   const [duplicateConfirm, setDuplicateConfirm] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const [showDraftBanner, setShowDraftBanner] = useState(isDraftDuplicate);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const duplicateButtonRef = useRef<HTMLButtonElement>(null);
@@ -180,16 +183,23 @@ export default function EditActivityForm({
   async function handleDuplicateActivity() {
     if (duplicating) return;
     if (!duplicateConfirm) {
+      setDuplicateError(null);
       setCancelConfirm(false);
       setDuplicateConfirm(true);
       return;
     }
 
+    setDuplicateError(null);
     setDuplicating(true);
     const { id, error } = await duplicateActivity(activity.id);
     setDuplicating(false);
     setDuplicateConfirm(false);
-    if (!error && id) router.push(`/activity/${id}/edit`);
+    if (error || !id) {
+      setDuplicateError(error ?? "Could not duplicate activity.");
+      return;
+    }
+
+    router.push(`/activity/${id}/edit`);
   }
 
   return (
@@ -412,10 +422,10 @@ export default function EditActivityForm({
               Danger zone
             </p>
 
-            {cancelConfirm && !duplicateConfirm && (
+            {cancelConfirm && (
               <p className="text-sm text-brand-muted text-center leading-relaxed">
-                This will remove all participants and cancel the activity.
-                This can&apos;t be undone.
+                This will remove all participants and cancel the activity. This
+                can&apos;t be undone.
               </p>
             )}
 
@@ -445,7 +455,7 @@ export default function EditActivityForm({
                     : "Cancel activity"}
               </button>
             )}
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="popLayout">
               {cancelConfirm && !cancelling && (
                 <motion.button
                   initial={{ opacity: 0, y: 16 }}
@@ -478,7 +488,7 @@ export default function EditActivityForm({
                     : "Duplicate activity"}
               </button>
             )}
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="popLayout">
               {duplicateConfirm && !duplicating && (
                 <motion.button
                   initial={{ opacity: 0, y: 16 }}
@@ -492,6 +502,11 @@ export default function EditActivityForm({
                 </motion.button>
               )}
             </AnimatePresence>
+            {duplicateError && (
+              <p className="text-xs text-brand-danger text-center">
+                {duplicateError}
+              </p>
+            )}
           </div>
         </div>
       </div>
