@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ActivityDetail } from "@/types";
@@ -12,6 +11,7 @@ const SearchBox = dynamic(
   { ssr: false },
 );
 import { updateActivity, cancelActivity } from "@/lib/actions/activities";
+import PageHeader from "@/components/ui/page-header";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
 import Select from "@/components/ui/select";
@@ -120,34 +120,7 @@ export default function EditActivityForm({
 
   return (
     <div className="flex-1 overflow-y-auto flex flex-col bg-brand-bg">
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="flex items-center px-4 pt-6 pb-4 gap-4 max-w-lg mx-auto w-full">
-        <Link
-          href={`/activity/${activity.id}`}
-          aria-label="Back"
-          className="md:hidden flex-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-brand-avatar-bg transition-colors"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 18 18"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M11 14L6 9l5-5"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
-        <p className="flex-1 text-center text-base font-semibold text-brand-text">
-          Edit activity
-        </p>
-        <div className="md:hidden flex-none w-8" />
-      </div>
+      <PageHeader title="Edit activity" backHref={`/activity/${activity.id}`} />
 
       {/* ── Form fields ─────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-2 pb-12 flex flex-col gap-5 max-w-lg mx-auto w-full">

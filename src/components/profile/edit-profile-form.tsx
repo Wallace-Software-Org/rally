@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,6 +11,7 @@ import {
   signOut,
 } from "@/lib/actions/profiles";
 import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
+import PageHeader from "@/components/ui/page-header";
 import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
 import ActivityPill from "@/components/ui/activity-pill";
 import { CameraIcon, InstagramIcon } from "@/components/ui/icons";
@@ -179,33 +179,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
     <div className="flex-1 min-h-0 flex flex-col bg-brand-bg overflow-hidden">
       {/* Scrollable form area */}
       <div className="flex-1 overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center px-4 pt-6 pb-4 gap-4 max-w-lg mx-auto w-full">
-          <Link
-            href={backHref}
-            aria-label="Back"
-            className="flex-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-brand-avatar-bg transition-colors"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M11 14L6 9l5-5"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-          <h1 className="text-base font-semibold text-brand-text">
-            Edit profile
-          </h1>
-        </div>
+        <PageHeader title="Edit profile" backHref={backHref} />
 
         {/* Form body */}
         <div className="flex flex-col gap-5 px-4 pb-10 max-w-lg mx-auto w-full">
