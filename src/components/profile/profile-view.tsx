@@ -45,7 +45,7 @@ function ActivityCard({
   const { date, time } = formatCardDate(activity.starts_at);
 
   return (
-    <div className="relative xl:h-44">
+    <div className="relative xl:h-44 flex flex-col">
       <Link
         href={`/activity/${activity.id}`}
         className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col justify-between h-full transition-all hover:border-brand-border-hover"

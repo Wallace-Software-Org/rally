@@ -57,8 +57,9 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
   const [tagsOpen, setTagsOpen] = useState(false);
 
   function toggleSport(s: string) {
+    const key = s.toLowerCase();
     setSports((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
+      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key],
     );
   }
   const [previewUrl, setPreviewUrl] = useState<string | null>(
@@ -182,7 +183,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
         <PageHeader title="Edit profile" backHref={backHref} />
 
         {/* Form body */}
-        <div className="flex flex-col gap-5 px-4 pb-10 max-w-lg mx-auto w-full">
+        <div className="flex flex-col gap-5 px-4 pt-6 pb-10 max-w-lg mx-auto w-full">
           {/* Avatar */}
           <div className="flex flex-col items-center gap-2">
             <div className="relative">
@@ -422,7 +423,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                 >
                   <div className="grid grid-cols-3 gap-2 pt-3">
                     {ACTIVITY_ITEMS.map((a) => {
-                      const active = sports.includes(a);
+                      const active = sports.includes(a.toLowerCase());
                       return (
                         <button
                           key={a}

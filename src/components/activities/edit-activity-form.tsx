@@ -123,7 +123,7 @@ export default function EditActivityForm({
       <PageHeader title="Edit activity" backHref={`/activity/${activity.id}`} />
 
       {/* ── Form fields ─────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 pb-12 flex flex-col gap-5 max-w-lg mx-auto w-full">
+      <div className="px-4 py-2 pb-12 flex flex-col gap-5 max-w-lg mx-auto w-full">
         {/* Title */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-brand-text">
