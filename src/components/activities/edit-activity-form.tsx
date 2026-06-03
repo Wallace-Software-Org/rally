@@ -14,6 +14,7 @@ const SearchBox = dynamic(
 import { updateActivity, cancelActivity } from "@/lib/actions/activities";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
+import Select from "@/components/ui/select";
 
 const SEARCH_BOX_THEME = {
   variables: {
@@ -30,7 +31,12 @@ const SEARCH_BOX_THEME = {
   },
 } as const;
 
-const SKILL_LEVELS = ["All levels", "Beginner", "Advanced"] as const;
+const SKILL_LEVELS = [
+  "All levels",
+  "Beginner",
+  "Intermediate",
+  "Advanced",
+] as const;
 
 const inputCls =
   "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
@@ -232,70 +238,67 @@ export default function EditActivityForm({
           <label className="text-sm font-medium text-brand-text">
             Skill level
           </label>
-          <div className="flex rounded-xl overflow-hidden border border-brand-border">
-            {SKILL_LEVELS.map((level) => (
-              <button
-                key={level}
-                type="button"
-                onClick={() => setSkillLevel(level)}
-                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  skillLevel === level
-                    ? "bg-brand-teal text-white"
-                    : "text-brand-muted hover:text-brand-text"
-                }`}
-              >
-                {level}
-              </button>
-            ))}
-          </div>
+          <Select
+            value={skillLevel}
+            onChange={setSkillLevel}
+            options={SKILL_LEVELS}
+          />
         </div>
 
         {/* Limit spots */}
-        <div className="flex items-center justify-between border border-brand-border bg-brand-bg rounded-xl px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm text-brand-text">Limit spots</span>
-            <span className="text-xs text-brand-muted">
-              {limitSpots
-                ? `Max ${stepperValue} participants`
-                : "Off, open to all"}
-            </span>
+        <div className="border border-brand-border bg-brand-bg rounded-xl">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm text-brand-text">Limit spots</span>
+              <span className="text-xs text-brand-muted">
+                {limitSpots
+                  ? `Max ${stepperValue} participants`
+                  : "Off, open to all"}
+              </span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={limitSpots}
+              onClick={() => setLimitSpots((p) => !p)}
+              className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
+                limitSpots
+                  ? "bg-brand-teal justify-end"
+                  : "bg-brand-border justify-start"
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
+            </button>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={limitSpots}
-            onClick={() => setLimitSpots((p) => !p)}
-            className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-              limitSpots
-                ? "bg-brand-teal justify-end"
-                : "bg-brand-border justify-start"
-            }`}
-          >
-            <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
-          </button>
-        </div>
 
-        {limitSpots && (
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setStepperValue((v) => Math.max(2, v - 1))}
-              className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
-            >
-              −
-            </button>
-            <span className="flex-1 text-center text-base font-semibold text-brand-text">
-              {stepperValue}
-            </span>
-            <button
-              type="button"
-              onClick={() => setStepperValue((v) => Math.min(20, v + 1))}
-              className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
-            >
-              +
-            </button>
-          </div>
-        )}
+          {limitSpots && (
+            <>
+              <div className="border-t border-brand-border/60" />
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-brand-text">Number of spots</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStepperValue((v) => Math.max(2, v - 1))}
+                    className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
+                  >
+                    -
+                  </button>
+                  <span className="w-6 text-center text-base font-semibold text-brand-text">
+                    {stepperValue}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStepperValue((v) => Math.min(20, v + 1))}
+                    className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Save */}
         <button
