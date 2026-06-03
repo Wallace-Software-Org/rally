@@ -286,7 +286,7 @@ export default function ActivityDetailView({
   const ctaButton = isHost ? (
     <Link
       href={`/activity/${activity.id}/edit`}
-      className="w-full max-w-156 flex items-center justify-center rounded-xl text-sm font-medium py-3 transition-colors bg-transparent border border-brand-teal text-brand-teal hover:bg-brand-teal/10"
+      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
     >
       Manage
     </Link>
