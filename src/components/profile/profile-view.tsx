@@ -45,21 +45,21 @@ function ActivityCard({
   const { date, time } = formatCardDate(activity.starts_at);
 
   return (
-    <div className="relative xl:h-44 flex flex-col">
+    <div className="xl:min-h-32 flex flex-col">
       <Link
         href={`/activity/${activity.id}`}
         className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col justify-between h-full transition-all hover:border-brand-border-hover"
       >
         <div className="flex flex-col gap-2">
           <ActivityPill sport={activity.sport} />
-          <p className="text-base font-semibold text-brand-text leading-snug line-clamp-2">
+          <p className="text-lg xl:text-base font-semibold text-brand-text leading-snug line-clamp-2">
             {activity.title}
           </p>
         </div>
 
-        <div className="flex flex-col gap-1.5 text-xs text-brand-muted">
+        <div className="flex flex-col gap-1.5 text-sm xl:text-xs text-brand-muted">
           {activity.location_name && (
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1">
               <svg
                 width="10"
                 height="12"
@@ -70,79 +70,81 @@ function ActivityCard({
               >
                 <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
               </svg>
-              <span className="truncate">{activity.location_name}</span>
+              <span className="truncate text-xs">{activity.location_name}</span>
             </span>
           )}
-          <span className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 16 16"
-                fill="none"
-                className="flex-none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="1.5"
-                  y="3"
-                  width="13"
-                  height="11.5"
-                  rx="1.5"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                />
-                <path
-                  d="M5 1.5V4M11 1.5V4M1.5 7h13"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  strokeLinecap="round"
-                />
-              </svg>
-              {date}
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="flex-none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="1.5"
+                    y="3"
+                    width="13"
+                    height="11.5"
+                    rx="1.5"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                  />
+                  <path
+                    d="M5 1.5V4M11 1.5V4M1.5 7h13"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                {date}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="flex-none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="6.5"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                  />
+                  <path
+                    d="M8 4.5V8.5l2.5 1.5"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {time}
+              </span>
             </span>
-            <span className="flex items-center gap-1.5">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 16 16"
-                fill="none"
-                className="flex-none"
-                aria-hidden="true"
+            {showShare && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  alert("Share card coming soon");
+                }}
+                className="flex-none flex items-center gap-1.5 bg-brand-teal text-white text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
               >
-                <circle
-                  cx="8"
-                  cy="8"
-                  r="6.5"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                />
-                <path
-                  d="M8 4.5V8.5l2.5 1.5"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {time}
-            </span>
-          </span>
+                <InstagramIcon size={11} />
+                Share
+              </button>
+            )}
+          </div>
         </div>
       </Link>
-
-      {showShare && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            alert("Share card coming soon");
-          }}
-          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 bg-brand-teal text-white text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
-        >
-          <InstagramIcon size={11} />
-          Share
-        </button>
-      )}
     </div>
   );
 }
@@ -384,7 +386,7 @@ export default function ProfileView({
       )}
 
       {/* ── MOBILE LAYOUT (< lg) ────────────────────────────────────── */}
-      <div className="lg:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div className="xl:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-120 mx-auto">
             {/* Hero */}
@@ -452,7 +454,7 @@ export default function ProfileView({
       </div>
 
       {/* ── DESKTOP LAYOUT (lg+) ────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-1 min-h-0 overflow-hidden">
+      <div className="hidden xl:flex flex-1 min-h-0 overflow-hidden">
         <div className="flex-1 max-w-6xl xl:max-w-7xl mx-auto flex flex-cols min-h-0 pt-6 xl:pt-12 gap-6">
           {/* Sidebar */}
           <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4">
