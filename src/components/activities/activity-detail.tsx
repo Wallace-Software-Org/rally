@@ -68,6 +68,32 @@ function Divider() {
   return <div className="h-px bg-brand-border" />;
 }
 
+function ExternalLinkIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M13 5h6m0 0v6m0-6-9 9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M11 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted mb-3">
@@ -347,6 +373,18 @@ export default function ActivityDetailView({
     </button>
   );
 
+  const registerBtn = activity.external_link ? (
+    <a
+      href={activity.external_link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary hover:bg-brand-secondary/10 transition-colors"
+    >
+      <ExternalLinkIcon />
+      Register here
+    </a>
+  ) : null;
+
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
@@ -603,6 +641,7 @@ export default function ActivityDetailView({
             )}
             <div className="flex flex-col gap-3">
               {ctaButton}
+              {registerBtn}
               {shareBtn}
             </div>
           </div>
@@ -612,6 +651,7 @@ export default function ActivityDetailView({
       {/* ── Bottom CTA bar — mobile/tablet only ────────────────────────────────────── */}
       <div className="xl:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col items-center gap-2">
         {ctaButton}
+        {registerBtn}
         {shareBtn}
       </div>
 

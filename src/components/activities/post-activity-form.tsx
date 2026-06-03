@@ -35,6 +35,7 @@ type FormState = {
   max_participants: number | null;
   skill_level: string;
   description: string;
+  external_link: string;
   location_name: string;
   lat: number | null;
   lng: number | null;
@@ -63,6 +64,22 @@ function getServerMountedSnapshot() {
   return false;
 }
 
+function normalizeExternalLink(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.toString();
+    }
+  } catch {
+    // Invalid URLs are handled by returning null below.
+  }
+
+  return null;
+}
+
 export default function PostActivityForm() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -73,6 +90,7 @@ export default function PostActivityForm() {
     max_participants: null,
     skill_level: "All levels",
     description: "",
+    external_link: "",
     location_name: "",
     lat: null,
     lng: null,
@@ -129,15 +147,27 @@ export default function PostActivityForm() {
 
   async function handleSubmit() {
     const starts = startsAt();
-    if (!form.lat || !form.lng || !form.location_name.trim() || !starts || submitting) return;
+    if (!step3Valid || !starts || submitting) return;
     setSubmitting(true);
-    const { error } = await createActivity({ ...form, starts_at: starts });
+    const { error } = await createActivity({
+      ...form,
+      external_link: externalLinkValue,
+      starts_at: starts,
+    });
     setSubmitting(false);
     if (!error) router.push("/");
   }
 
   const step2Valid = Boolean(form.title.trim() && date && time && form.description.trim().length >= 50);
-  const step3Valid = Boolean(form.lat != null && form.lng != null);
+  const externalLinkValue = normalizeExternalLink(form.external_link);
+  const externalLinkValid =
+    !form.external_link.trim() || externalLinkValue !== null;
+  const step3Valid = Boolean(
+    form.lat != null &&
+      form.lng != null &&
+      form.location_name.trim() &&
+      externalLinkValid,
+  );
   const reviewStartsAt = startsAt();
 
   return (
@@ -400,6 +430,24 @@ export default function PostActivityForm() {
                   />
                 )}
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-brand-text">
+                External registration link
+              </label>
+              <input
+                type="url"
+                value={form.external_link}
+                onChange={(e) => patch({ external_link: e.target.value })}
+                placeholder="https://..."
+                className={inputCls}
+              />
+              {!externalLinkValid && (
+                <p className="text-xs text-brand-danger">
+                  Enter a valid http or https URL.
+                </p>
+              )}
             </div>
 
             <button

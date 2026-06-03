@@ -34,6 +34,7 @@ create table public.activities (
   title            text not null,
   sport            text not null,
   description      text,
+  external_link    text,
   lat              float8,
   lng              float8,
   location_name    text,

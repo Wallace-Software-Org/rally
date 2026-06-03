@@ -22,6 +22,7 @@ export type Activity = {
   creator_id: string;
   title: string;
   sport: string;
+  external_link?: string | null;
   location_name: string;
   starts_at: string;
   max_participants: number | null;
@@ -96,6 +97,7 @@ export type ActivityDetail = {
   title: string;
   sport: string;
   description: string | null;
+  external_link?: string | null;
   location_name: string;
   starts_at: string;
   max_participants: number | null;

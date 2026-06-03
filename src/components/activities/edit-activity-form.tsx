@@ -10,7 +10,11 @@ const SearchBox = dynamic(
   () => import("@mapbox/search-js-react").then((m) => m.SearchBox),
   { ssr: false },
 );
-import { updateActivity, cancelActivity } from "@/lib/actions/activities";
+import {
+  updateActivity,
+  cancelActivity,
+  duplicateActivity,
+} from "@/lib/actions/activities";
 import PageHeader from "@/components/ui/page-header";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
@@ -52,6 +56,22 @@ function parseDateParts(iso: string): { date: string; time: string } {
   };
 }
 
+function normalizeExternalLink(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.toString();
+    }
+  } catch {
+    // Invalid URLs are handled by returning null below.
+  }
+
+  return null;
+}
+
 export default function EditActivityForm({
   activity,
 }: {
@@ -65,6 +85,7 @@ export default function EditActivityForm({
   const [date, setDate] = useState(initDT.date);
   const [time, setTime] = useState(initDT.time);
   const [locationName, setLocationName] = useState(activity.location_name);
+  const [externalLink, setExternalLink] = useState(activity.external_link ?? "");
   const [lat, setLat] = useState<number | null>(activity.lat);
   const [lng, setLng] = useState<number | null>(activity.lng);
   const [skillLevel, setSkillLevel] = useState(
@@ -84,13 +105,22 @@ export default function EditActivityForm({
   const [submitting, setSubmitting] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   function startsAtIso(): string {
     if (!date || !time) return "";
     return new Date(`${date}T${time}:00`).toISOString();
   }
 
-  const canSave = title.trim().length > 0 && !!date && !!time;
+  const externalLinkValue = normalizeExternalLink(externalLink);
+  const externalLinkValid = !externalLink.trim() || externalLinkValue !== null;
+  const locationValid = locationName.trim().length > 0;
+  const canSave =
+    title.trim().length > 0 &&
+    locationValid &&
+    externalLinkValid &&
+    !!date &&
+    !!time;
 
   async function handleSave() {
     const starts = startsAtIso();
@@ -102,7 +132,8 @@ export default function EditActivityForm({
       starts_at: starts,
       max_participants: limitSpots ? stepperValue : null,
       skill_level: skillLevel,
-      location_name: locationName,
+      external_link: externalLinkValue,
+      location_name: locationName.trim(),
       lat,
       lng,
       status,
@@ -116,6 +147,14 @@ export default function EditActivityForm({
     const { error } = await cancelActivity(activity.id);
     if (!error) router.push("/");
     setCancelling(false);
+  }
+
+  async function handleDuplicateActivity() {
+    if (duplicating) return;
+    setDuplicating(true);
+    const { id, error } = await duplicateActivity(activity.id);
+    setDuplicating(false);
+    if (!error && id) router.push(`/activity/${id}/edit`);
   }
 
   return (
@@ -176,6 +215,27 @@ export default function EditActivityForm({
                 theme={SEARCH_BOX_THEME}
               />
             </div>
+            {!locationValid && (
+              <p className="text-xs text-brand-danger">Location is required.</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-brand-text">
+              External registration link
+            </label>
+            <input
+              type="url"
+              value={externalLink}
+              onChange={(e) => setExternalLink(e.target.value)}
+              placeholder="https://..."
+              className={inputCls}
+            />
+            {!externalLinkValid && (
+              <p className="text-xs text-brand-danger">
+                Enter a valid http or https URL.
+              </p>
+            )}
           </div>
 
           {/* Date / Time */}
@@ -331,6 +391,14 @@ export default function EditActivityForm({
               {cancelConfirm ? "Keep it" : "Cancel activity"}
             </button>
           </div>
+
+          <button
+            onClick={handleDuplicateActivity}
+            disabled={duplicating}
+            className="w-full xl:w-auto xl:px-6 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-border-hover hover:text-brand-text transition-colors disabled:opacity-40"
+          >
+            {duplicating ? "Duplicating..." : "Duplicate activity"}
+          </button>
         </div>
       </div>
     </div>
