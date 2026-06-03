@@ -38,7 +38,7 @@ create table public.activities (
   lat              float8,
   lng              float8,
   location_name    text,
-  starts_at        timestamptz not null,
+  starts_at        timestamptz,
   max_participants int default 10,
   skill_level      text default 'all',
   status           text default 'open',

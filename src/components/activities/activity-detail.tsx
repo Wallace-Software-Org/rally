@@ -424,7 +424,9 @@ export default function ActivityDetailView({
                     strokeLinecap="round"
                   />
                 </svg>
-                {formatDetailDate(activity.starts_at)}
+                {activity.starts_at
+                  ? formatDetailDate(activity.starts_at)
+                  : "Date and time not set"}
               </p>
               {/* Location row — xl only (map stays in right panel) */}
               {activity.location_name && (

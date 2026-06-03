@@ -99,7 +99,7 @@ export type ActivityDetail = {
   description: string | null;
   external_link?: string | null;
   location_name: string;
-  starts_at: string;
+  starts_at: string | null;
   max_participants: number | null;
   skill_level: string | null;
   lat: number | null;

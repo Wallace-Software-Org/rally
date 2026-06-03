@@ -163,7 +163,7 @@ export async function duplicateActivity(
     .select(
       `
       title, sport, description, external_link, lat, lng, location_name,
-      starts_at, max_participants, skill_level, community_tag
+      max_participants, skill_level, community_tag
     `,
     )
     .eq("id", activityId)
@@ -177,6 +177,7 @@ export async function duplicateActivity(
     .from("activities")
     .insert({
       ...activity,
+      starts_at: null,
       creator_id: user.id,
       status: "open",
     })

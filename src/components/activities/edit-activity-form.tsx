@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,7 +48,9 @@ const inputCls =
 const primaryBtn =
   "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40";
 
-function parseDateParts(iso: string): { date: string; time: string } {
+function parseDateParts(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
+
   const d = new Date(iso);
   return {
     date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
@@ -78,6 +80,7 @@ export default function EditActivityForm({
   activity: ActivityDetail;
 }) {
   const router = useRouter();
+  const isDraftDuplicate = activity.starts_at === null;
   const initDT = parseDateParts(activity.starts_at);
 
   const [title, setTitle] = useState(activity.title);
@@ -105,7 +108,29 @@ export default function EditActivityForm({
   const [submitting, setSubmitting] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [duplicateConfirm, setDuplicateConfirm] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [showDraftBanner, setShowDraftBanner] = useState(isDraftDuplicate);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const duplicateButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if ((!cancelConfirm && !duplicateConfirm) || cancelling || duplicating)
+      return;
+
+    function handleOutsideClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (cancelConfirm && cancelButtonRef.current?.contains(target)) return;
+      if (duplicateConfirm && duplicateButtonRef.current?.contains(target))
+        return;
+
+      setCancelConfirm(false);
+      setDuplicateConfirm(false);
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [cancelConfirm, cancelling, duplicateConfirm, duplicating]);
 
   function startsAtIso(): string {
     if (!date || !time) return "";
@@ -115,15 +140,15 @@ export default function EditActivityForm({
   const externalLinkValue = normalizeExternalLink(externalLink);
   const externalLinkValid = !externalLink.trim() || externalLinkValue !== null;
   const locationValid = locationName.trim().length > 0;
+  const currentStartsAt = startsAtIso();
   const canSave =
     title.trim().length > 0 &&
     locationValid &&
     externalLinkValid &&
-    !!date &&
-    !!time;
+    !!currentStartsAt;
 
   async function handleSave() {
-    const starts = startsAtIso();
+    const starts = currentStartsAt;
     if (!canSave || !starts || submitting) return;
     setSubmitting(true);
     const { error } = await updateActivity(activity.id, {
@@ -139,7 +164,10 @@ export default function EditActivityForm({
       status,
     });
     setSubmitting(false);
-    if (!error) router.push(`/activity/${activity.id}`);
+    if (!error) {
+      setShowDraftBanner(false);
+      router.push(`/activity/${activity.id}`);
+    }
   }
 
   async function handleCancelActivity() {
@@ -151,19 +179,34 @@ export default function EditActivityForm({
 
   async function handleDuplicateActivity() {
     if (duplicating) return;
+    if (!duplicateConfirm) {
+      setCancelConfirm(false);
+      setDuplicateConfirm(true);
+      return;
+    }
+
     setDuplicating(true);
     const { id, error } = await duplicateActivity(activity.id);
     setDuplicating(false);
+    setDuplicateConfirm(false);
     if (!error && id) router.push(`/activity/${id}/edit`);
   }
 
   return (
     <div className="flex-1 overflow-y-auto flex flex-col bg-brand-bg">
       <PageHeader
-        title="Edit activity"
+        title={isDraftDuplicate ? "New activity" : "Edit activity"}
         backHref={`/activity/${activity.id}`}
         containerClassName="max-w-lg xl:max-w-3xl"
       />
+
+      {showDraftBanner && (
+        <div className="px-4 max-w-lg xl:max-w-3xl mx-auto w-full">
+          <div className="rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 text-sm font-medium text-brand-teal">
+            Set a date and time to finish posting this activity.
+          </div>
+        </div>
+      )}
 
       {/* ── Form fields ─────────────────────────────────────── */}
       <div className="px-4 py-2 pb-12 xl:py-8 flex flex-col xl:flex-row xl:items-start gap-5 xl:gap-12 max-w-lg xl:max-w-3xl mx-auto w-full">
@@ -356,7 +399,11 @@ export default function EditActivityForm({
             disabled={!canSave || submitting}
             className={`${primaryBtn} xl:w-auto xl:px-8`}
           >
-            {submitting ? "Saving…" : "Save changes"}
+            {submitting
+              ? "Saving..."
+              : !currentStartsAt
+                ? "Set a date to save"
+                : "Save changes"}
           </button>
 
           {/* ── Cancel activity ──────────────────────────────── */}
@@ -365,40 +412,87 @@ export default function EditActivityForm({
               Danger zone
             </p>
 
-            {cancelConfirm && (
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-brand-muted text-center leading-relaxed">
-                  This will remove all participants and cancel the activity.
-                  This can&apos;t be undone.
-                </p>
-                <button
-                  onClick={handleCancelActivity}
-                  disabled={cancelling}
-                  className="w-full xl:w-auto xl:px-6 rounded-xl bg-brand-danger-dark text-white text-sm font-semibold py-3.5 hover:opacity-90 transition-opacity disabled:opacity-60"
-                >
-                  {cancelling ? "Cancelling…" : "Yes, cancel activity"}
-                </button>
-              </div>
+            {cancelConfirm && !duplicateConfirm && (
+              <p className="text-sm text-brand-muted text-center leading-relaxed">
+                This will remove all participants and cancel the activity.
+                This can&apos;t be undone.
+              </p>
             )}
 
-            <button
-              onClick={() =>
-                cancelConfirm ? setCancelConfirm(false) : setCancelConfirm(true)
-              }
-              disabled={cancelling}
-              className="w-full xl:w-auto xl:px-6 rounded-xl border border-brand-danger text-brand-danger text-sm font-medium py-3 hover:bg-brand-danger/5 transition-colors disabled:opacity-40"
-            >
-              {cancelConfirm ? "Keep it" : "Cancel activity"}
-            </button>
-          </div>
+            {!duplicateConfirm && (
+              <button
+                ref={cancelButtonRef}
+                onClick={() => {
+                  if (cancelConfirm) {
+                    handleCancelActivity();
+                    return;
+                  }
 
-          <button
-            onClick={handleDuplicateActivity}
-            disabled={duplicating}
-            className="w-full xl:w-auto xl:px-6 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-border-hover hover:text-brand-text transition-colors disabled:opacity-40"
-          >
-            {duplicating ? "Duplicating..." : "Duplicate activity"}
-          </button>
+                  setDuplicateConfirm(false);
+                  setCancelConfirm(true);
+                }}
+                disabled={cancelling}
+                className={`w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 ${
+                  cancelConfirm
+                    ? "border-brand-danger-dark bg-brand-danger-dark text-white hover:opacity-90"
+                    : "border-brand-danger text-brand-danger hover:bg-brand-danger/5"
+                }`}
+              >
+                {cancelling
+                  ? "Cancelling…"
+                  : cancelConfirm
+                    ? "Yes, cancel activity"
+                    : "Cancel activity"}
+              </button>
+            )}
+            <AnimatePresence initial={false}>
+              {cancelConfirm && !cancelling && (
+                <motion.button
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 16 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setCancelConfirm(false)}
+                  className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+                >
+                  Never mind
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            {!cancelConfirm && (
+              <button
+                ref={duplicateButtonRef}
+                onClick={handleDuplicateActivity}
+                disabled={duplicating}
+                className={`w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 ${
+                  duplicateConfirm
+                    ? "border-brand-teal bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
+                    : "border-brand-border text-brand-muted hover:border-brand-border-hover hover:text-brand-text"
+                }`}
+              >
+                {duplicating
+                  ? "Duplicating..."
+                  : duplicateConfirm
+                    ? "Confirm duplicate"
+                    : "Duplicate activity"}
+              </button>
+            )}
+            <AnimatePresence initial={false}>
+              {duplicateConfirm && !duplicating && (
+                <motion.button
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 16 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setDuplicateConfirm(false)}
+                  className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+                >
+                  Cancel
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>
