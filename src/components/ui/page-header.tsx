@@ -7,6 +7,7 @@ interface PageHeaderProps {
   title: string;
   backHref?: string;
   backLabel?: string;
+  containerClassName?: string;
 }
 
 function getScrollParent(node: HTMLElement | null): HTMLElement | null {
@@ -20,6 +21,7 @@ export default function PageHeader({
   title,
   backHref,
   backLabel,
+  containerClassName = "max-w-lg",
 }: PageHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -44,13 +46,12 @@ export default function PageHeader({
         borderBottom: "0.5px solid",
         borderColor: scrolled ? "rgba(0,0,0,0.2)" : "transparent",
         transition: "border-color 0.15s ease",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
       }}
-      className="bg-brand-bg"
+      className="bg-brand-bg sticky top-0 z-50 xl:static xl:z-auto xl:border-[transparent!important]"
     >
-      <div className="relative flex items-center justify-center px-4 pt-6 pb-4 max-w-lg mx-auto w-full">
+      <div
+        className={`relative flex items-center justify-center xl:justify-start px-4 pt-6 pb-4 ${containerClassName} mx-auto w-full`}
+      >
         {backHref && (
           <Link
             href={backHref}

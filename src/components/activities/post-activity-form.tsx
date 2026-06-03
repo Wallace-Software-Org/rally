@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { SearchBox } from "@mapbox/search-js-react";
 import {
@@ -51,6 +51,18 @@ const SKILL_LEVELS = ["All levels", "Beginner", "Advanced"] as const;
 
 const SPORTS = SPORTS_LIST.filter((s) => s !== "All");
 
+function subscribeMounted() {
+  return () => {};
+}
+
+function getMountedSnapshot() {
+  return true;
+}
+
+function getServerMountedSnapshot() {
+  return false;
+}
+
 export default function PostActivityForm() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -71,8 +83,11 @@ export default function PostActivityForm() {
   const [stepperValue, setStepperValue] = useState(4);
   const [submitting, setSubmitting] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    subscribeMounted,
+    getMountedSnapshot,
+    getServerMountedSnapshot,
+  );
 
   function patch(update: Partial<FormState>) {
     setForm((f) => ({ ...f, ...update }));

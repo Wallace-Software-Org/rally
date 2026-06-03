@@ -18,26 +18,41 @@ export function useLocation(): LocationState {
   });
 
   useEffect(() => {
+    let active = true;
+
     if (!navigator.geolocation) {
-      setState((s) => ({
-        ...s,
-        loading: false,
-        error: "Geolocation not supported",
-      }));
-      return;
+      queueMicrotask(() => {
+        if (!active) return;
+        setState((s) => ({
+          ...s,
+          loading: false,
+          error: "Geolocation not supported",
+        }));
+      });
+      return () => {
+        active = false;
+      };
     }
-    // No cleanup: getCurrentPosition has no cancellation API. If the component unmounts
-    // before the callback fires, React 18 silently drops the setState call.
+
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
+      (pos) => {
+        if (!active) return;
         setState({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           loading: false,
           error: null,
-        }),
-      (err) => setState((s) => ({ ...s, loading: false, error: err.message })),
+        });
+      },
+      (err) => {
+        if (!active) return;
+        setState((s) => ({ ...s, loading: false, error: err.message }));
+      },
     );
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   return state;

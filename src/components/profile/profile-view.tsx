@@ -70,7 +70,9 @@ function ActivityCard({
               >
                 <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
               </svg>
-              <span className="truncate text-xs">{activity.location_name}</span>
+              <span className="truncate text-sm xl:text-xs">
+                {activity.location_name}
+              </span>
             </span>
           )}
           <div className="flex items-center justify-between gap-2">

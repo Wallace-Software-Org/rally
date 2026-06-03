@@ -375,7 +375,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
           </div>
 
           {/* Activities */}
-          <div className="flex flex-col">
+          <div className="flex flex-col mb-2 xl:mb-0">
             <button
               type="button"
               onClick={() => setTagsOpen((o) => !o)}
@@ -446,6 +446,8 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
             </AnimatePresence>
           </div>
 
+          <div className="xl:hidden mt-4 border-t-[0.5px] border-brand-border pt-4" />
+
           {saveError && (
             <p className="text-xs text-brand-danger text-center">{saveError}</p>
           )}
@@ -457,6 +459,8 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
           >
             {submitting ? "Saving..." : "Save changes"}
           </button>
+
+          <div className="xl:hidden mt-6 border-t-[0.5px] border-brand-border pt-4" />
 
           {/* Sign out */}
           <div className="flex flex-col gap-2 pt-2 mb-2">
