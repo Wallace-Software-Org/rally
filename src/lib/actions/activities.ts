@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function normalizeExternalLink(link: string | null | undefined): string | null {
@@ -103,7 +104,8 @@ export async function createActivity(data: {
   if (partErr) return { error: partErr.message };
 
   revalidatePath("/");
-  return { error: null };
+  revalidatePath(`/activity/${activity.id}`);
+  redirect(`/activity/${activity.id}?posted=true`);
 }
 
 export async function updateActivity(
@@ -147,53 +149,6 @@ export async function updateActivity(
   revalidatePath("/");
   revalidatePath(`/activity/${activityId}`);
   return { error: null };
-}
-
-export async function duplicateActivity(
-  activityId: string,
-): Promise<{ id: string | null; error: string | null }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { id: null, error: "Not authenticated" };
-
-  const { data: activity, error: readError } = await supabase
-    .from("activities")
-    .select(
-      `
-      title, sport, description, external_link, lat, lng, location_name,
-      max_participants, skill_level, community_tag
-    `,
-    )
-    .eq("id", activityId)
-    .eq("creator_id", user.id)
-    .single();
-
-  if (readError) return { id: null, error: readError.message };
-  if (!activity) return { id: null, error: "Activity not found" };
-
-  const { data: newActivity, error: insertError } = await supabase
-    .from("activities")
-    .insert({
-      ...activity,
-      starts_at: null,
-      creator_id: user.id,
-      status: "open",
-    })
-    .select("id")
-    .single();
-
-  if (insertError) return { id: null, error: insertError.message };
-
-  const { error: participantError } = await supabase
-    .from("participants")
-    .insert({ activity_id: newActivity.id, user_id: user.id, status: "joined" });
-
-  if (participantError) return { id: null, error: participantError.message };
-
-  revalidatePath("/");
-  return { id: newActivity.id, error: null };
 }
 
 export async function cancelActivity(

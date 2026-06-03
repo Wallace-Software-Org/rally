@@ -252,9 +252,11 @@ function LocationButton({ locationName, lat, lng }: { locationName: string; lat:
 export default function ActivityDetailView({
   activity,
   userId,
+  showPostedBanner: initialShowPostedBanner = false,
 }: {
   activity: ActivityDetail;
   userId: string | null;
+  showPostedBanner?: boolean;
 }) {
   const initiallyJoined = activity.participants.some(
     (p) => p.user_id === userId,
@@ -264,6 +266,9 @@ export default function ActivityDetailView({
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [showPostedBanner, setShowPostedBanner] = useState(
+    initialShowPostedBanner,
+  );
 
   useEffect(() => {
     if (!leaveConfirm) return;
@@ -275,6 +280,25 @@ export default function ActivityDetailView({
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
   }, [leaveConfirm]);
+
+  useEffect(() => {
+    if (!initialShowPostedBanner) return;
+
+    function hidePostedBanner() {
+      setShowPostedBanner(false);
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete("posted");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+
+    window.addEventListener("pagehide", hidePostedBanner);
+    return () => window.removeEventListener("pagehide", hidePostedBanner);
+  }, [initialShowPostedBanner]);
 
   const isHost = userId === activity.creator_id;
   const participantCount = activity.participants.length;
@@ -306,6 +330,10 @@ export default function ActivityDetailView({
   function handleInstagram() {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
+  }
+
+  function handlePostedShare() {
+    alert("Share card coming soon");
   }
 
   // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
@@ -389,6 +417,28 @@ export default function ActivityDetailView({
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
+        {showPostedBanner && (
+          <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
+            <div className="rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 text-sm font-medium text-brand-teal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <span>Your activity is live.</span>
+              <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 flex-none">
+                <button
+                  onClick={handlePostedShare}
+                  className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
+                >
+                  Share to Instagram
+                </button>
+                <button
+                  onClick={() => setShowPostedBanner(false)}
+                  aria-label="Dismiss"
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {/* xl: max-width wrapper with flex row; md/lg: centered single column */}
         <div className="xl:max-w-5xl xl:mx-auto xl:px-8 xl:flex xl:items-start xl:gap-10 xl:pt-8">
           {/* ── Main content column ─────────────────────────────────────────── */}
