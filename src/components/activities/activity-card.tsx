@@ -3,7 +3,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { ActivityWithParticipants } from "@/types";
+import { createClient } from "@/lib/supabase/client";
 import { formatActivityDate } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 
@@ -24,6 +26,93 @@ type CardProps = {
   onJoin: () => void;
 };
 
+function initialParticipantCount(activity: ActivityWithParticipants): number {
+  return Array.isArray(activity.participants) ? activity.participants.length : 0;
+}
+
+function useRealtimeParticipantCount(activity: ActivityWithParticipants) {
+  const initialCount = initialParticipantCount(activity);
+  const [participantState, setParticipantState] = useState(() => ({
+    activityId: activity.id,
+    initialCount,
+    count: initialCount,
+  }));
+  const participantCount =
+    participantState.activityId === activity.id &&
+    participantState.initialCount === initialCount
+      ? participantState.count
+      : initialCount;
+
+  useEffect(() => {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      return;
+    }
+
+    function updateParticipantCount(update: (count: number) => number) {
+      setParticipantState((state) => {
+        const currentCount =
+          state.activityId === activity.id && state.initialCount === initialCount
+            ? state.count
+            : initialCount;
+
+        return {
+          activityId: activity.id,
+          initialCount,
+          count: update(currentCount),
+        };
+      });
+    }
+
+    const supabase = createClient();
+    const channelId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+    const channel = supabase
+      .channel(`participants:${activity.id}:${channelId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "participants",
+          filter: `activity_id=eq.${activity.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            updateParticipantCount((count) => count + 1);
+          }
+
+          if (payload.eventType === "DELETE") {
+            updateParticipantCount((count) => Math.max(0, count - 1));
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [activity.id, initialCount]);
+
+  return participantCount;
+}
+
+function spotsLeftText(
+  maxParticipants: number | null,
+  participantCount: number,
+) {
+  if (maxParticipants === null) return "Open";
+
+  const spotsLeft = Math.max(0, maxParticipants - participantCount);
+  if (spotsLeft === 0) return "Full";
+
+  return `${spotsLeft} spots left`;
+}
+
 // ── CardAction ────────────────────────────────────────────────────────────────
 // Shared CTA pill used by both card variants. Priority order:
 //   logged-out → Sign in  |  host → null  |  joined → Going ✓  |  full → Full  |  → Join
@@ -36,7 +125,10 @@ function CardAction({
   onJoin,
   spotsLeft,
   router,
-}: CardProps & { spotsLeft: number; router: ReturnType<typeof useRouter> }) {
+}: CardProps & {
+  spotsLeft: number | null;
+  router: ReturnType<typeof useRouter>;
+}) {
   const pill =
     "w-20 h-9 flex items-center justify-center rounded-full text-xs font-semibold";
 
@@ -75,7 +167,7 @@ function CardAction({
     );
   }
 
-  if (spotsLeft <= 0) {
+  if (spotsLeft !== null && spotsLeft <= 0) {
     return <span className="text-sm text-brand-muted font-medium">Full</span>;
   }
 
@@ -111,13 +203,11 @@ export function ActivityCardMobile({
   onJoin,
 }: MobileCardProps) {
   const router = useRouter();
-  const participantCount = Array.isArray(activity.participants)
-    ? activity.participants.length
-    : 0;
+  const participantCount = useRealtimeParticipantCount(activity);
   const spotsLeft =
     activity.max_participants === null
-      ? Infinity
-      : activity.max_participants - participantCount;
+      ? null
+      : Math.max(0, activity.max_participants - participantCount);
   const avatars = activity.participants
     .filter((p) => p.profiles)
     .slice(0, 3)
@@ -197,11 +287,7 @@ export function ActivityCardMobile({
           </div>
         )}
         <span className="text-xs text-brand-muted flex-1">
-          {activity.max_participants === null
-            ? "Open"
-            : spotsLeft <= 0
-              ? "Full"
-              : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
+          {spotsLeftText(activity.max_participants, participantCount)}
         </span>
         <CardAction
           activity={activity}
@@ -239,13 +325,11 @@ export function ActivityCardDesktop({
   onJoin,
 }: DesktopCardProps) {
   const router = useRouter();
-  const participantCount = Array.isArray(activity.participants)
-    ? activity.participants.length
-    : 0;
+  const participantCount = useRealtimeParticipantCount(activity);
   const spotsLeft =
     activity.max_participants === null
-      ? Infinity
-      : activity.max_participants - participantCount;
+      ? null
+      : Math.max(0, activity.max_participants - participantCount);
   const avatars = activity.participants
     .filter((p) => p.profiles)
     .slice(0, 3)
@@ -329,11 +413,7 @@ export function ActivityCardDesktop({
           </div>
         )}
         <span className="text-xs text-brand-muted flex-1">
-          {activity.max_participants === null
-            ? "Open"
-            : spotsLeft <= 0
-              ? "Full"
-              : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"}`}
+          {spotsLeftText(activity.max_participants, participantCount)}
         </span>
         <CardAction
           activity={activity}

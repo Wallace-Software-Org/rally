@@ -11,6 +11,7 @@ const ActivityMiniMap = dynamic(
 import Image from "next/image";
 import type { ActivityDetail } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
+import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
@@ -66,6 +67,89 @@ function Avatar({
 
 function Divider() {
   return <div className="h-px bg-brand-border" />;
+}
+
+function useRealtimeParticipantCount(activity: ActivityDetail) {
+  const initialCount = activity.participants.length;
+  const [participantState, setParticipantState] = useState(() => ({
+    activityId: activity.id,
+    initialCount,
+    count: initialCount,
+  }));
+  const participantCount =
+    participantState.activityId === activity.id &&
+    participantState.initialCount === initialCount
+      ? participantState.count
+      : initialCount;
+
+  useEffect(() => {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      return;
+    }
+
+    function updateParticipantCount(update: (count: number) => number) {
+      setParticipantState((state) => {
+        const currentCount =
+          state.activityId === activity.id && state.initialCount === initialCount
+            ? state.count
+            : initialCount;
+
+        return {
+          activityId: activity.id,
+          initialCount,
+          count: update(currentCount),
+        };
+      });
+    }
+
+    const supabase = createClient();
+    const channelId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+    const channel = supabase
+      .channel(`participants:${activity.id}:${channelId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "participants",
+          filter: `activity_id=eq.${activity.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            updateParticipantCount((count) => count + 1);
+          }
+
+          if (payload.eventType === "DELETE") {
+            updateParticipantCount((count) => Math.max(0, count - 1));
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [activity.id, initialCount]);
+
+  return participantCount;
+}
+
+function spotsLeftText(
+  maxParticipants: number | null,
+  participantCount: number,
+) {
+  if (maxParticipants === null) return "Open";
+
+  const spotsLeft = Math.max(0, maxParticipants - participantCount);
+  if (spotsLeft === 0) return "Full";
+
+  return `${spotsLeft} spots left`;
 }
 
 function ExternalLinkIcon() {
@@ -301,11 +385,12 @@ export default function ActivityDetailView({
   }, [initialShowPostedBanner]);
 
   const isHost = userId === activity.creator_id;
-  const participantCount = activity.participants.length;
+  const participantCount = useRealtimeParticipantCount(activity);
   const spotsLeft =
     activity.max_participants === null
       ? null
-      : activity.max_participants - participantCount;
+      : Math.max(0, activity.max_participants - participantCount);
+  const isFull = spotsLeft !== null && spotsLeft <= 0;
   const skillDisplay = activity.skill_level
     ? activity.skill_level.charAt(0).toUpperCase() +
       activity.skill_level.slice(1)
@@ -363,6 +448,13 @@ export default function ActivityDetailView({
     >
       Sign in to join
     </Link>
+  ) : isFull ? (
+    <button
+      disabled
+      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 transition-colors disabled:opacity-60"
+    >
+      Full
+    </button>
   ) : (
     <button
       onClick={handleJoin}
@@ -532,11 +624,7 @@ export default function ActivityDetailView({
               <div className="flex flex-wrap gap-2 mt-3">
                 <MetaPill>{skillDisplay}</MetaPill>
                 <MetaPill>
-                  {activity.max_participants === null
-                    ? "Open enrollment"
-                    : spotsLeft === 0
-                      ? "Full"
-                      : `${spotsLeft} spots left`}
+                  {spotsLeftText(activity.max_participants, participantCount)}
                 </MetaPill>
               </div>
             </div>
