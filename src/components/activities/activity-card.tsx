@@ -252,7 +252,7 @@ export function ActivityCardDesktop({
     .map((p) => p.profiles!);
   const { time, date } = formatActivityDate(activity.starts_at);
 
-  const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-2 transition-all border ${
+  const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-1 transition-all border ${
     isActive
       ? "border-brand-teal bg-brand-teal/10"
       : "border-brand-border bg-brand-bg hover:border-brand-border-hover"
@@ -302,7 +302,7 @@ export function ActivityCardDesktop({
         </p>
       </div>
       {/* mt-auto pushes this row to the bottom when the grid stretches cards to equal height */}
-      <div className="flex items-center gap-2 mt-auto pt-1.5">
+      <div className="flex items-center gap-2 mt-auto pt-1">
         {avatars.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
             {avatars.map((av, i) => (
