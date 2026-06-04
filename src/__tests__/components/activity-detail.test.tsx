@@ -7,7 +7,6 @@ import type { ActivityDetail } from "@/types";
 vi.mock("@/lib/actions/activities", () => ({
   joinActivity: vi.fn().mockResolvedValue({ error: null }),
   leaveActivity: vi.fn().mockResolvedValue({ error: null }),
-  cancelActivity: vi.fn().mockResolvedValue({ error: null }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -17,7 +16,6 @@ vi.mock("next/navigation", () => ({
 import {
   joinActivity,
   leaveActivity,
-  cancelActivity,
 } from "@/lib/actions/activities";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -43,6 +41,7 @@ const mockActivity: ActivityDetail = {
         full_name: "Jake Kline",
         avatar_url: null,
         instagram_handle: "jakekline",
+        username: "jakekline",
       },
     },
   ],
@@ -51,6 +50,7 @@ const mockActivity: ActivityDetail = {
     full_name: "Jake Kline",
     avatar_url: null,
     instagram_handle: "jakekline",
+    username: "jakekline",
   },
   hosted_count: 5,
 };
@@ -86,7 +86,12 @@ function renderAsJoinedViewer() {
           {
             id: "p-2",
             user_id: "viewer-99",
-            profiles: { full_name: "Wallace Palmer", avatar_url: null, instagram_handle: "wallacepalmer" },
+            profiles: {
+              full_name: "Wallace Palmer",
+              avatar_url: null,
+              instagram_handle: "wallacepalmer",
+              username: "wallacepalmer",
+            },
           },
         ],
       }}
@@ -198,21 +203,21 @@ describe("ActivityDetailView — join flow", () => {
 // ── Leave flow (cycling pill) ─────────────────────────────────────────────────
 
 describe("ActivityDetailView — leave flow", () => {
-  it('shows "✓ You\'re going" pill when the user has joined', () => {
+  it('shows "Going ✓" pill when the user has joined', () => {
     renderAsJoinedViewer();
-    expect(screen.getAllByText(/you're going/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Going ✓").length).toBeGreaterThan(0);
   });
 
   it('first tap on pill transitions to "Leave activity?" confirm state', () => {
     renderAsJoinedViewer();
     // desktop cycling button (md/lg or xl) is the first interactive pill in DOM order
-    fireEvent.click(screen.getAllByRole("button", { name: /you're going/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Going ✓" })[0]);
     expect(screen.getAllByRole("button", { name: /leave activity\?/i }).length).toBeGreaterThan(0);
   });
 
   it("second tap on confirm calls leaveActivity", async () => {
     renderAsJoinedViewer();
-    fireEvent.click(screen.getAllByRole("button", { name: /you're going/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Going ✓" })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /leave activity\?/i })[0]);
     await waitFor(() => {
       expect(leaveActivity).toHaveBeenCalledWith("act-1");
@@ -223,38 +228,19 @@ describe("ActivityDetailView — leave flow", () => {
 // ── Host actions ─────────────────────────────────────────────────────────────
 
 describe("ActivityDetailView — host actions", () => {
-  it("shows Edit and Cancel buttons when the current user is the host", () => {
+  it("shows Manage link when the current user is the host", () => {
     renderAsHost();
-    expect(screen.getAllByRole("link", { name: /edit activity/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("button", { name: /cancel activity/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /manage/i }).length).toBeGreaterThan(0);
   });
 
-  it("hides Edit and Cancel buttons for non-host viewers", () => {
+  it("hides Manage link for non-host viewers", () => {
     renderAsViewer();
-    expect(screen.queryByRole("link", { name: /edit activity/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /cancel activity/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /manage/i })).not.toBeInTheDocument();
   });
 
-  it('first click on Cancel shows "Confirm cancel?" state', () => {
+  it("Manage link points to the edit page", () => {
     renderAsHost();
-    fireEvent.click(screen.getAllByRole("button", { name: /cancel activity/i })[0]);
-    expect(screen.getAllByRole("button", { name: /confirm cancel/i }).length).toBeGreaterThan(0);
-  });
-
-  it("second click on Cancel calls cancelActivity", async () => {
-    renderAsHost();
-    const cancelBtn = screen.getAllByRole("button", { name: /cancel activity/i })[0];
-    fireEvent.click(cancelBtn);
-    const confirmBtn = screen.getAllByRole("button", { name: /confirm cancel/i })[0];
-    fireEvent.click(confirmBtn);
-    await waitFor(() => {
-      expect(cancelActivity).toHaveBeenCalledWith("act-1");
-    });
-  });
-
-  it("Edit activity link points to the edit page", () => {
-    renderAsHost();
-    const editLink = screen.getAllByRole("link", { name: /edit activity/i })[0];
-    expect(editLink).toHaveAttribute("href", "/activity/act-1/edit");
+    const manageLink = screen.getAllByRole("link", { name: /manage/i })[0];
+    expect(manageLink).toHaveAttribute("href", "/activity/act-1/edit");
   });
 });

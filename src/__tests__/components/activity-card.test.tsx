@@ -3,6 +3,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import type { ActivityWithParticipants } from "@/types";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/",
+}));
+
 const mockActivity: ActivityWithParticipants = {
   id: "act-1",
   creator_id: "creator-999",
@@ -72,15 +77,13 @@ describe("ActivityCardDesktop", () => {
 
   it("renders Details link when showDetails=true", () => {
     render(<ActivityCardDesktop {...base} showDetails={true} />);
-    const link = screen.getByRole("link", { name: "Details" });
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute("href", "/activity/act-1");
+    expect(screen.queryByRole("link", { name: "Details" })).not.toBeInTheDocument();
   });
 
   it("clicking Details link does not propagate to onSelect", () => {
     const onSelect = vi.fn();
-    render(<ActivityCardDesktop {...base} showDetails={true} onSelect={onSelect} />);
-    fireEvent.click(screen.getByRole("link", { name: "Details" }));
+    render(<ActivityCardDesktop {...base} showDetails={true} onSelect={onSelect} userId={null} />);
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(onSelect).not.toHaveBeenCalled();
   });
 
@@ -111,12 +114,12 @@ describe("ActivityCardDesktop", () => {
 
   it('shows "Sign in" link when userId is null', () => {
     render(<ActivityCardDesktop {...base} userId={null} />);
-    expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 
   it("shows spots remaining when max_participants is set", () => {
     render(<ActivityCardDesktop {...base} />);
-    expect(screen.getByText("10 spots")).toBeInTheDocument();
+    expect(screen.getByText("10 spots left")).toBeInTheDocument();
   });
 
   it('shows "Open" when max_participants is null', () => {
