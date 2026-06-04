@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { ActivityWithParticipants } from "@/types";
+import type { ActivityWithParticipants, Participant } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { formatActivityDate } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
@@ -27,21 +27,71 @@ type CardProps = {
 };
 
 function initialParticipantCount(activity: ActivityWithParticipants): number {
-  return Array.isArray(activity.participants) ? activity.participants.length : 0;
+  return initialParticipants(activity).length;
 }
 
-function useRealtimeParticipantCount(activity: ActivityWithParticipants) {
+function initialParticipants(activity: ActivityWithParticipants): Participant[] {
+  if (!Array.isArray(activity.participants)) return [];
+
+  const seenUserIds = new Set<string>();
+  return activity.participants.filter((participant) => {
+    if (seenUserIds.has(participant.user_id)) return false;
+    seenUserIds.add(participant.user_id);
+    return true;
+  });
+}
+
+type RealtimeState = {
+  activityId: string;
+  initialCount: number;
+  currentUserId: string | null;
+  count: number;
+  participants: Participant[];
+  hasJoined: boolean;
+  deleteLogKey: number;
+};
+
+function hasUserJoined(participants: Participant[], currentUserId: string | null) {
+  return (
+    currentUserId !== null &&
+    participants.some((participant) => participant.user_id === currentUserId)
+  );
+}
+
+function useRealtimeParticipants(
+  activity: ActivityWithParticipants,
+  currentUserId: string | null,
+): {
+  participantCount: number;
+  liveParticipants: Participant[];
+  hasJoined: boolean;
+} {
+  const initialParticipantList = initialParticipants(activity);
   const initialCount = initialParticipantCount(activity);
-  const [participantState, setParticipantState] = useState(() => ({
+  const [state, setState] = useState<RealtimeState>(() => ({
     activityId: activity.id,
     initialCount,
+    currentUserId,
     count: initialCount,
+    participants: initialParticipantList,
+    hasJoined: hasUserJoined(initialParticipantList, currentUserId),
+    deleteLogKey: 0,
   }));
-  const participantCount =
-    participantState.activityId === activity.id &&
-    participantState.initialCount === initialCount
-      ? participantState.count
-      : initialCount;
+
+  const isSync =
+    state.activityId === activity.id &&
+    state.initialCount === initialCount &&
+    state.currentUserId === currentUserId;
+  const participantCount = isSync ? state.count : initialCount;
+  const liveParticipants = isSync ? state.participants : initialParticipantList;
+  const hasJoined = isSync
+    ? state.hasJoined
+    : hasUserJoined(initialParticipantList, currentUserId);
+
+  useEffect(() => {
+    if (state.deleteLogKey === 0) return;
+    console.log("participants after DELETE length", state.participants.length);
+  }, [state.deleteLogKey, state.participants.length]);
 
   useEffect(() => {
     if (
@@ -51,26 +101,12 @@ function useRealtimeParticipantCount(activity: ActivityWithParticipants) {
       return;
     }
 
-    function updateParticipantCount(update: (count: number) => number) {
-      setParticipantState((state) => {
-        const currentCount =
-          state.activityId === activity.id && state.initialCount === initialCount
-            ? state.count
-            : initialCount;
-
-        return {
-          activityId: activity.id,
-          initialCount,
-          count: update(currentCount),
-        };
-      });
-    }
-
     const supabase = createClient();
     const channelId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : Math.random().toString(36).slice(2);
+
     const channel = supabase
       .channel(`participants:${activity.id}:${channelId}`)
       .on(
@@ -83,11 +119,63 @@ function useRealtimeParticipantCount(activity: ActivityWithParticipants) {
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            updateParticipantCount((count) => count + 1);
+            const row = payload.new as { id: string; user_id: string };
+            void supabase
+              .from("profiles")
+              .select("full_name, avatar_url")
+              .eq("id", row.user_id)
+              .single()
+              .then(({ data: profile }) => {
+                setState((prev) => {
+                  const isCurrent =
+                    prev.activityId === activity.id &&
+                    prev.initialCount === initialCount &&
+                    prev.currentUserId === currentUserId;
+                  const nextParticipants = [
+                    ...(isCurrent ? prev.participants : initialParticipantList),
+                    {
+                      id: row.id,
+                      user_id: row.user_id,
+                      profiles: profile ?? null,
+                    },
+                  ];
+
+                  return {
+                    activityId: activity.id,
+                    initialCount,
+                    currentUserId,
+                    count: nextParticipants.length,
+                    participants: nextParticipants,
+                    hasJoined: hasUserJoined(nextParticipants, currentUserId),
+                    deleteLogKey: prev.deleteLogKey,
+                  };
+                });
+              });
           }
 
           if (payload.eventType === "DELETE") {
-            updateParticipantCount((count) => Math.max(0, count - 1));
+            const row = payload.old as { id: string };
+            console.log("participants DELETE payload.old", payload.old);
+            setState((prev) => {
+              const isCurrent =
+                prev.activityId === activity.id &&
+                prev.initialCount === initialCount &&
+                prev.currentUserId === currentUserId;
+              const base = isCurrent ? prev.participants : initialParticipantList;
+              const nextParticipants = base.filter(
+                (participant) => participant.id !== row.id,
+              );
+
+              return {
+                activityId: activity.id,
+                initialCount,
+                currentUserId,
+                count: nextParticipants.length,
+                participants: nextParticipants,
+                hasJoined: hasUserJoined(nextParticipants, currentUserId),
+                deleteLogKey: prev.deleteLogKey + 1,
+              };
+            });
           }
         },
       )
@@ -96,9 +184,12 @@ function useRealtimeParticipantCount(activity: ActivityWithParticipants) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [activity.id, initialCount]);
+  // activity.participants intentionally omitted: re-sync only on id/count
+  // changes, not on every parent render with a new array reference.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity.id, initialCount, currentUserId]);
 
-  return participantCount;
+  return { participantCount, liveParticipants, hasJoined };
 }
 
 function spotsLeftText(
@@ -198,20 +289,23 @@ export function ActivityCardMobile({
   activity,
   userId,
   isActive,
-  isJoined,
   isJoining,
   onJoin,
 }: MobileCardProps) {
   const router = useRouter();
-  const participantCount = useRealtimeParticipantCount(activity);
+  const {
+    participantCount,
+    liveParticipants,
+    hasJoined: isJoinedLive,
+  } = useRealtimeParticipants(activity, userId);
   const spotsLeft =
     activity.max_participants === null
       ? null
       : Math.max(0, activity.max_participants - participantCount);
-  const avatars = activity.participants
+  const avatars = liveParticipants
     .filter((p) => p.profiles)
-    .slice(0, 3)
-    .map((p) => p.profiles!);
+    .map((p) => p.profiles!)
+    .slice(0, 5);
   const { time, date } = formatActivityDate(activity.starts_at);
 
   return (
@@ -292,7 +386,7 @@ export function ActivityCardMobile({
         <CardAction
           activity={activity}
           userId={userId}
-          isJoined={isJoined}
+          isJoined={isJoinedLive}
           isJoining={isJoining}
           onJoin={onJoin}
           spotsLeft={spotsLeft}
@@ -319,21 +413,24 @@ export function ActivityCardDesktop({
   userId,
   isActive,
   showDetails,
-  isJoined,
   isJoining,
   onSelect,
   onJoin,
 }: DesktopCardProps) {
   const router = useRouter();
-  const participantCount = useRealtimeParticipantCount(activity);
+  const {
+    participantCount,
+    liveParticipants,
+    hasJoined: isJoinedLive,
+  } = useRealtimeParticipants(activity, userId);
   const spotsLeft =
     activity.max_participants === null
       ? null
       : Math.max(0, activity.max_participants - participantCount);
-  const avatars = activity.participants
+  const avatars = liveParticipants
     .filter((p) => p.profiles)
-    .slice(0, 3)
-    .map((p) => p.profiles!);
+    .map((p) => p.profiles!)
+    .slice(0, 5);
   const { time, date } = formatActivityDate(activity.starts_at);
 
   const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-1 transition-all border ${
@@ -418,7 +515,7 @@ export function ActivityCardDesktop({
         <CardAction
           activity={activity}
           userId={userId}
-          isJoined={isJoined}
+          isJoined={isJoinedLive}
           isJoining={isJoining}
           onJoin={onJoin}
           spotsLeft={spotsLeft}

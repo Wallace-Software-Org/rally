@@ -36,7 +36,7 @@ export default function MapPanel({
 }: MapPanelProps) {
   const mapRef = useRef<MapRef>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const prevSelectedId = useRef<string | null>(null);
 
   // Fly to selected activity at zoom 14; fly back to default view on deselect
@@ -52,8 +52,16 @@ const [expanded, setExpanded] = useState(false);
 
     if (selectedId) {
       const activity = activities.find((a) => a.id === selectedId);
-      if (typeof activity?.lat !== "number" || typeof activity?.lng !== "number") return;
-      map.flyTo({ center: [activity.lng, activity.lat], duration: 600, essential: true });
+      if (
+        typeof activity?.lat !== "number" ||
+        typeof activity?.lng !== "number"
+      )
+        return;
+      map.flyTo({
+        center: [activity.lng, activity.lat],
+        duration: 600,
+        essential: true,
+      });
     } else if (prev) {
       map.flyTo({
         center: [DEFAULT_VIEW.longitude, DEFAULT_VIEW.latitude],
@@ -64,17 +72,10 @@ const [expanded, setExpanded] = useState(false);
   }, [selectedId, activities, variant]);
 
   const stripInteractionOff =
-    variant === "strip"
-      ? { scrollZoom: false, doubleClickZoom: false }
-      : {};
+    variant === "strip" ? { scrollZoom: false, doubleClickZoom: false } : {};
 
   const withCoords = activities.filter(
     (a) => typeof a.lat === "number" && typeof a.lng === "number",
-  );
-  console.log(
-    "Activities with coords:",
-    withCoords.length,
-    withCoords.map((a) => ({ title: a.title, lat: a.lat, lng: a.lng })),
   );
 
   const pins = mapLoaded
