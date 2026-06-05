@@ -140,7 +140,7 @@ export default function MapPreviewCard({
           ref={btnRef}
           onClick={() => (confirming ? onLeave() : setConfirming(true))}
           disabled={isLeaving}
-          className={`w-full rounded-xl text-sm font-semibold py-3 transition-colors disabled:opacity-50 border ${
+          className={`cursor-pointer w-full rounded-xl text-sm font-semibold py-3 transition-colors disabled:opacity-50 border ${
             confirming
               ? "border-red-400 text-red-500 bg-transparent"
               : "border-transparent tag-teal"
@@ -156,7 +156,7 @@ export default function MapPreviewCard({
         <button
           onClick={onJoin}
           disabled={isJoining}
-          className="w-full rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50"
+          className="cursor-pointer w-full rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50"
         >
           {isJoining ? "Joining…" : "Join this activity"}
         </button>

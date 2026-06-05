@@ -216,12 +216,18 @@ function CardAction({
   onJoin,
   spotsLeft,
   router,
+  showJoinAction = true,
 }: CardProps & {
   spotsLeft: number | null;
   router: ReturnType<typeof useRouter>;
+  showJoinAction?: boolean;
 }) {
   const pill =
     "w-20 h-9 flex items-center justify-center rounded-full text-xs font-semibold";
+
+  if (!showJoinAction && userId !== activity.creator_id) {
+    return null;
+  }
 
   if (userId === null) {
     return (
@@ -391,6 +397,7 @@ export function ActivityCardMobile({
           onJoin={onJoin}
           spotsLeft={spotsLeft}
           router={router}
+          showJoinAction={false}
         />
       </div>
     </Link>
@@ -520,6 +527,7 @@ export function ActivityCardDesktop({
           onJoin={onJoin}
           spotsLeft={spotsLeft}
           router={router}
+          showJoinAction={showDetails}
         />
       </div>
     </>

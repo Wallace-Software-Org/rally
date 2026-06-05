@@ -433,7 +433,7 @@ export default function ActivityDetailView({
     <button
       data-leave-btn
       onClick={() => (leaveConfirm ? handleLeave() : setLeaveConfirm(true))}
-      className={`w-full max-w-156 flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
+      className={`cursor-pointer w-full max-w-156 flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
         leaveConfirm
           ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
           : "border-brand-teal text-brand-teal bg-transparent hover:bg-brand-teal/5"
@@ -459,7 +459,7 @@ export default function ActivityDetailView({
     <button
       onClick={handleJoin}
       disabled={joining}
-      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
+      className="cursor-pointer w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
     >
       {joining ? "Joining…" : "Join activity"}
     </button>
