@@ -38,10 +38,7 @@ const SKILL_LEVELS = [
   "Advanced",
 ] as const;
 
-const SPORT_OPTIONS = [
-  "Select sport",
-  ...SPORTS_LIST.filter((s) => s !== "All"),
-];
+const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
 const inputCls =
   "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
@@ -421,20 +418,32 @@ export default function ActivityForm({
         </div>
 
         <div className="flex flex-col gap-5 xl:w-72">
-          {mode !== "edit" && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-brand-text">
-                Sport
-              </label>
-              <Select
-                value={sport ? getSportLabel(sport) : "Select sport"}
-                onChange={(value) =>
-                  setSport(value === "Select sport" ? "" : value.toLowerCase())
-                }
-                options={SPORT_OPTIONS}
-              />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-brand-text">
+              Sport
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {SPORT_ITEMS.map((a) => {
+                const key = a.toLowerCase();
+                const active = sport === key;
+                return (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => setSport(key)}
+                    aria-pressed={active}
+                    className={`cursor-pointer rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
+                      active
+                        ? "bg-brand-teal border-brand-teal text-white"
+                        : "border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg"
+                    }`}
+                  >
+                    {getSportLabel(a)}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-brand-text">

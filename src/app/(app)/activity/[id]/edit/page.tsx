@@ -26,6 +26,7 @@ export default async function EditActivityPage({
     "use server";
 
     const { error } = await updateActivity(id, {
+      sport: data.sport,
       title: data.title,
       description: data.description,
       starts_at: data.starts_at,

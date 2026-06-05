@@ -111,6 +111,7 @@ export async function createActivity(data: {
 export async function updateActivity(
   activityId: string,
   data: {
+    sport: string;
     title: string;
     description: string;
     starts_at: string;

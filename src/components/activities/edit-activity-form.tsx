@@ -16,6 +16,7 @@ export default function EditActivityForm({
 
   async function handleSubmit(data: ActivityFormSubmitData) {
     const { error } = await updateActivity(activity.id, {
+      sport: data.sport,
       title: data.title,
       description: data.description,
       starts_at: data.starts_at,
