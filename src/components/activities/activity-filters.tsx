@@ -79,7 +79,7 @@ function MorePill({
     <div ref={ref} className="relative flex-none">
       <button
         onClick={() => setOpen((p) => !p)}
-        className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+        className={`cursor-pointer flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
           isActive
             ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
             : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
@@ -103,7 +103,7 @@ function MorePill({
                     onSelect(s);
                     setOpen(false);
                   }}
-                  className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
+                  className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
                 >
                   {s}
                   {activeSports.includes(s) && checkIcon}
@@ -126,7 +126,7 @@ function MorePill({
                     onSelect(s);
                     setOpen(false);
                   }}
-                  className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
+                  className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
                 >
                   {s}
                   {activeSports.includes(s) && checkIcon}
@@ -168,7 +168,7 @@ export function DatePickerPill({
     <div ref={ref} className="relative flex-none">
       <button
         onClick={() => setOpen((p) => !p)}
-        className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+        className={`cursor-pointer flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
           isActive
             ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
             : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
@@ -187,7 +187,7 @@ export function DatePickerPill({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
+              className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
             >
               {opt.label}
               {value === opt.value && checkIcon}
@@ -242,7 +242,7 @@ export default function ActivityFilters({
     (pinnedOverflow.length > 0 || others.length > 0);
 
   function pillCls(active: boolean) {
-    return `flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+    return `cursor-pointer flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
       active
         ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
         : "border border-brand-border text-brand-muted hover:border-brand-border-hover"

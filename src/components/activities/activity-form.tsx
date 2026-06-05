@@ -173,6 +173,7 @@ export default function ActivityForm({
     initialData.status === "closed" ? "closed" : "open",
   );
   const [submitting, setSubmitting] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -236,6 +237,7 @@ export default function ActivityForm({
 
   async function handleSubmit() {
     const starts = startsAtIso();
+    setHasSubmitted(true);
     if (!canSubmit || !starts || submitting) return;
 
     setSubmitError(null);
@@ -354,7 +356,7 @@ export default function ActivityForm({
                 theme={SEARCH_BOX_THEME}
               />
             </div>
-            {!locationValid && (
+            {hasSubmitted && !locationValid && (
               <p className="text-xs text-brand-danger">Location is required.</p>
             )}
           </div>
@@ -370,7 +372,7 @@ export default function ActivityForm({
               placeholder="https://..."
               className={inputCls}
             />
-            {!externalLinkValid && (
+            {hasSubmitted && !externalLinkValid && (
               <p className="text-xs text-brand-danger">
                 Enter a valid http or https URL.
               </p>
@@ -505,7 +507,7 @@ export default function ActivityForm({
 
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit || submitting}
+            disabled={submitting}
             className={`${primaryBtn} xl:w-auto xl:px-8`}
           >
             {submitLabel}

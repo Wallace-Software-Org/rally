@@ -257,7 +257,7 @@ function CardAction({
   if (isJoined) {
     return (
       <span
-        className={`${pill} border border-brand-teal text-brand-teal bg-transparent`}
+        className={`${pill} cursor-pointer border border-brand-teal text-brand-teal bg-transparent`}
       >
         Going ✓
       </span>
@@ -275,7 +275,7 @@ function CardAction({
         onJoin();
       }}
       disabled={isJoining}
-      className={`${pill} bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
+      className={`${pill} cursor-pointer bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
     >
       {isJoining ? "…" : "Join"}
     </button>
