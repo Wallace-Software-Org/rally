@@ -26,7 +26,6 @@ export default function EditActivityForm({
       location_name: data.location_name,
       lat: data.lat,
       lng: data.lng,
-      status: data.status,
     });
 
     if (!error) router.push(`/activity/${activity.id}`);

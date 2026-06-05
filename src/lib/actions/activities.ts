@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SPORTS_LIST } from "@/lib/utils/sport-config";
+
+const PREDEFINED_SPORTS = new Set(
+  SPORTS_LIST.filter((sport) => sport !== "All").map((sport) =>
+    sport.toLowerCase(),
+  ),
+);
 
 function normalizeExternalLink(link: string | null | undefined): string | null {
   const value = link?.trim();
@@ -18,6 +25,27 @@ function normalizeExternalLink(link: string | null | undefined): string | null {
   }
 
   throw new Error("External link must be a valid http or https URL");
+}
+
+function normalizeSport(sport: string): string {
+  const value = sport.trim().replace(/\s+/g, " ");
+  if (!value) throw new Error("Sport is required");
+
+  const key = value.toLowerCase();
+  if (PREDEFINED_SPORTS.has(key)) return key;
+
+  if (value.length < 2) {
+    throw new Error("Custom sport must be at least 2 characters");
+  }
+
+  if (value.length > 30) {
+    throw new Error("Custom sport must be 30 characters or fewer");
+  }
+
+  return key
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 export async function joinActivity(
@@ -76,11 +104,13 @@ export async function createActivity(data: {
   if (!user) return { error: "Unauthenticated" };
 
   let externalLink: string | null;
+  let sport: string;
   try {
     externalLink = normalizeExternalLink(data.external_link);
+    sport = normalizeSport(data.sport);
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Invalid external link",
+      error: error instanceof Error ? error.message : "Invalid activity",
     };
   }
 
@@ -88,6 +118,7 @@ export async function createActivity(data: {
     .from("activities")
     .insert({
       ...data,
+      sport,
       external_link: externalLink,
       creator_id: user.id,
       status: "open",
@@ -101,7 +132,15 @@ export async function createActivity(data: {
     .from("participants")
     .insert({ activity_id: activity.id, user_id: user.id, status: "joined" });
 
-  if (partErr) return { error: partErr.message };
+  if (partErr) {
+    await supabase
+      .from("activities")
+      .delete()
+      .eq("id", activity.id)
+      .eq("creator_id", user.id);
+
+    return { error: partErr.message };
+  }
 
   revalidatePath("/");
   revalidatePath(`/activity/${activity.id}`);
@@ -121,7 +160,6 @@ export async function updateActivity(
     location_name: string;
     lat: number | null;
     lng: number | null;
-    status: string;
   },
 ): Promise<{ error: string | null }> {
   const supabase = await createClient();
@@ -131,17 +169,19 @@ export async function updateActivity(
   if (!user) return { error: "Not authenticated" };
 
   let externalLink: string | null;
+  let sport: string;
   try {
     externalLink = normalizeExternalLink(data.external_link);
+    sport = normalizeSport(data.sport);
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Invalid external link",
+      error: error instanceof Error ? error.message : "Invalid activity",
     };
   }
 
   const { error } = await supabase
     .from("activities")
-    .update({ ...data, external_link: externalLink })
+    .update({ ...data, sport, external_link: externalLink })
     .eq("id", activityId)
     .eq("creator_id", user.id);
 

@@ -511,23 +511,23 @@ export default function ActivityDetailView({
       <div className="flex-1 overflow-y-auto">
         {showPostedBanner && (
           <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
-            <div className="rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 text-sm font-medium text-brand-teal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <span>Your activity is live.</span>
-              <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 flex-none">
+              <div className="w-full sm:w-auto flex items-center sm:justify-end gap-2 flex-none">
                 <button
                   onClick={handlePostedShare}
                   className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
                 >
                   Share to Instagram
                 </button>
-                <button
-                  onClick={() => setShowPostedBanner(false)}
-                  aria-label="Dismiss"
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
-                >
-                  ×
-                </button>
               </div>
+              <button
+                onClick={() => setShowPostedBanner(false)}
+                aria-label="Dismiss"
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
+              >
+                ×
+              </button>
             </div>
           </div>
         )}

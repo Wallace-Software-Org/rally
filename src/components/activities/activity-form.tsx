@@ -74,7 +74,6 @@ export type ActivityFormSubmitData = {
   location_name: string;
   lat: number | null;
   lng: number | null;
-  status: string;
 };
 
 type ActivityFormProps = {
@@ -91,6 +90,7 @@ type TouchedField =
   | "externalLink"
   | "date"
   | "time"
+  | "description"
   | "sport";
 
 type TouchedFields = Record<TouchedField, boolean>;
@@ -101,6 +101,7 @@ const initialTouchedFields: TouchedFields = {
   externalLink: false,
   date: false,
   time: false,
+  description: false,
   sport: false,
 };
 
@@ -163,7 +164,17 @@ export default function ActivityForm({
       : parsedStartsAt;
 
   const [title, setTitle] = useState(initialData.title ?? "");
-  const [sport, setSport] = useState(initialData.sport?.toLowerCase() ?? "");
+  const initialSport = initialData.sport?.trim() ?? "";
+  const initialSportKey = initialSport.toLowerCase();
+  const initialSportIsPreset = SPORT_ITEMS.some(
+    (item) => item.toLowerCase() === initialSportKey,
+  );
+  const [selectedSport, setSelectedSport] = useState(
+    initialSportIsPreset ? initialSportKey : "",
+  );
+  const [customSport, setCustomSport] = useState(
+    initialSportIsPreset ? "" : initialSport,
+  );
   const [description, setDescription] = useState(initialData.description ?? "");
   const [date, setDate] = useState(startsAtParts.date);
   const [time, setTime] = useState(startsAtParts.time);
@@ -185,12 +196,12 @@ export default function ActivityForm({
   const [stepperValue, setStepperValue] = useState(
     initialData.max_participants ?? 4,
   );
-  const [status] = useState<"open" | "closed">(
-    initialData.status === "closed" ? "closed" : "open",
-  );
   const [submitting, setSubmitting] = useState(false);
   const [touched, setTouched] = useState<TouchedFields>(initialTouchedFields);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [externalLinkOpen, setExternalLinkOpen] = useState(
+    Boolean(initialData.external_link),
+  );
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [duplicateConfirm, setDuplicateConfirm] = useState(false);
@@ -227,6 +238,16 @@ export default function ActivityForm({
     });
   }
 
+  function titleCaseSport(value: string): string {
+    return value
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+
   function handleDuplicateActivity() {
     if (!duplicateConfirm) {
       setCancelConfirm(false);
@@ -236,7 +257,7 @@ export default function ActivityForm({
 
     const params = new URLSearchParams();
     params.set("title", title.trim());
-    params.set("sport", sport);
+    params.set("sport", sportValue);
     params.set("location", locationName.trim());
     params.set("description", description.trim());
     params.set("skill_level", skillLevel);
@@ -266,7 +287,7 @@ export default function ActivityForm({
     setSubmitting(true);
     const result = await onSubmit({
       title: title.trim(),
-      sport,
+      sport: sportValue,
       description: description.trim(),
       starts_at: starts,
       max_participants: limitSpots ? stepperValue : null,
@@ -275,7 +296,6 @@ export default function ActivityForm({
       location_name: locationName.trim(),
       lat,
       lng,
-      status,
     });
     setSubmitting(false);
 
@@ -287,32 +307,34 @@ export default function ActivityForm({
   const externalLinkValue = normalizeExternalLink(externalLink);
   const externalLinkValid = !externalLink.trim() || externalLinkValue !== null;
   const titleValid = title.trim().length > 0;
-  const sportValid = sport.trim().length > 0;
+  const descriptionValid = description.trim().length >= 20;
+  const customSportTrimmed = customSport.trim();
+  const customSportValid = customSportTrimmed.length >= 2;
+  const sportValue = selectedSport || titleCaseSport(customSportTrimmed);
+  const sportValid = Boolean(selectedSport) || customSportValid;
   const dateValid = date.trim().length > 0;
   const timeValid = time.trim().length > 0;
   const locationHasSelectedResult =
     locationName.trim().length > 0 &&
-    typeof lat === "number" &&
-    typeof lng === "number";
-  const locationValid =
-    mode === "edit"
-      ? locationName.trim().length > 0
-      : locationHasSelectedResult;
+    lat !== null &&
+    lng !== null;
+  const locationValid = locationHasSelectedResult;
   const currentStartsAt = startsAtIso();
   const canSubmit =
     titleValid &&
     sportValid &&
     locationValid &&
-    externalLinkValid &&
+    descriptionValid &&
     dateValid &&
     timeValid &&
     !!currentStartsAt;
-  const submitDisabled = submitting || (mode !== "edit" && !canSubmit);
+  const submitDisabled = submitting || !canSubmit;
   const showTitleError = touched.title && !titleValid;
   const showLocationError = touched.location && !locationValid;
   const showExternalLinkError = touched.externalLink && !externalLinkValid;
   const showDateError = touched.date && !dateValid;
   const showTimeError = touched.time && !timeValid;
+  const showDescriptionError = touched.description && !descriptionValid;
   const showSportError = touched.sport && !sportValid;
   const pageTitle = mode === "edit" ? "Edit activity" : "New activity";
   const backHref =
@@ -329,11 +351,11 @@ export default function ActivityForm({
         : "Post activity";
   const highlightedDateCls =
     mode === "duplicate" && !date
-      ? "[&>div>button]:border-brand-teal [&>div>button]:ring-[1.5px] [&>div>button]:ring-brand-teal"
+      ? "[&_button]:border-brand-teal [&_button]:ring-[1.5px] [&_button]:ring-brand-teal"
       : "";
   const highlightedTimeCls =
     mode === "duplicate" && !time
-      ? "[&>div>button]:border-brand-teal [&>div>button]:ring-[1.5px] [&>div>button]:ring-brand-teal"
+      ? "[&_button]:border-brand-teal [&_button]:ring-[1.5px] [&_button]:ring-brand-teal"
       : "";
 
   return (
@@ -341,19 +363,19 @@ export default function ActivityForm({
       <PageHeader
         title={pageTitle}
         backHref={backHref}
-        containerClassName="max-w-lg xl:max-w-3xl"
+        containerClassName="max-w-lg xl:max-w-5xl"
       />
 
       {mode === "duplicate" && (
-        <div className="px-4 max-w-lg xl:max-w-3xl mx-auto w-full">
+        <div className="px-4 max-w-lg xl:max-w-5xl mx-auto w-full">
           <div className="rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 text-sm font-medium text-brand-teal">
             Set a date to post this activity
           </div>
         </div>
       )}
 
-      <div className="px-4 py-2 pb-12 xl:py-8 flex flex-col xl:flex-row xl:items-start gap-5 xl:gap-12 max-w-lg xl:max-w-3xl mx-auto w-full">
-        <div className="flex flex-col gap-5 xl:flex-1 min-w-0">
+      <div className="px-4 py-2 pb-12 xl:py-8 flex flex-col xl:flex-row xl:items-stretch gap-8 xl:gap-0 max-w-lg xl:max-w-5xl mx-auto w-full">
+        <div className="flex flex-col gap-5 xl:flex-1 xl:pr-10 min-w-0">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-brand-text">
               Activity title
@@ -470,65 +492,76 @@ export default function ActivityForm({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onBlur={() => markTouched("description")}
               placeholder="Tell people what to expect: pace, gear, meetup spot, anything useful."
               rows={4}
               className={`${inputCls} resize-none`}
             />
+            {showDescriptionError && (
+              <p className="text-red-500 text-sm">
+                Tell people what to expect (20 characters minimum)
+              </p>
+            )}
           </div>
-          {/* Sport */}
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-brand-text">Sport</label>
             <div
-              className={`grid grid-cols-3 gap-2 rounded-xl ${
-                showSportError ? "outline outline-1 outline-red-500" : ""
+              className={`rounded-xl border ${
+                showSportError ? "border-red-500" : "border-transparent"
               }`}
             >
-              {SPORT_ITEMS.map((a) => {
-                const key = a.toLowerCase();
-                const active = sport === key;
-                return (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => {
-                      markTouched("sport");
-                      setSport(key);
-                    }}
-                    aria-pressed={active}
-                    className={`cursor-pointer rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
-                      active
-                        ? "bg-brand-teal border-brand-teal text-white"
-                        : "border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg"
-                    }`}
-                  >
-                    {getSportLabel(a)}
-                  </button>
-                );
-              })}
+              <div className="grid grid-cols-3 gap-2">
+                {SPORT_ITEMS.map((a) => {
+                  const key = a.toLowerCase();
+                  const active = selectedSport === key;
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => {
+                        markTouched("sport");
+                        setSelectedSport(key);
+                        setCustomSport("");
+                      }}
+                      aria-pressed={active}
+                      className={`cursor-pointer rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
+                        active
+                          ? "bg-brand-teal border-brand-teal text-white"
+                          : "border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg"
+                      }`}
+                    >
+                      {getSportLabel(a)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 pt-2">
+              <label className="text-sm font-medium text-brand-text">
+                Other
+              </label>
+              <input
+                type="text"
+                value={customSport}
+                onChange={(e) => {
+                  setCustomSport(e.target.value.slice(0, 30));
+                  setSelectedSport("");
+                }}
+                onBlur={() => markTouched("sport")}
+                maxLength={30}
+                placeholder="Custom sport"
+                className={inputCls}
+              />
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 xl:w-72">
-          {/* External registraion */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
-              External registration link
-            </label>
-            <input
-              type="url"
-              value={externalLink}
-              onChange={(e) => setExternalLink(e.target.value)}
-              onBlur={() => markTouched("externalLink")}
-              placeholder="https://..."
-              className={inputCls}
-            />
-            {showExternalLinkError && (
-              <p className="text-red-500 text-sm">
-                Enter a valid http or https URL.
-              </p>
-            )}
-          </div>
+        <div className="flex flex-col gap-5 xl:w-80 xl:border-l-[0.5px] xl:border-brand-border xl:pl-10 xl:self-stretch">
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted">
+            Optional
+          </p>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-brand-text">
               Skill level
@@ -598,19 +631,52 @@ export default function ActivityForm({
             )}
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={submitDisabled}
-            className={`${primaryBtn} xl:w-auto xl:px-8`}
-          >
-            {submitLabel}
-          </button>
+          <div className="flex flex-col gap-1.5">
+            {!externalLinkOpen ? (
+              <button
+                type="button"
+                onClick={() => setExternalLinkOpen(true)}
+                className="cursor-pointer w-full rounded-xl border border-brand-border bg-brand-bg px-4 py-3 text-left text-sm font-medium text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors"
+              >
+                Add external link
+              </button>
+            ) : (
+              <>
+                <label className="text-sm font-medium text-brand-text">
+                  External registration link
+                </label>
+                <input
+                  type="url"
+                  value={externalLink}
+                  onChange={(e) => setExternalLink(e.target.value)}
+                  onBlur={() => markTouched("externalLink")}
+                  placeholder="https://..."
+                  className={inputCls}
+                />
+                {showExternalLinkError && (
+                  <p className="text-red-500 text-sm">
+                    Enter a valid http or https URL.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
 
-          {submitError && (
-            <p className="text-xs text-brand-danger text-center">
-              {submitError}
-            </p>
-          )}
+          <div className="flex flex-col gap-2 xl:mt-auto">
+            <button
+              onClick={handleSubmit}
+              disabled={submitDisabled}
+              className={`${primaryBtn} xl:w-auto xl:px-8`}
+            >
+              {submitLabel}
+            </button>
+
+            {submitError && (
+              <p className="text-xs text-brand-danger text-center">
+                {submitError}
+              </p>
+            )}
+          </div>
 
           {mode === "edit" && (
             <div className="border-t border-brand-border pt-6 mt-2 flex flex-col gap-3 transition-all duration-1000">

@@ -36,7 +36,6 @@ export default async function EditActivityPage({
       location_name: data.location_name,
       lat: data.lat,
       lng: data.lng,
-      status: data.status,
     });
 
     if (error) return { error };
