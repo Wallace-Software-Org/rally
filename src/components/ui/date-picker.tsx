@@ -6,6 +6,7 @@ interface DatePickerProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  minDate?: string;
 }
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -28,6 +29,7 @@ export default function DatePicker({
   value,
   onChange,
   placeholder = "Select a date",
+  minDate,
 }: DatePickerProps) {
   const today = new Date();
   const todayStr = [
@@ -64,7 +66,9 @@ export default function DatePicker({
   function selectDay(day: number) {
     const m = String(viewMonth + 1).padStart(2, "0");
     const d = String(day).padStart(2, "0");
-    onChange(`${viewYear}-${m}-${d}`);
+    const selectedDate = `${viewYear}-${m}-${d}`;
+    if (minDate && selectedDate < minDate) return;
+    onChange(selectedDate);
     setOpen(false);
   }
 
@@ -128,13 +132,17 @@ export default function DatePicker({
               const cellStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const isSelected = cellStr === value;
               const isToday = cellStr === todayStr;
+              const isDisabled = Boolean(minDate && cellStr < minDate);
               return (
                 <button
                   key={day}
                   type="button"
+                  disabled={isDisabled}
                   onClick={() => selectDay(day)}
                   className={`h-8 w-8 mx-auto flex items-center justify-center text-sm rounded-full transition-colors ${
-                    isSelected
+                    isDisabled
+                      ? "text-brand-muted/40 cursor-not-allowed"
+                      : isSelected
                       ? "bg-brand-teal text-white font-semibold"
                       : isToday
                         ? "bg-brand-warm-muted text-brand-warm font-medium hover:bg-brand-teal/20"

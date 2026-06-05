@@ -6,6 +6,7 @@ interface TimePickerProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  defaultOpenValue?: string;
 }
 
 type Slot = { value: string; label: string };
@@ -40,6 +41,7 @@ export default function TimePicker({
   value,
   onChange,
   placeholder = "Select a time",
+  defaultOpenValue = "00:00",
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,12 +49,11 @@ export default function TimePicker({
 
   useEffect(() => {
     if (!open || !listRef.current) return;
-    const idx = value
-      ? Math.max(0, SLOTS.findIndex((s) => s.value >= value))
-      : 0;
+    const scrollValue = value || defaultOpenValue;
+    const idx = Math.max(0, SLOTS.findIndex((s) => s.value >= scrollValue));
     const el = listRef.current.children[idx] as HTMLElement | undefined;
     el?.scrollIntoView({ block: "center" });
-  }, [open, value]);
+  }, [defaultOpenValue, open, value]);
 
   useEffect(() => {
     if (!open) return;

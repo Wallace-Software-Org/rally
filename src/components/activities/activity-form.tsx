@@ -44,7 +44,7 @@ const inputCls =
   "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
 
 const primaryBtn =
-  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
 export type ActivityFormMode = "edit" | "duplicate" | "new";
 
@@ -116,6 +116,22 @@ function parseDateParts(iso: string | null | undefined): {
     date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
     time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
   };
+}
+
+function localDateString(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function nextHalfHourTimeValue(date: Date = new Date()): string {
+  const minutesSinceMidnight =
+    date.getHours() * 60 +
+    date.getMinutes() +
+    (date.getSeconds() > 0 || date.getMilliseconds() > 0 ? 1 : 0);
+  const roundedMinutes = Math.ceil(minutesSinceMidnight / 30) * 30;
+  const hours = Math.floor(roundedMinutes / 60) % 24;
+  const minutes = roundedMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function normalizeExternalLink(value: string): string | null {
@@ -202,6 +218,7 @@ export default function ActivityForm({
   const [externalLinkOpen, setExternalLinkOpen] = useState(
     Boolean(initialData.external_link),
   );
+  const [validationNow, setValidationNow] = useState(() => new Date());
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [duplicateConfirm, setDuplicateConfirm] = useState(false);
@@ -225,6 +242,14 @@ export default function ActivityForm({
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [cancelConfirm, cancelling, duplicateConfirm, mode]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setValidationNow(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   function startsAtIso(): string {
     if (!date || !time) return "";
@@ -312,8 +337,18 @@ export default function ActivityForm({
   const customSportValid = customSportTrimmed.length >= 2;
   const sportValue = selectedSport || titleCaseSport(customSportTrimmed);
   const sportValid = Boolean(selectedSport) || customSportValid;
-  const dateValid = date.trim().length > 0;
-  const timeValid = time.trim().length > 0;
+  const todayDate = localDateString(validationNow);
+  const dateValid = date.trim().length > 0 && date >= todayDate;
+  const timeSelected = time.trim().length > 0;
+  const selectedDateIsToday = date === todayDate;
+  const selectedStartTime =
+    date && timeSelected ? new Date(`${date}T${time}:00`) : null;
+  const timeAtLeastThirtyMinutesFromNow =
+    !selectedDateIsToday ||
+    !selectedStartTime ||
+    selectedStartTime.getTime() >= validationNow.getTime() + 30 * 60 * 1000;
+  const timeValid = timeSelected && timeAtLeastThirtyMinutesFromNow;
+  const defaultOpenTime = date ? nextHalfHourTimeValue(validationNow) : "08:00";
   const locationHasSelectedResult =
     locationName.trim().length > 0 &&
     lat !== null &&
@@ -333,7 +368,9 @@ export default function ActivityForm({
   const showLocationError = touched.location && !locationValid;
   const showExternalLinkError = touched.externalLink && !externalLinkValid;
   const showDateError = touched.date && !dateValid;
-  const showTimeError = touched.time && !timeValid;
+  const showTimeRequiredError = touched.time && !timeSelected;
+  const showTimeLeadTimeError =
+    touched.time && timeSelected && !timeAtLeastThirtyMinutesFromNow;
   const showDescriptionError = touched.description && !descriptionValid;
   const showSportError = touched.sport && !sportValid;
   const pageTitle = mode === "edit" ? "Edit activity" : "New activity";
@@ -449,7 +486,12 @@ export default function ActivityForm({
                 >
                   <DatePicker
                     value={date}
-                    onChange={setDate}
+                    onChange={(value) => {
+                      markTouched("date");
+                      setValidationNow(new Date());
+                      setDate(value);
+                    }}
+                    minDate={todayDate}
                     placeholder="Select a date"
                   />
                 </div>
@@ -474,13 +516,23 @@ export default function ActivityForm({
                 >
                   <TimePicker
                     value={time}
-                    onChange={setTime}
+                    onChange={(value) => {
+                      markTouched("time");
+                      setValidationNow(new Date());
+                      setTime(value);
+                    }}
+                    defaultOpenValue={defaultOpenTime}
                     placeholder="Select a time"
                   />
                 </div>
               </div>
-              {showTimeError && (
+              {showTimeRequiredError && (
                 <p className="text-red-500 text-sm">Select a time</p>
+              )}
+              {showTimeLeadTimeError && (
+                <p className="text-red-500 text-sm">
+                  Choose a time at least 30 minutes from now
+                </p>
               )}
             </div>
           </div>
@@ -506,11 +558,7 @@ export default function ActivityForm({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-brand-text">Sport</label>
-            <div
-              className={`rounded-xl border ${
-                showSportError ? "border-red-500" : "border-transparent"
-              }`}
-            >
+            <div>
               <div className="grid grid-cols-3 gap-2">
                 {SPORT_ITEMS.map((a) => {
                   const key = a.toLowerCase();
@@ -545,6 +593,7 @@ export default function ActivityForm({
                 type="text"
                 value={customSport}
                 onChange={(e) => {
+                  markTouched("sport");
                   setCustomSport(e.target.value.slice(0, 30));
                   setSelectedSport("");
                 }}
@@ -553,6 +602,11 @@ export default function ActivityForm({
                 placeholder="Custom sport"
                 className={inputCls}
               />
+              {showSportError && (
+                <p className="text-red-500 text-sm">
+                  Select a sport to continue
+                </p>
+              )}
             </div>
           </div>
         </div>
