@@ -44,7 +44,7 @@ const inputCls =
   "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
 
 const primaryBtn =
-  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40";
+  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
 export type ActivityFormMode = "edit" | "duplicate" | "new";
 
@@ -83,6 +83,25 @@ type ActivityFormProps = {
   onSubmit: (
     data: ActivityFormSubmitData,
   ) => Promise<{ error: string | null } | void>;
+};
+
+type TouchedField =
+  | "title"
+  | "location"
+  | "externalLink"
+  | "date"
+  | "time"
+  | "sport";
+
+type TouchedFields = Record<TouchedField, boolean>;
+
+const initialTouchedFields: TouchedFields = {
+  title: false,
+  location: false,
+  externalLink: false,
+  date: false,
+  time: false,
+  sport: false,
 };
 
 function parseDateParts(iso: string | null | undefined): {
@@ -170,7 +189,7 @@ export default function ActivityForm({
     initialData.status === "closed" ? "closed" : "open",
   );
   const [submitting, setSubmitting] = useState(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [touched, setTouched] = useState<TouchedFields>(initialTouchedFields);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -199,6 +218,13 @@ export default function ActivityForm({
   function startsAtIso(): string {
     if (!date || !time) return "";
     return new Date(`${date}T${time}:00`).toISOString();
+  }
+
+  function markTouched(field: TouchedField) {
+    setTouched((prev) => {
+      if (prev[field]) return prev;
+      return { ...prev, [field]: true };
+    });
   }
 
   function handleDuplicateActivity() {
@@ -234,7 +260,6 @@ export default function ActivityForm({
 
   async function handleSubmit() {
     const starts = startsAtIso();
-    setHasSubmitted(true);
     if (!canSubmit || !starts || submitting) return;
 
     setSubmitError(null);
@@ -261,14 +286,34 @@ export default function ActivityForm({
 
   const externalLinkValue = normalizeExternalLink(externalLink);
   const externalLinkValid = !externalLink.trim() || externalLinkValue !== null;
-  const locationValid = locationName.trim().length > 0;
+  const titleValid = title.trim().length > 0;
+  const sportValid = sport.trim().length > 0;
+  const dateValid = date.trim().length > 0;
+  const timeValid = time.trim().length > 0;
+  const locationHasSelectedResult =
+    locationName.trim().length > 0 &&
+    typeof lat === "number" &&
+    typeof lng === "number";
+  const locationValid =
+    mode === "edit"
+      ? locationName.trim().length > 0
+      : locationHasSelectedResult;
   const currentStartsAt = startsAtIso();
   const canSubmit =
-    title.trim().length > 0 &&
-    sport.trim().length > 0 &&
+    titleValid &&
+    sportValid &&
     locationValid &&
     externalLinkValid &&
+    dateValid &&
+    timeValid &&
     !!currentStartsAt;
+  const submitDisabled = submitting || (mode !== "edit" && !canSubmit);
+  const showTitleError = touched.title && !titleValid;
+  const showLocationError = touched.location && !locationValid;
+  const showExternalLinkError = touched.externalLink && !externalLinkValid;
+  const showDateError = touched.date && !dateValid;
+  const showTimeError = touched.time && !timeValid;
+  const showSportError = touched.sport && !sportValid;
   const pageTitle = mode === "edit" ? "Edit activity" : "New activity";
   const backHref =
     mode === "edit" && initialData.id ? `/activity/${initialData.id}` : "/";
@@ -317,9 +362,13 @@ export default function ActivityForm({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => markTouched("title")}
               placeholder="e.g. Morning pickleball at Balboa Park"
               className={inputCls}
             />
+            {showTitleError && (
+              <p className="text-red-500 text-sm">Activity title is required</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -335,6 +384,7 @@ export default function ActivityForm({
                   setLat(null);
                   setLng(null);
                 }}
+                onBlur={() => markTouched("location")}
                 onRetrieve={(result) => {
                   const feat = result.features[0];
                   if (!feat) return;
@@ -353,25 +403,9 @@ export default function ActivityForm({
                 theme={SEARCH_BOX_THEME}
               />
             </div>
-            {hasSubmitted && !locationValid && (
-              <p className="text-xs text-brand-danger">Location is required.</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
-              External registration link
-            </label>
-            <input
-              type="url"
-              value={externalLink}
-              onChange={(e) => setExternalLink(e.target.value)}
-              placeholder="https://..."
-              className={inputCls}
-            />
-            {hasSubmitted && !externalLinkValid && (
-              <p className="text-xs text-brand-danger">
-                Enter a valid http or https URL.
+            {showLocationError && (
+              <p className="text-red-500 text-sm">
+                Select a location from the suggestions
               </p>
             )}
           </div>
@@ -382,24 +416,50 @@ export default function ActivityForm({
                 Date
               </label>
               <div className={highlightedDateCls}>
-                <DatePicker
-                  value={date}
-                  onChange={setDate}
-                  placeholder="Select a date"
-                />
+                <div
+                  onBlur={(e) => {
+                    if (
+                      e.currentTarget.contains(e.relatedTarget as Node | null)
+                    )
+                      return;
+                    markTouched("date");
+                  }}
+                >
+                  <DatePicker
+                    value={date}
+                    onChange={setDate}
+                    placeholder="Select a date"
+                  />
+                </div>
               </div>
+              {showDateError && (
+                <p className="text-red-500 text-sm">Select a date</p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-brand-text">
                 Time
               </label>
               <div className={highlightedTimeCls}>
-                <TimePicker
-                  value={time}
-                  onChange={setTime}
-                  placeholder="Select a time"
-                />
+                <div
+                  onBlur={(e) => {
+                    if (
+                      e.currentTarget.contains(e.relatedTarget as Node | null)
+                    )
+                      return;
+                    markTouched("time");
+                  }}
+                >
+                  <TimePicker
+                    value={time}
+                    onChange={setTime}
+                    placeholder="Select a time"
+                  />
+                </div>
               </div>
+              {showTimeError && (
+                <p className="text-red-500 text-sm">Select a time</p>
+              )}
             </div>
           </div>
 
@@ -415,14 +475,14 @@ export default function ActivityForm({
               className={`${inputCls} resize-none`}
             />
           </div>
-        </div>
-
-        <div className="flex flex-col gap-5 xl:w-72">
+          {/* Sport */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
-              Sport
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+            <label className="text-sm font-medium text-brand-text">Sport</label>
+            <div
+              className={`grid grid-cols-3 gap-2 rounded-xl ${
+                showSportError ? "outline outline-1 outline-red-500" : ""
+              }`}
+            >
               {SPORT_ITEMS.map((a) => {
                 const key = a.toLowerCase();
                 const active = sport === key;
@@ -430,7 +490,10 @@ export default function ActivityForm({
                   <button
                     key={a}
                     type="button"
-                    onClick={() => setSport(key)}
+                    onClick={() => {
+                      markTouched("sport");
+                      setSport(key);
+                    }}
                     aria-pressed={active}
                     className={`cursor-pointer rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
                       active
@@ -444,7 +507,28 @@ export default function ActivityForm({
               })}
             </div>
           </div>
+        </div>
 
+        <div className="flex flex-col gap-5 xl:w-72">
+          {/* External registraion */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-brand-text">
+              External registration link
+            </label>
+            <input
+              type="url"
+              value={externalLink}
+              onChange={(e) => setExternalLink(e.target.value)}
+              onBlur={() => markTouched("externalLink")}
+              placeholder="https://..."
+              className={inputCls}
+            />
+            {showExternalLinkError && (
+              <p className="text-red-500 text-sm">
+                Enter a valid http or https URL.
+              </p>
+            )}
+          </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-brand-text">
               Skill level
@@ -516,7 +600,7 @@ export default function ActivityForm({
 
           <button
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitDisabled}
             className={`${primaryBtn} xl:w-auto xl:px-8`}
           >
             {submitLabel}
