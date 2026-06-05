@@ -63,7 +63,7 @@ export default function AppNav({
 
         <Link
           href="/activity/new"
-          className="hidden lg:flex items-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold px-4 py-2 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors flex-none"
+          className="hidden xl:flex items-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold px-4 py-2 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors flex-none"
         >
           <svg
             width="12"
@@ -119,7 +119,6 @@ export default function AppNav({
             )}
           </div>
         )}
-
       </div>
     </header>
   );
