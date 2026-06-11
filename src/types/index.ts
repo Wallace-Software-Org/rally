@@ -25,6 +25,8 @@ export type Activity = {
   external_link?: string | null;
   location_name: string;
   starts_at: string;
+  ends_at: string | null;
+  visibility: "public" | "private";
   max_participants: number | null;
   skill_level: string | null;
   lat: number | null;
@@ -106,6 +108,7 @@ export type ActivityDetail = {
   lng: number | null;
   status: string;
   creator_id: string;
+  visibility: "public" | "private";
   participants: DetailParticipant[];
   host: HostProfile;
   hosted_count: number;

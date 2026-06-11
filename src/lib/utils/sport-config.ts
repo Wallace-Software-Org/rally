@@ -1,5 +1,6 @@
 // Single tag palette across all sports — brand uses one unified sport tag color
 const TAG = { bg: "#C8E6DC", text: "#1A6B52" };
+const OTHER_TAG = { bg: "#E2DBD3", text: "#7A6A5A" };
 
 export const SPORT_COLORS: Record<string, { bg: string; text: string }> = {
   running:     TAG,
@@ -17,6 +18,7 @@ export const SPORT_COLORS: Record<string, { bg: string; text: string }> = {
   golf:        TAG,
   pilates:     TAG,
   paddleboard: TAG,
+  other:       OTHER_TAG,
 };
 
 export function getSportLabel(sport: string): string {
@@ -40,4 +42,5 @@ export const SPORTS_LIST = [
   "Golf",
   "Pilates",
   "Paddleboard",
+  "Other",
 ];

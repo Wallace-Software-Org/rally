@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
-import { joinActivity, leaveActivity } from "@/lib/actions/activities";
+import { joinActivity } from "@/lib/actions/activities";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import ActivityFilters, {
   DatePickerPill,
@@ -39,7 +39,7 @@ export default function ActivityFeed({
       ),
   );
   const [joining, setJoining] = useState<Set<string>>(new Set());
-  const [leaving, setLeaving] = useState<Set<string>>(new Set());
+
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const visible = activities.filter(
@@ -71,22 +71,6 @@ export default function ActivityFeed({
     });
   }
 
-  async function handleLeave(activityId: string) {
-    if (!userId || !joined.has(activityId) || leaving.has(activityId)) return;
-    setLeaving((prev) => new Set(prev).add(activityId));
-    const { error } = await leaveActivity(activityId);
-    if (!error)
-      setJoined((prev) => {
-        const next = new Set(prev);
-        next.delete(activityId);
-        return next;
-      });
-    setLeaving((prev) => {
-      const next = new Set(prev);
-      next.delete(activityId);
-      return next;
-    });
-  }
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-brand-bg overflow-hidden">
@@ -232,13 +216,9 @@ export default function ActivityFeed({
             >
               {selectedActivity && (
                 <MapPreviewCard
+                  key={selectedActivity.id}
                   activity={selectedActivity}
                   userId={userId}
-                  isJoined={joined.has(selectedActivity.id)}
-                  isJoining={joining.has(selectedActivity.id)}
-                  isLeaving={leaving.has(selectedActivity.id)}
-                  onJoin={() => handleJoin(selectedActivity.id)}
-                  onLeave={() => handleLeave(selectedActivity.id)}
                   onDismiss={() => setSelectedId(null)}
                 />
               )}

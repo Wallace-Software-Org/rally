@@ -28,24 +28,10 @@ function normalizeExternalLink(link: string | null | undefined): string | null {
 }
 
 function normalizeSport(sport: string): string {
-  const value = sport.trim().replace(/\s+/g, " ");
-  if (!value) throw new Error("Sport is required");
-
-  const key = value.toLowerCase();
-  if (PREDEFINED_SPORTS.has(key)) return key;
-
-  if (value.length < 2) {
-    throw new Error("Custom sport must be at least 2 characters");
-  }
-
-  if (value.length > 30) {
-    throw new Error("Custom sport must be 30 characters or fewer");
-  }
-
-  return key
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  const key = sport.trim().toLowerCase();
+  if (!key) throw new Error("Sport is required");
+  if (!PREDEFINED_SPORTS.has(key)) throw new Error("Invalid sport");
+  return key;
 }
 
 export async function joinActivity(
@@ -88,6 +74,8 @@ export async function createActivity(data: {
   sport: string;
   title: string;
   starts_at: string;
+  ends_at?: string | null;
+  visibility?: "public" | "private";
   max_participants: number | null;
   skill_level: string;
   description: string;
@@ -114,12 +102,21 @@ export async function createActivity(data: {
     };
   }
 
+  const { ends_at: rawEndsAt, visibility, ...rest } = data;
+  const endsAt =
+    rawEndsAt ??
+    new Date(
+      new Date(data.starts_at).getTime() + 60 * 60 * 1000,
+    ).toISOString();
+
   const { data: activity, error: actErr } = await supabase
     .from("activities")
     .insert({
-      ...data,
+      ...rest,
       sport,
       external_link: externalLink,
+      ends_at: endsAt,
+      visibility: visibility ?? "public",
       creator_id: user.id,
       status: "open",
     })
@@ -154,6 +151,8 @@ export async function updateActivity(
     title: string;
     description: string;
     starts_at: string;
+    ends_at?: string | null;
+    visibility?: "public" | "private";
     max_participants: number | null;
     skill_level: string;
     external_link?: string | null;

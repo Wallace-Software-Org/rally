@@ -30,6 +30,8 @@ export default async function EditActivityPage({
       title: data.title,
       description: data.description,
       starts_at: data.starts_at,
+      ends_at: data.ends_at,
+      visibility: data.visibility,
       max_participants: data.max_participants,
       skill_level: data.skill_level,
       external_link: data.external_link,

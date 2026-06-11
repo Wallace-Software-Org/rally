@@ -6,9 +6,11 @@ interface SelectProps {
   value: string;
   onChange: (value: string) => void;
   options: readonly string[];
+  placeholder?: string;
+  listClassName?: string;
 }
 
-export default function Select({ value, onChange, options }: SelectProps) {
+export default function Select({ value, onChange, options, placeholder, listClassName }: SelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -32,7 +34,9 @@ export default function Select({ value, onChange, options }: SelectProps) {
             : "border-brand-border"
         }`}
       >
-        <span>{value}</span>
+        <span className={!value && placeholder ? "text-brand-muted" : ""}>
+          {value || placeholder || ""}
+        </span>
         <svg
           width="14"
           height="14"
@@ -53,20 +57,22 @@ export default function Select({ value, onChange, options }: SelectProps) {
 
       {open && (
         <div className="absolute top-full left-0 mt-1 w-full bg-brand-bg border border-brand-border rounded-xl shadow-md z-50 overflow-hidden">
-          {options.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => { onChange(option); setOpen(false); }}
-              className={`w-full px-4 py-3 text-sm text-left transition-colors hover:bg-brand-avatar-bg ${
-                option === value
-                  ? "text-brand-teal font-medium"
-                  : "text-brand-text"
-              }`}
-            >
-              {option}
-            </button>
-          ))}
+          <div className={listClassName ?? ""}>
+            {options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => { onChange(option); setOpen(false); }}
+                className={`w-full px-4 py-3 text-sm text-left transition-colors hover:bg-brand-avatar-bg ${
+                  option === value
+                    ? "text-brand-teal font-medium"
+                    : "text-brand-text"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -350,6 +350,7 @@ export default function ActivityDetailView({
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
   );
@@ -410,6 +411,12 @@ export default function ActivityDetailView({
     if (!error) setIsJoined(false);
     setLeaving(false);
     setLeaveConfirm(false);
+  }
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(window.location.href);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   }
 
   function handleInstagram() {
@@ -626,6 +633,9 @@ export default function ActivityDetailView({
                 <MetaPill>
                   {spotsLeftText(activity.max_participants, participantCount)}
                 </MetaPill>
+                {activity.visibility === "private" && (
+                  <MetaPill>Private</MetaPill>
+                )}
               </div>
             </div>
 
@@ -781,6 +791,14 @@ export default function ActivityDetailView({
             )}
             <div className="flex flex-col gap-3">
               {ctaButton}
+              {isHost && activity.visibility === "private" && (
+                <button
+                  onClick={handleCopyLink}
+                  className="cursor-pointer w-full flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary hover:bg-brand-secondary/10 transition-colors"
+                >
+                  {linkCopied ? "Copied!" : "Copy link"}
+                </button>
+              )}
               {registerBtn}
               {shareBtn}
             </div>

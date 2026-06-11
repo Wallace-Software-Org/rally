@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ActivityWithParticipants } from "@/types";
+import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 import { InstagramIcon } from "@/components/ui/icons";
@@ -10,25 +11,20 @@ import { InstagramIcon } from "@/components/ui/icons";
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
   userId: string | null;
-  isJoined: boolean;
-  isJoining: boolean;
-  isLeaving: boolean;
-  onJoin: () => void;
-  onLeave: () => void;
   onDismiss: () => void;
 };
 
 export default function MapPreviewCard({
   activity,
   userId,
-  isJoined,
-  isJoining,
-  isLeaving,
-  onJoin,
-  onLeave,
   onDismiss,
 }: MapPreviewCardProps) {
   const [confirming, setConfirming] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [isJoined, setIsJoined] = useState(
+    () => userId !== null && activity.participants.some((p) => p.user_id === userId),
+  );
   const btnRef = useRef<HTMLButtonElement>(null);
   const isHost = userId === activity.creator_id;
 
@@ -40,6 +36,25 @@ export default function MapPreviewCard({
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
   }, [confirming]);
+
+  async function handleJoin() {
+    if (!userId || isJoining) return;
+    setIsJoining(true);
+    const { error } = await joinActivity(activity.id);
+    if (!error) setIsJoined(true);
+    setIsJoining(false);
+  }
+
+  async function handleLeave() {
+    if (!userId || isLeaving) return;
+    setIsLeaving(true);
+    const { error } = await leaveActivity(activity.id);
+    if (!error) {
+      setIsJoined(false);
+      setConfirming(false);
+    }
+    setIsLeaving(false);
+  }
 
   const participantCount = Array.isArray(activity.participants)
     ? activity.participants.length
@@ -138,7 +153,7 @@ export default function MapPreviewCard({
       ) : isJoined ? (
         <button
           ref={btnRef}
-          onClick={() => (confirming ? onLeave() : setConfirming(true))}
+          onClick={() => (confirming ? handleLeave() : setConfirming(true))}
           disabled={isLeaving}
           className={`cursor-pointer w-full rounded-xl text-sm font-semibold py-3 transition-colors disabled:opacity-50 border ${
             confirming
@@ -154,7 +169,7 @@ export default function MapPreviewCard({
         </button>
       ) : spotsLeft > 0 ? (
         <button
-          onClick={onJoin}
+          onClick={handleJoin}
           disabled={isJoining}
           className="cursor-pointer w-full rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50"
         >

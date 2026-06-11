@@ -54,6 +54,8 @@ export type ActivityFormInitialData = Partial<{
   sport: string;
   description: string | null;
   starts_at: string | null;
+  ends_at: string | null;
+  visibility: "public" | "private";
   max_participants: number | null;
   skill_level: string | null;
   external_link: string | null;
@@ -68,6 +70,8 @@ export type ActivityFormSubmitData = {
   sport: string;
   description: string;
   starts_at: string;
+  ends_at: string | null;
+  visibility: "public" | "private";
   max_participants: number | null;
   skill_level: string;
   external_link: string | null;
@@ -178,18 +182,14 @@ export default function ActivityForm({
     mode === "duplicate"
       ? { date: "", time: parsedStartsAt.time }
       : parsedStartsAt;
+  const parsedEndsAt = parseDateParts(initialData.ends_at);
 
   const [title, setTitle] = useState(initialData.title ?? "");
-  const initialSport = initialData.sport?.trim() ?? "";
-  const initialSportKey = initialSport.toLowerCase();
-  const initialSportIsPreset = SPORT_ITEMS.some(
-    (item) => item.toLowerCase() === initialSportKey,
-  );
+  const initialSportKey = (initialData.sport?.trim() ?? "").toLowerCase();
   const [selectedSport, setSelectedSport] = useState(
-    initialSportIsPreset ? initialSportKey : "",
-  );
-  const [customSport, setCustomSport] = useState(
-    initialSportIsPreset ? "" : initialSport,
+    SPORT_ITEMS.some((item) => item.toLowerCase() === initialSportKey)
+      ? initialSportKey
+      : "",
   );
   const [description, setDescription] = useState(initialData.description ?? "");
   const [date, setDate] = useState(startsAtParts.date);
@@ -211,6 +211,13 @@ export default function ActivityForm({
   );
   const [stepperValue, setStepperValue] = useState(
     initialData.max_participants ?? 4,
+  );
+  const [endTime, setEndTime] = useState(parsedEndsAt.time);
+  const [endTimeVisible, setEndTimeVisible] = useState(
+    Boolean(initialData.ends_at),
+  );
+  const [visibility, setVisibility] = useState<"public" | "private">(
+    initialData.visibility ?? "public",
   );
   const [submitting, setSubmitting] = useState(false);
   const [touched, setTouched] = useState<TouchedFields>(initialTouchedFields);
@@ -256,21 +263,16 @@ export default function ActivityForm({
     return new Date(`${date}T${time}:00`).toISOString();
   }
 
+  function endsAtIso(): string | null {
+    if (!endTimeVisible || !endTime || !date) return null;
+    return new Date(`${date}T${endTime}:00`).toISOString();
+  }
+
   function markTouched(field: TouchedField) {
     setTouched((prev) => {
       if (prev[field]) return prev;
       return { ...prev, [field]: true };
     });
-  }
-
-  function titleCaseSport(value: string): string {
-    return value
-      .trim()
-      .replace(/\s+/g, " ")
-      .toLowerCase()
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
   }
 
   function handleDuplicateActivity() {
@@ -315,6 +317,8 @@ export default function ActivityForm({
       sport: sportValue,
       description: description.trim(),
       starts_at: starts,
+      ends_at: endsAtIso(),
+      visibility,
       max_participants: limitSpots ? stepperValue : null,
       skill_level: skillLevel,
       external_link: externalLinkValue,
@@ -333,10 +337,8 @@ export default function ActivityForm({
   const externalLinkValid = !externalLink.trim() || externalLinkValue !== null;
   const titleValid = title.trim().length > 0;
   const descriptionValid = description.trim().length >= 20;
-  const customSportTrimmed = customSport.trim();
-  const customSportValid = customSportTrimmed.length >= 2;
-  const sportValue = selectedSport || titleCaseSport(customSportTrimmed);
-  const sportValid = Boolean(selectedSport) || customSportValid;
+  const sportValue = selectedSport;
+  const sportValid = Boolean(selectedSport);
   const todayDate = localDateString(validationNow);
   const dateValid = date.trim().length > 0 && date >= todayDate;
   const timeSelected = time.trim().length > 0;
@@ -431,6 +433,23 @@ export default function ActivityForm({
           </div>
 
           <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-brand-text">Sport</label>
+            <Select
+              value={selectedSport ? getSportLabel(selectedSport) : ""}
+              onChange={(label) => {
+                markTouched("sport");
+                setSelectedSport(label.toLowerCase());
+              }}
+              options={SPORT_ITEMS}
+              placeholder="Select a sport"
+              listClassName="max-h-[240px] overflow-y-auto"
+            />
+            {showSportError && (
+              <p className="text-red-500 text-sm">Select a sport to continue</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-brand-text">
               Location
             </label>
@@ -469,72 +488,100 @@ export default function ActivityForm({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-brand-text">
-                Date
-              </label>
-              <div className={highlightedDateCls}>
-                <div
-                  onBlur={(e) => {
-                    if (
-                      e.currentTarget.contains(e.relatedTarget as Node | null)
-                    )
-                      return;
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-brand-text">Date</label>
+            <div className={highlightedDateCls}>
+              <div
+                onBlur={(e) => {
+                  if (e.currentTarget.contains(e.relatedTarget as Node | null))
+                    return;
+                  markTouched("date");
+                }}
+              >
+                <DatePicker
+                  value={date}
+                  onChange={(value) => {
                     markTouched("date");
+                    setValidationNow(new Date());
+                    setDate(value);
                   }}
-                >
-                  <DatePicker
-                    value={date}
-                    onChange={(value) => {
-                      markTouched("date");
-                      setValidationNow(new Date());
-                      setDate(value);
-                    }}
-                    minDate={todayDate}
-                    placeholder="Select a date"
-                  />
-                </div>
+                  minDate={todayDate}
+                  placeholder="Select a date"
+                />
               </div>
-              {showDateError && (
-                <p className="text-red-500 text-sm">Select a date</p>
-              )}
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-brand-text">
-                Time
+            {showDateError && (
+              <p className="text-red-500 text-sm">Select a date</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center">
+              <label className="text-sm font-medium text-brand-text flex-1">
+                Start time
               </label>
-              <div className={highlightedTimeCls}>
-                <div
-                  onBlur={(e) => {
-                    if (
-                      e.currentTarget.contains(e.relatedTarget as Node | null)
-                    )
-                      return;
-                    markTouched("time");
-                  }}
-                >
-                  <TimePicker
-                    value={time}
-                    onChange={(value) => {
+              <button
+                type="button"
+                onClick={() => setEndTimeVisible((v) => !v)}
+                className="flex items-center justify-center w-5 h-5 rounded-full border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors flex-none"
+                aria-label={endTimeVisible ? "Remove end time" : "Add end time"}
+              >
+                {endTimeVisible ? (
+                  <svg width="8" height="2" viewBox="0 0 8 2" fill="currentColor" aria-hidden="true">
+                    <rect width="8" height="1.5" rx="0.75" y="0.25" />
+                  </svg>
+                ) : (
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden="true">
+                    <rect x="3.25" width="1.5" height="8" rx="0.75" />
+                    <rect y="3.25" width="8" height="1.5" rx="0.75" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <div className={highlightedTimeCls}>
+                  <div
+                    onBlur={(e) => {
+                      if (
+                        e.currentTarget.contains(e.relatedTarget as Node | null)
+                      )
+                        return;
                       markTouched("time");
-                      setValidationNow(new Date());
-                      setTime(value);
                     }}
-                    defaultOpenValue={defaultOpenTime}
-                    placeholder="Select a time"
-                  />
+                  >
+                    <TimePicker
+                      value={time}
+                      onChange={(value) => {
+                        markTouched("time");
+                        setValidationNow(new Date());
+                        setTime(value);
+                      }}
+                      defaultOpenValue={defaultOpenTime}
+                      placeholder="Select a time"
+                    />
+                  </div>
                 </div>
               </div>
-              {showTimeRequiredError && (
-                <p className="text-red-500 text-sm">Select a time</p>
-              )}
-              {showTimeLeadTimeError && (
-                <p className="text-red-500 text-sm">
-                  Choose a time at least 30 minutes from now
-                </p>
+              {endTimeVisible && (
+                <div className="flex-1">
+                  <TimePicker
+                    value={endTime}
+                    onChange={setEndTime}
+                    defaultOpenValue={time || defaultOpenTime}
+                    placeholder="End time"
+                  />
+                </div>
               )}
             </div>
+            {showTimeRequiredError && (
+              <p className="text-red-500 text-sm">Select a time</p>
+            )}
+            {showTimeLeadTimeError && (
+              <p className="text-red-500 text-sm">
+                Choose a time at least 30 minutes from now
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -554,60 +601,6 @@ export default function ActivityForm({
                 Tell people what to expect (20 characters minimum)
               </p>
             )}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">Sport</label>
-            <div>
-              <div className="grid grid-cols-3 gap-2">
-                {SPORT_ITEMS.map((a) => {
-                  const key = a.toLowerCase();
-                  const active = selectedSport === key;
-                  return (
-                    <button
-                      key={a}
-                      type="button"
-                      onClick={() => {
-                        markTouched("sport");
-                        setSelectedSport(key);
-                        setCustomSport("");
-                      }}
-                      aria-pressed={active}
-                      className={`cursor-pointer rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
-                        active
-                          ? "bg-brand-teal border-brand-teal text-white"
-                          : "border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg"
-                      }`}
-                    >
-                      {getSportLabel(a)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5 pt-2">
-              <label className="text-sm font-medium text-brand-text">
-                Other
-              </label>
-              <input
-                type="text"
-                value={customSport}
-                onChange={(e) => {
-                  markTouched("sport");
-                  setCustomSport(e.target.value.slice(0, 30));
-                  setSelectedSport("");
-                }}
-                onBlur={() => markTouched("sport")}
-                maxLength={30}
-                placeholder="Custom sport"
-                className={inputCls}
-              />
-              {showSportError && (
-                <p className="text-red-500 text-sm">
-                  Select a sport to continue
-                </p>
-              )}
-            </div>
           </div>
         </div>
 
@@ -685,33 +678,78 @@ export default function ActivityForm({
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            {!externalLinkOpen ? (
+          <div className="border border-brand-border bg-brand-bg rounded-xl">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm text-brand-text">
+                  {visibility === "public" ? "Public activity" : "Private activity"}
+                </span>
+                <span className="text-xs text-brand-muted">
+                  {visibility === "public"
+                    ? "Anyone can find and join"
+                    : "Only joinable via link"}
+                </span>
+              </div>
               <button
                 type="button"
-                onClick={() => setExternalLinkOpen(true)}
-                className="cursor-pointer w-full rounded-xl border border-brand-border bg-brand-bg px-4 py-3 text-left text-sm font-medium text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors"
+                role="switch"
+                aria-checked={visibility === "private"}
+                onClick={() =>
+                  setVisibility((v) => (v === "public" ? "private" : "public"))
+                }
+                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
+                  visibility === "private"
+                    ? "bg-brand-teal justify-end"
+                    : "bg-brand-border justify-start"
+                }`}
               >
-                Add external link
+                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
               </button>
-            ) : (
-              <>
-                <label className="text-sm font-medium text-brand-text">
+            </div>
+          </div>
+
+          <div className="border border-brand-border bg-brand-bg rounded-xl">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm text-brand-text">
                   External registration link
-                </label>
-                <input
-                  type="url"
-                  value={externalLink}
-                  onChange={(e) => setExternalLink(e.target.value)}
-                  onBlur={() => markTouched("externalLink")}
-                  placeholder="https://..."
-                  className={inputCls}
-                />
-                {showExternalLinkError && (
-                  <p className="text-red-500 text-sm">
-                    Enter a valid http or https URL.
-                  </p>
-                )}
+                </span>
+                <span className="text-xs text-brand-muted">
+                  Redirect joiners to register elsewhere
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={externalLinkOpen}
+                onClick={() => setExternalLinkOpen((p) => !p)}
+                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
+                  externalLinkOpen
+                    ? "bg-brand-teal justify-end"
+                    : "bg-brand-border justify-start"
+                }`}
+              >
+                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
+              </button>
+            </div>
+            {externalLinkOpen && (
+              <>
+                <div className="border-t border-brand-border/60" />
+                <div className="px-4 py-3 flex flex-col gap-1.5">
+                  <input
+                    type="url"
+                    value={externalLink}
+                    onChange={(e) => setExternalLink(e.target.value)}
+                    onBlur={() => markTouched("externalLink")}
+                    placeholder="https://..."
+                    className={inputCls}
+                  />
+                  {showExternalLinkError && (
+                    <p className="text-red-500 text-sm">
+                      Enter a valid http or https URL.
+                    </p>
+                  )}
+                </div>
               </>
             )}
           </div>

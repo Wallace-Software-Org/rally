@@ -15,6 +15,8 @@ const mockActivity: ActivityWithParticipants = {
   sport: "running",
   location_name: "Papago Park",
   starts_at: new Date(Date.now() + 3_600_000).toISOString(),
+  ends_at: null,
+  visibility: "public",
   max_participants: 10,
   skill_level: "beginner",
   lat: 33.4584,

@@ -29,6 +29,7 @@ const mockActivity: ActivityDetail = {
   starts_at: new Date(Date.now() + 3_600_000).toISOString(),
   max_participants: 4,
   skill_level: "all",
+  visibility: "public",
   lat: 33.5722,
   lng: -111.926,
   status: "open",
