@@ -244,4 +244,24 @@ describe("ActivityDetailView — host actions", () => {
     const manageLink = screen.getAllByRole("link", { name: /manage/i })[0];
     expect(manageLink).toHaveAttribute("href", "/activity/act-1/edit");
   });
+
+  it("shows Private pill when visibility is private", () => {
+    renderAsViewer({ visibility: "private" });
+    expect(screen.getByText("Private")).toBeInTheDocument();
+  });
+
+  it("shows Copy link button for host on private activity", () => {
+    renderAsHost({ visibility: "private" });
+    expect(screen.getByRole("button", { name: /copy link/i })).toBeInTheDocument();
+  });
+
+  it("does not show Copy link button for non-host on private activity", () => {
+    renderAsViewer({ visibility: "private" });
+    expect(screen.queryByRole("button", { name: /copy link/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show Copy link button for host on public activity", () => {
+    renderAsHost({ visibility: "public" });
+    expect(screen.queryByRole("button", { name: /copy link/i })).not.toBeInTheDocument();
+  });
 });

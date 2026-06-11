@@ -10,6 +10,7 @@ describe("SPORT_COLORS", () => {
     "hiking",
     "gym",
     "paddleboard",
+    "other",
   ];
 
   it.each(required)('contains "%s"', (sport) => {
