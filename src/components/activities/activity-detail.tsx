@@ -497,7 +497,7 @@ export default function ActivityDetailView({
   const shareBtn = (
     <button
       onClick={handleShare}
-      className="btn-tier-3 cursor-pointer w-full max-w-156 transition-colors"
+      className="btn-tier-3 cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors"
     >
       <svg
         width="15"
@@ -523,7 +523,7 @@ export default function ActivityDetailView({
       href={activity.external_link}
       target="_blank"
       rel="noopener noreferrer"
-      className="btn-tier-3 w-full max-w-156 transition-colors"
+      className="btn-tier-3 w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors"
     >
       <ExternalLinkIcon />
       Register here

@@ -30,7 +30,9 @@ function initialParticipantCount(activity: ActivityWithParticipants): number {
   return initialParticipants(activity).length;
 }
 
-function initialParticipants(activity: ActivityWithParticipants): Participant[] {
+function initialParticipants(
+  activity: ActivityWithParticipants,
+): Participant[] {
   if (!Array.isArray(activity.participants)) return [];
 
   const seenUserIds = new Set<string>();
@@ -51,7 +53,10 @@ type RealtimeState = {
   deleteLogKey: number;
 };
 
-function hasUserJoined(participants: Participant[], currentUserId: string | null) {
+function hasUserJoined(
+  participants: Participant[],
+  currentUserId: string | null,
+) {
   return (
     currentUserId !== null &&
     participants.some((participant) => participant.user_id === currentUserId)
@@ -161,7 +166,9 @@ function useRealtimeParticipants(
                 prev.activityId === activity.id &&
                 prev.initialCount === initialCount &&
                 prev.currentUserId === currentUserId;
-              const base = isCurrent ? prev.participants : initialParticipantList;
+              const base = isCurrent
+                ? prev.participants
+                : initialParticipantList;
               const nextParticipants = base.filter(
                 (participant) => participant.id !== row.id,
               );
@@ -184,9 +191,9 @@ function useRealtimeParticipants(
     return () => {
       void supabase.removeChannel(channel);
     };
-  // activity.participants intentionally omitted: re-sync only on id/count
-  // changes, not on every parent render with a new array reference.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // activity.participants intentionally omitted: re-sync only on id/count
+    // changes, not on every parent render with a new array reference.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activity.id, initialCount, currentUserId]);
 
   return { participantCount, liveParticipants, hasJoined };
@@ -248,7 +255,7 @@ function CardAction({
 
   if (userId === activity.creator_id) {
     return (
-      <span className="h-9 w-20 border border-brand-muted/40 rounded-full flex justify-center items-center text-xs font-medium text-brand-muted/80">
+      <span className="h-9 xl:w-20 xl:border xl:border-brand-muted/40 rounded-full flex justify-center items-center text-xs font-medium text-brand-muted/80">
         Hosting
       </span>
     );

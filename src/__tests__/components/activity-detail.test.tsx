@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ActivityDetailView from "@/components/activities/activity-detail";
 import type { ActivityDetail } from "@/types";
@@ -115,6 +115,38 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+function mockShareBrowserApis() {
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    blob: vi.fn().mockResolvedValue(new Blob(["card"], { type: "image/png" })),
+  });
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  const createObjectURL = vi.fn(() => "blob:rally-card");
+  const revokeObjectURL = vi.fn();
+
+  vi.stubGlobal("fetch", fetchMock);
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText },
+  });
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: createObjectURL,
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: revokeObjectURL,
+  });
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+  return { fetchMock, writeText, createObjectURL, revokeObjectURL };
+}
+
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 describe("ActivityDetailView — rendering", () => {
@@ -198,6 +230,60 @@ describe("ActivityDetailView — join flow", () => {
     await waitFor(() => {
       expect(joinActivity).toHaveBeenCalledWith("act-1");
     });
+  });
+});
+
+// ── Share flow + CTA tiers ───────────────────────────────────────────────────
+
+describe("ActivityDetailView — share flow and CTA tiers", () => {
+  it("Manage button has btn-tier-1 class", () => {
+    renderAsHost();
+    const manageLinks = screen.getAllByRole("link", { name: /manage/i });
+
+    expect(manageLinks.length).toBeGreaterThan(0);
+    manageLinks.forEach((link) => {
+      expect(link).toHaveClass("btn-tier-1");
+    });
+  });
+
+  it("Share to Story and Register here have btn-tier-3 class", () => {
+    renderAsViewer({ external_link: "https://example.com/register" });
+
+    const shareButtons = screen.getAllByRole("button", {
+      name: /share to story/i,
+    });
+    const registerLinks = screen.getAllByRole("link", {
+      name: /register here/i,
+    });
+
+    expect(shareButtons.length).toBeGreaterThan(0);
+    expect(registerLinks.length).toBeGreaterThan(0);
+    shareButtons.forEach((button) => {
+      expect(button).toHaveClass("btn-tier-3");
+    });
+    registerLinks.forEach((link) => {
+      expect(link).toHaveClass("btn-tier-3");
+    });
+  });
+
+  it("Share to Story button triggers share flow on click", async () => {
+    const { fetchMock, writeText, createObjectURL, revokeObjectURL } =
+      mockShareBrowserApis();
+
+    renderAsViewer();
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /share to story/i })[0],
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/activity/act-1/card");
+      expect(createObjectURL).toHaveBeenCalled();
+      expect(revokeObjectURL).toHaveBeenCalledWith("blob:rally-card");
+      expect(writeText).toHaveBeenCalledWith(window.location.href);
+    });
+    expect(
+      await screen.findByText("Image saved to your photos"),
+    ).toBeInTheDocument();
   });
 });
 
