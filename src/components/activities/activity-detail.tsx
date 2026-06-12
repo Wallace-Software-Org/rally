@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
+import ShareStoryModal from "@/components/ui/share-story-modal";
 
 function initials(name: string): string {
   return name
@@ -93,7 +94,8 @@ function useRealtimeParticipantCount(activity: ActivityDetail) {
     function updateParticipantCount(update: (count: number) => number) {
       setParticipantState((state) => {
         const currentCount =
-          state.activityId === activity.id && state.initialCount === initialCount
+          state.activityId === activity.id &&
+          state.initialCount === initialCount
             ? state.count
             : initialCount;
 
@@ -186,7 +188,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LocationButton({ locationName, lat, lng }: { locationName: string; lat: number | null; lng: number | null }) {
+function LocationButton({
+  locationName,
+  lat,
+  lng,
+}: {
+  locationName: string;
+  lat: number | null;
+  lng: number | null;
+}) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -206,12 +216,14 @@ function LocationButton({ locationName, lat, lng }: { locationName: string; lat:
     setTimeout(() => setCopied(false), 1500);
   }
 
-  const appleUrl = lat != null && lng != null
-    ? `https://maps.apple.com/?ll=${lat},${lng}&q=${encodeURIComponent(locationName)}`
-    : `https://maps.apple.com/?q=${encodeURIComponent(locationName)}`;
-  const googleUrl = lat != null && lng != null
-    ? `https://maps.google.com/?q=${lat},${lng}`
-    : `https://maps.google.com/?q=${encodeURIComponent(locationName)}`;
+  const appleUrl =
+    lat != null && lng != null
+      ? `https://maps.apple.com/?ll=${lat},${lng}&q=${encodeURIComponent(locationName)}`
+      : `https://maps.apple.com/?q=${encodeURIComponent(locationName)}`;
+  const googleUrl =
+    lat != null && lng != null
+      ? `https://maps.google.com/?q=${lat},${lng}`
+      : `https://maps.google.com/?q=${encodeURIComponent(locationName)}`;
 
   return (
     <div ref={ref} className="relative">
@@ -349,7 +361,7 @@ export default function ActivityDetailView({
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
@@ -419,13 +431,23 @@ export default function ActivityDetailView({
     setTimeout(() => setLinkCopied(false), 2000);
   }
 
-  function handleInstagram() {
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000);
-  }
-
-  function handlePostedShare() {
-    alert("Share card coming soon");
+  async function handleShare() {
+    try {
+      const res = await fetch(`/api/activity/${activity.id}/card`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `rally-${activity.id}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      // download best-effort; still show modal
+    }
+    await navigator.clipboard.writeText(window.location.href).catch(() => {});
+    setShowShareModal(true);
   }
 
   // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
@@ -474,8 +496,8 @@ export default function ActivityDetailView({
 
   const shareBtn = (
     <button
-      onClick={handleInstagram}
-      className="cursor-pointer! w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary  hover:bg-brand-secondary/10 transition-colors"
+      onClick={handleShare}
+      className="cursor-pointer w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary hover:bg-brand-secondary/10 transition-colors"
     >
       <svg
         width="15"
@@ -484,19 +506,15 @@ export default function ActivityDetailView({
         fill="none"
         aria-hidden="true"
       >
-        <rect
-          x="2"
-          y="2"
-          width="20"
-          height="20"
-          rx="5"
+        <path
+          d="M12 3v12M7 8l5-5 5 5M20 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"
           stroke="currentColor"
           strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
       </svg>
-      Share to Instagram
+      Share to Story
     </button>
   );
 
@@ -522,10 +540,10 @@ export default function ActivityDetailView({
               <span>Your activity is live.</span>
               <div className="w-full sm:w-auto flex items-center sm:justify-end gap-2 flex-none">
                 <button
-                  onClick={handlePostedShare}
+                  onClick={handleShare}
                   className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
                 >
-                  Share to Instagram
+                  Share to Story
                 </button>
               </div>
               <button
@@ -580,7 +598,11 @@ export default function ActivityDetailView({
               {/* Location row — xl only (map stays in right panel) */}
               {activity.location_name && (
                 <div className="hidden xl:flex">
-                  <LocationButton locationName={activity.location_name} lat={activity.lat} lng={activity.lng} />
+                  <LocationButton
+                    locationName={activity.location_name}
+                    lat={activity.lat}
+                    lng={activity.lng}
+                  />
                 </div>
               )}
             </div>
@@ -644,7 +666,11 @@ export default function ActivityDetailView({
               <div className="h-px bg-brand-border" />
               <SectionLabel>Location</SectionLabel>
               {activity.location_name && (
-                <LocationButton locationName={activity.location_name} lat={activity.lat} lng={activity.lng} />
+                <LocationButton
+                  locationName={activity.location_name}
+                  lat={activity.lat}
+                  lng={activity.lng}
+                />
               )}
               {typeof activity.lat === "number" &&
               typeof activity.lng === "number" ? (
@@ -674,7 +700,7 @@ export default function ActivityDetailView({
                   {/* Mobile: horizontal scroll row */}
                   <div className="md:hidden relative">
                     <div
-                      className="flex gap-6 overflow-x-auto pb-1"
+                      className="flex gap-2 overflow-x-auto pb-1"
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
@@ -813,12 +839,11 @@ export default function ActivityDetailView({
         {shareBtn}
       </div>
 
-      {/* ── Toast ───────────────────────────────────────────────────────────── */}
-      {showToast && (
-        <div className="fixed bottom-28 md:bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-brand-text text-white text-xs font-medium px-4 py-2 shadow-lg">
-          Coming soon
-        </div>
-      )}
+      <AnimatePresence>
+        {showShareModal && (
+          <ShareStoryModal onClose={() => setShowShareModal(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
