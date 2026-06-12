@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { ActivityWithParticipants } from "@/types";
-import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
@@ -12,25 +11,27 @@ import ShareStoryModal from "@/components/ui/share-story-modal";
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
   userId: string | null;
+  onJoin: () => Promise<boolean>;
+  onLeave: () => Promise<boolean>;
   onDismiss: () => void;
 };
 
 export default function MapPreviewCard({
   activity,
   userId,
+  onJoin,
+  onLeave,
   onDismiss,
 }: MapPreviewCardProps) {
   const [confirming, setConfirming] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
-  const [isJoined, setIsJoined] = useState(
-    () =>
-      userId !== null &&
-      activity.participants.some((p) => p.user_id === userId),
-  );
   const [showShareModal, setShowShareModal] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const isHost = userId === activity.creator_id;
+  const isJoined =
+    userId !== null &&
+    activity.participants.some((participant) => participant.user_id === userId);
 
   useEffect(() => {
     if (!confirming) return;
@@ -42,19 +43,17 @@ export default function MapPreviewCard({
   }, [confirming]);
 
   async function handleJoin() {
-    if (!userId || isJoining) return;
+    if (!userId || isJoining || isJoined) return;
     setIsJoining(true);
-    const { error } = await joinActivity(activity.id);
-    if (!error) setIsJoined(true);
+    await onJoin();
     setIsJoining(false);
   }
 
   async function handleLeave() {
-    if (!userId || isLeaving) return;
+    if (!userId || isLeaving || !isJoined) return;
     setIsLeaving(true);
-    const { error } = await leaveActivity(activity.id);
-    if (!error) {
-      setIsJoined(false);
+    const didLeave = await onLeave();
+    if (didLeave) {
       setConfirming(false);
     }
     setIsLeaving(false);
@@ -104,6 +103,20 @@ export default function MapPreviewCard({
     >
       Sign in to join
     </Link>
+  ) : isLeaving ? (
+    <button
+      disabled
+      className="w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3 transition-colors disabled:opacity-50 border border-brand-teal text-brand-teal bg-transparent"
+    >
+      Leaving…
+    </button>
+  ) : isJoining ? (
+    <button
+      disabled
+      className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active transition-colors disabled:opacity-50"
+    >
+      Joining…
+    </button>
   ) : isJoined ? (
     <button
       ref={btnRef}
@@ -123,7 +136,7 @@ export default function MapPreviewCard({
       disabled={isJoining}
       className="btn-tier-1 cursor-pointer w-full flex items-center justify-center active:bg-brand-teal-active transition-colors disabled:opacity-50"
     >
-      {isJoining ? "Joining…" : "Join this activity"}
+      {isJoining ? "Joining…" : "Join activity"}
     </button>
   ) : (
     <button
@@ -134,8 +147,7 @@ export default function MapPreviewCard({
     </button>
   );
 
-  const ghostButtonClass =
-    "btn-tier-3 w-full transition-colors";
+  const ghostButtonClass = "btn-tier-3 w-full transition-colors";
 
   const registerBtn = activity.external_link ? (
     <a

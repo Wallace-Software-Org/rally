@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
-import { joinActivity } from "@/lib/actions/activities";
+import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import ActivityFilters, {
   DatePickerPill,
@@ -42,7 +42,36 @@ export default function ActivityFeed({
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
 
-  const visible = activities.filter(
+  const activitiesWithLocalParticipation = useMemo(() => {
+    if (!userId) return activities;
+
+    return activities.map((activity) => {
+      const hasUserParticipant = activity.participants.some(
+        (participant) => participant.user_id === userId,
+      );
+      const shouldBeJoined = joined.has(activity.id);
+
+      if (hasUserParticipant === shouldBeJoined) return activity;
+
+      return {
+        ...activity,
+        participants: shouldBeJoined
+          ? [
+              ...activity.participants,
+              {
+                id: `local-${activity.id}-${userId}`,
+                user_id: userId,
+                profiles: null,
+              },
+            ]
+          : activity.participants.filter(
+              (participant) => participant.user_id !== userId,
+            ),
+      };
+    });
+  }, [activities, joined, userId]);
+
+  const visible = activitiesWithLocalParticipation.filter(
     (a) =>
       (sports.length === 0 ||
         sports.some((s) => s.toLowerCase() === a.sport.toLowerCase())) &&
@@ -59,18 +88,50 @@ export default function ActivityFeed({
 
   // Optimistic updates: local state is mutated immediately so the UI responds instantly.
   // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
-  async function handleJoin(activityId: string) {
-    if (!userId || joined.has(activityId) || joining.has(activityId)) return;
+  async function handleJoin(activityId: string): Promise<boolean> {
+    if (!userId || joined.has(activityId) || joining.has(activityId)) {
+      return false;
+    }
+
     setJoining((prev) => new Set(prev).add(activityId));
+    setJoined((prev) => new Set(prev).add(activityId));
+
     const { error } = await joinActivity(activityId);
-    if (!error) setJoined((prev) => new Set(prev).add(activityId));
+
+    if (error) {
+      setJoined((prev) => {
+        const next = new Set(prev);
+        next.delete(activityId);
+        return next;
+      });
+    }
+
     setJoining((prev) => {
       const next = new Set(prev);
       next.delete(activityId);
       return next;
     });
+
+    return !error;
   }
 
+  async function handleLeave(activityId: string): Promise<boolean> {
+    if (!userId) return false;
+
+    setJoined((prev) => {
+      const next = new Set(prev);
+      next.delete(activityId);
+      return next;
+    });
+
+    const { error } = await leaveActivity(activityId);
+
+    if (error) {
+      setJoined((prev) => new Set(prev).add(activityId));
+    }
+
+    return !error;
+  }
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-brand-bg overflow-hidden">
@@ -219,6 +280,8 @@ export default function ActivityFeed({
                   key={selectedActivity.id}
                   activity={selectedActivity}
                   userId={userId}
+                  onJoin={() => handleJoin(selectedActivity.id)}
+                  onLeave={() => handleLeave(selectedActivity.id)}
                   onDismiss={() => setSelectedId(null)}
                 />
               )}

@@ -97,8 +97,8 @@ body {
     outline: none;
   }
   .btn-tier-2:hover {
-    background-color: color-mix(in srgb, var(--color-brand-warm) 10%, transparent);
-    border-color: color-mix(in srgb, var(--color-brand-warm) 35%, transparent);
+    background-color: color-mix(in srgb, var(--color-brand-warm) 20%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand-warm) 50%, transparent);
   }
   .btn-tier-3 {
     background-color: transparent;
