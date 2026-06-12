@@ -73,6 +73,57 @@ body {
     color: var(--color-brand-warm);
     border: 1px solid color-mix(in srgb, var(--color-brand-warm) 40%, transparent);
   }
+  .btn-tier-1 {
+    background-color: var(--color-brand-teal);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+  }
+  .btn-tier-1:hover {
+    background-color: color-mix(in srgb, var(--color-brand-teal) 90%, black);
+  }
+  .btn-tier-2 {
+    background-color: color-mix(in srgb, var(--color-brand-warm) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-brand-warm) 50%, transparent);
+    color: var(--color-brand-warm);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    outline: none;
+  }
+  .btn-tier-2:hover {
+    background-color: color-mix(in srgb, var(--color-brand-warm) 10%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand-warm) 35%, transparent);
+  }
+  .btn-tier-3 {
+    background-color: transparent;
+    border: 1px solid color-mix(in srgb, var(--color-brand-warm) 15%, transparent);
+    color: var(--color-text-muted);
+    font-weight: 500;
+    font-size: 14px;
+    padding: 11px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    outline: none;
+  }
+  .btn-tier-3:hover {
+    background-color: color-mix(in srgb, var(--color-brand-warm) 5%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand-warm) 25%, transparent);
+  }
+  .btn-tier-1:focus-visible,
+  .btn-tier-2:focus-visible,
+  .btn-tier-3:focus-visible {
+    outline: 2px solid var(--color-brand-teal);
+    outline-offset: 2px;
+  }
   button:not(:disabled),
     [role="button"]:not(:disabled) {
     cursor: pointer;

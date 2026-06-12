@@ -24,7 +24,9 @@ export default function MapPreviewCard({
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isJoined, setIsJoined] = useState(
-    () => userId !== null && activity.participants.some((p) => p.user_id === userId),
+    () =>
+      userId !== null &&
+      activity.participants.some((p) => p.user_id === userId),
   );
   const [showShareModal, setShowShareModal] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -91,7 +93,7 @@ export default function MapPreviewCard({
   const primaryAction = isHost ? (
     <Link
       href={`/activity/${activity.id}/edit`}
-      className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+      className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active transition-colors"
     >
       Manage
     </Link>
@@ -119,7 +121,7 @@ export default function MapPreviewCard({
     <button
       onClick={handleJoin}
       disabled={isJoining}
-      className="cursor-pointer w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50"
+      className="btn-tier-1 cursor-pointer w-full flex items-center justify-center active:bg-brand-teal-active transition-colors disabled:opacity-50"
     >
       {isJoining ? "Joining…" : "Join this activity"}
     </button>
@@ -133,7 +135,7 @@ export default function MapPreviewCard({
   );
 
   const ghostButtonClass =
-    "w-full flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3 hover:border-brand-secondary hover:text-brand-secondary hover:bg-brand-secondary/10 transition-colors";
+    "btn-tier-3 w-full transition-colors";
 
   const registerBtn = activity.external_link ? (
     <a
@@ -220,7 +222,10 @@ export default function MapPreviewCard({
 
         <div className="flex flex-col gap-2">
           {primaryAction}
-          <Link href={`/activity/${activity.id}`} className={ghostButtonClass}>
+          <Link
+            href={`/activity/${activity.id}`}
+            className="btn-tier-2 w-full flex items-center justify-center transition-colors"
+          >
             View details
           </Link>
           {registerBtn}

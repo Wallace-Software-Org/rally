@@ -454,7 +454,7 @@ export default function ActivityDetailView({
   const ctaButton = isHost ? (
     <Link
       href={`/activity/${activity.id}/edit`}
-      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+      className="btn-tier-1 w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active transition-colors"
     >
       Manage
     </Link>
@@ -488,7 +488,7 @@ export default function ActivityDetailView({
     <button
       onClick={handleJoin}
       disabled={joining}
-      className="cursor-pointer w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-60"
+      className="btn-tier-1 cursor-pointer w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active transition-colors disabled:opacity-60"
     >
       {joining ? "Joining…" : "Join activity"}
     </button>
@@ -497,7 +497,7 @@ export default function ActivityDetailView({
   const shareBtn = (
     <button
       onClick={handleShare}
-      className="cursor-pointer w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary hover:bg-brand-secondary/10 transition-colors"
+      className="btn-tier-3 cursor-pointer w-full max-w-156 transition-colors"
     >
       <svg
         width="15"
@@ -523,7 +523,7 @@ export default function ActivityDetailView({
       href={activity.external_link}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-full max-w-156 flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary hover:bg-brand-secondary/10 transition-colors"
+      className="btn-tier-3 w-full max-w-156 transition-colors"
     >
       <ExternalLinkIcon />
       Register here
