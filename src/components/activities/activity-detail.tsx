@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
+import { isIOSDevice } from "@/lib/utils/platform";
 
 function initials(name: string): string {
   return name
@@ -432,19 +433,24 @@ export default function ActivityDetailView({
   }
 
   async function handleShare() {
-    try {
-      const res = await fetch(`/api/activity/${activity.id}/card`);
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `rally-${activity.id}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
+    const cardUrl = `/api/activity/${activity.id}/card`;
+    if (isIOSDevice()) {
+      window.open(cardUrl, "_blank");
+    } else {
+      try {
+        const res = await fetch(cardUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `rally-${activity.id}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        // best-effort; still show modal
       }
-    } catch {
-      // download best-effort; still show modal
     }
     await navigator.clipboard.writeText(window.location.href).catch(() => {});
     setShowShareModal(true);

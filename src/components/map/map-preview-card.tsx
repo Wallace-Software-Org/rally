@@ -7,6 +7,7 @@ import type { ActivityWithParticipants } from "@/types";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
+import { isIOSDevice } from "@/lib/utils/platform";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
@@ -61,20 +62,25 @@ export default function MapPreviewCard({
 
   async function handleShare() {
     const activityUrl = `${window.location.origin}/activity/${activity.id}`;
+    const cardUrl = `/api/activity/${activity.id}/card`;
 
-    try {
-      const res = await fetch(`/api/activity/${activity.id}/card`);
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `rally-${activity.id}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
+    if (isIOSDevice()) {
+      window.open(cardUrl, "_blank");
+    } else {
+      try {
+        const res = await fetch(cardUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `rally-${activity.id}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        // best-effort; still show modal
       }
-    } catch {
-      // download best-effort; still show modal
     }
 
     await navigator.clipboard.writeText(activityUrl).catch(() => {});

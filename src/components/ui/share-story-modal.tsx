@@ -1,19 +1,24 @@
 "use client";
 
 import { motion } from "framer-motion";
-
-const STEPS = [
-  "Image saved to your photos",
-  "Open Instagram, Snapchat, or any app with Stories",
-  "Add the saved image to your Story",
-  "Tap the link sticker and paste your link, it's already copied",
-];
+import { isIOSDevice } from "@/lib/utils/platform";
 
 type Props = {
   onClose: () => void;
 };
 
 export default function ShareStoryModal({ onClose }: Props) {
+  const ios = isIOSDevice();
+
+  const steps = [
+    ios
+      ? "Long-press the image and tap Save to Photos"
+      : "Image saved to your photos",
+    "Open Instagram, Snapchat, or any app with Stories",
+    "Add the saved image to your Story",
+    "Tap the link sticker and paste your link, it's already copied",
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -44,7 +49,7 @@ export default function ShareStoryModal({ onClose }: Props) {
         </h2>
 
         <ol className="flex flex-col gap-3">
-          {STEPS.map((step, i) => (
+          {steps.map((step, i) => (
             <li key={i} className="flex items-start gap-3">
               <div
                 style={{ backgroundColor: "#4A9B8E", flexShrink: 0 }}
