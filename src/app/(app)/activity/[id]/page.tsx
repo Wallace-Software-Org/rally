@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivityById } from "@/lib/queries/activities";
@@ -21,14 +22,34 @@ export default async function ActivityPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const activity = await getActivityById(id);
+  const userId = user?.id ?? null;
+  const activity = await getActivityById(id, userId);
 
-  if (!activity) notFound();
+  if (activity === null) notFound();
+
+  if (activity === "private") {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center gap-3">
+        <p className="text-base font-medium text-brand-text">
+          This activity is private.
+        </p>
+        <p className="text-sm text-brand-muted">
+          Sign in to see if you have access.
+        </p>
+        <Link
+          href="/login"
+          className="mt-1 inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+        >
+          Sign in
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <ActivityDetailView
       activity={activity}
-      userId={user?.id ?? null}
+      userId={userId}
       showPostedBanner={postedParam === "true"}
     />
   );

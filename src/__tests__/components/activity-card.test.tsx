@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ActivityCardDesktop } from "@/components/activities/activity-card";
+import {
+  ActivityCardDesktop,
+  ActivityCardMobile,
+} from "@/components/activities/activity-card";
 import type { ActivityWithParticipants } from "@/types";
 
 vi.mock("next/navigation", () => ({
@@ -119,6 +122,12 @@ describe("ActivityCardDesktop", () => {
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 
+  it("shows location text when userId is null", () => {
+    render(<ActivityCardDesktop {...base} userId={null} />);
+    expect(screen.getByText("Papago Park")).toBeInTheDocument();
+    expect(screen.queryByText("••••••••••••")).not.toBeInTheDocument();
+  });
+
   it("shows spots remaining when max_participants is set", () => {
     render(<ActivityCardDesktop {...base} />);
     expect(screen.getByText("10 spots left")).toBeInTheDocument();
@@ -129,5 +138,13 @@ describe("ActivityCardDesktop", () => {
       <ActivityCardDesktop {...base} activity={{ ...mockActivity, max_participants: null }} />,
     );
     expect(screen.getByText("Open")).toBeInTheDocument();
+  });
+});
+
+describe("ActivityCardMobile", () => {
+  it("shows location text when userId is null", () => {
+    render(<ActivityCardMobile {...base} userId={null} />);
+    expect(screen.getByText("Papago Park")).toBeInTheDocument();
+    expect(screen.queryByText("••••••••••••")).not.toBeInTheDocument();
   });
 });

@@ -103,12 +103,17 @@ export default function MapPreviewCard({
       Manage
     </Link>
   ) : userId === null ? (
-    <Link
-      href="/login"
-      className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
-    >
-      Sign in to join
-    </Link>
+    <div className="flex w-full flex-col items-center gap-1.5">
+      <Link
+        href="/login"
+        className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+      >
+        Sign in to join
+      </Link>
+      <p className="text-[11px] text-center text-brand-muted">
+        One tap with Google, no signup form.
+      </p>
+    </div>
   ) : isLeaving ? (
     <button
       disabled
@@ -153,9 +158,10 @@ export default function MapPreviewCard({
     </button>
   );
 
-  const ghostButtonClass = "btn-tier-3 w-full flex items-center justify-center gap-1.5 transition-colors";
+  const ghostButtonClass =
+    "btn-tier-3 w-full flex items-center justify-center gap-1.5 transition-colors";
 
-  const registerBtn = activity.external_link ? (
+  const registerBtn = userId !== null && activity.external_link ? (
     <a
       href={activity.external_link}
       target="_blank"
@@ -218,16 +224,10 @@ export default function MapPreviewCard({
             >
               <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
             </svg>
-            {userId ? (
-              <span>
-                {activity.location_name}
-                {activity.skill_level && ` · ${activity.skill_level}`}
-              </span>
-            ) : (
-              <span className="rounded px-1.5 bg-brand-border text-brand-border select-none blur-[2px]">
-                ••••••••••••
-              </span>
-            )}
+            <span>
+              {activity.location_name}
+              {activity.skill_level && ` · ${activity.skill_level}`}
+            </span>
           </p>
           <p className="text-xs text-brand-muted">
             {activity.max_participants === null
@@ -247,13 +247,15 @@ export default function MapPreviewCard({
             View details
           </Link>
           {registerBtn}
-          <button
-            onClick={handleShare}
-            className={`cursor-pointer ${ghostButtonClass}`}
-          >
-            <ShareIcon />
-            Share to Story
-          </button>
+          {userId !== null && (
+            <button
+              onClick={handleShare}
+              className={`cursor-pointer ${ghostButtonClass}`}
+            >
+              <ShareIcon />
+              Share to Story
+            </button>
+          )}
         </div>
       </div>
       <AnimatePresence>

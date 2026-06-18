@@ -399,6 +399,10 @@ export default function ActivityDetailView({
   }, [initialShowPostedBanner]);
 
   const isHost = userId === activity.creator_id;
+  const heroTagline =
+    activity.sport && activity.sport !== "other"
+      ? `Find people for your next ${activity.sport} session`
+      : "Find people for your next activity";
   const participantCount = useRealtimeParticipantCount(activity);
   const spotsLeft =
     activity.max_participants === null
@@ -477,12 +481,17 @@ export default function ActivityDetailView({
       {leaving ? "Leaving…" : leaveConfirm ? "Leave activity?" : "Going ✓"}
     </button>
   ) : userId === null ? (
-    <Link
-      href="/login"
-      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
-    >
-      Sign in to join
-    </Link>
+    <div className="flex flex-col items-center gap-1.5 w-full max-w-156">
+      <Link
+        href="/login"
+        className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+      >
+        Sign in to join
+      </Link>
+      <p className="text-xs text-center text-brand-muted">
+        One tap with Google, no signup form.
+      </p>
+    </div>
   ) : isFull ? (
     <button
       disabled
@@ -500,7 +509,7 @@ export default function ActivityDetailView({
     </button>
   );
 
-  const shareBtn = (
+  const shareBtn = userId ? (
     <button
       onClick={handleShare}
       className="btn-tier-3 cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors"
@@ -522,9 +531,9 @@ export default function ActivityDetailView({
       </svg>
       Share to Story
     </button>
-  );
+  ) : null;
 
-  const registerBtn = activity.external_link ? (
+  const registerBtn = userId && activity.external_link ? (
     <a
       href={activity.external_link}
       target="_blank"
@@ -544,14 +553,16 @@ export default function ActivityDetailView({
           <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
             <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <span>Your activity is live.</span>
-              <div className="w-full sm:w-auto flex items-center sm:justify-end gap-2 flex-none">
-                <button
-                  onClick={handleShare}
-                  className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
-                >
-                  Share to Story
-                </button>
-              </div>
+              {userId && (
+                <div className="w-full sm:w-auto flex items-center sm:justify-end gap-2 flex-none">
+                  <button
+                    onClick={handleShare}
+                    className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
+                  >
+                    Share to Story
+                  </button>
+                </div>
+              )}
               <button
                 onClick={() => setShowPostedBanner(false)}
                 aria-label="Dismiss"
@@ -560,6 +571,12 @@ export default function ActivityDetailView({
                 ×
               </button>
             </div>
+          </div>
+        )}
+        {/* Hero strip — logged-out visitors from shared links */}
+        {!userId && (
+          <div className="px-4 md:px-6 pt-5 pb-2">
+            <p className="text-sm text-brand-muted">{heroTagline}</p>
           </div>
         )}
         {/* xl: max-width wrapper with flex row; md/lg: centered single column */}
@@ -713,7 +730,7 @@ export default function ActivityDetailView({
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
-                          <div className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
+                          <div className={`relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg${!userId ? " blur-sm" : ""}`}>
                             {p.profiles?.avatar_url ? (
                               <Image
                                 src={p.profiles.avatar_url}
@@ -760,7 +777,7 @@ export default function ActivityDetailView({
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
+                          <div className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg${!userId ? " blur-sm" : ""}`}>
                             {p.profiles?.avatar_url ? (
                               <Image
                                 src={p.profiles.avatar_url}

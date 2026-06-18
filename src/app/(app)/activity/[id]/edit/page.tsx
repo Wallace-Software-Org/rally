@@ -14,13 +14,17 @@ export default async function EditActivityPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [activity, { data: { user } }] = await Promise.all([
-    getActivityById(id),
-    supabase.auth.getUser(),
-  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!activity) notFound();
-  if (!user || user.id !== activity.creator_id) redirect(`/activity/${id}`);
+  if (!user) redirect(`/activity/${id}`);
+
+  const activity = await getActivityById(id, user.id);
+
+  if (activity === null) notFound();
+  if (activity === "private") redirect(`/activity/${id}`);
+  if (user.id !== activity.creator_id) redirect(`/activity/${id}`);
 
   async function handleSubmit(data: ActivityFormSubmitData) {
     "use server";

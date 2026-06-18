@@ -102,10 +102,10 @@ function renderAsJoinedViewer() {
 }
 
 // Helper: renders unauthenticated
-function renderUnauthenticated() {
+function renderUnauthenticated(overrides: Partial<ActivityDetail> = {}) {
   return render(
     <ActivityDetailView
-      activity={mockActivity}
+      activity={{ ...mockActivity, ...overrides }}
       userId={null}
     />,
   );
@@ -212,6 +212,21 @@ describe("ActivityDetailView — unauthenticated", () => {
   it("does not show Join button when userId is null", () => {
     renderUnauthenticated();
     expect(screen.queryByRole("button", { name: /join activity/i })).not.toBeInTheDocument();
+  });
+
+  it("hides Register here and Share to Story when userId is null", () => {
+    renderUnauthenticated({ external_link: "https://example.com/register" });
+
+    expect(
+      screen.getAllByRole("link", { name: /sign in to join/i }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("One tap with Google, no signup form.").length).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole("link", { name: /register here/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /share to story/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

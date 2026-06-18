@@ -169,4 +169,24 @@ describe("MapPreviewCard", () => {
     expectBefore(viewDetails, registerHere);
     expectBefore(registerHere, shareToStory);
   });
+
+  it("hides Register here and Share to Story for logged-out users", () => {
+    renderCard({
+      activity: {
+        ...mockActivity,
+        external_link: "https://example.com/register",
+      },
+      userId: null,
+    });
+
+    expect(screen.getByRole("link", { name: /sign in to join/i })).toBeInTheDocument();
+    expect(screen.getByText("One tap with Google, no signup form.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view details/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /register here/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /share to story/i }),
+    ).not.toBeInTheDocument();
+  });
 });

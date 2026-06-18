@@ -66,7 +66,10 @@ function normalize(
   }));
 }
 
-export async function getActivityById(id: string): Promise<ActivityDetail | null> {
+export async function getActivityById(
+  id: string,
+  requesterId: string | null = null,
+): Promise<ActivityDetail | "private" | null> {
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -85,6 +88,16 @@ export async function getActivityById(id: string): Promise<ActivityDetail | null
     .single();
 
   if (!data) return null;
+
+  if (data.visibility === "private") {
+    const isCreator = requesterId === data.creator_id;
+    const isParticipant =
+      requesterId !== null &&
+      (data.participants as { user_id: string }[]).some(
+        (p) => p.user_id === requesterId,
+      );
+    if (!isCreator && !isParticipant) return "private";
+  }
 
   const [{ data: host }, { count: hostedCount }] = await Promise.all([
     supabase
