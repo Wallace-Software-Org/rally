@@ -34,13 +34,19 @@ export default async function ActivityPage({
           This activity is private.
         </p>
         <p className="text-sm text-brand-muted">
-          Sign in to see if you have access.
+          Log in to see if you have access.
         </p>
         <Link
           href="/login"
           className="mt-1 inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
         >
-          Sign in
+          Log in
+        </Link>
+        <Link
+          href="/login"
+          className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+        >
+          New here? Sign up
         </Link>
       </div>
     );

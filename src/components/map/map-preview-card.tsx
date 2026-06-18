@@ -111,7 +111,7 @@ export default function MapPreviewCard({
         Sign in to join
       </Link>
       <p className="text-[11px] text-center text-brand-muted">
-        One tap with Google, no signup form.
+        Sign in with Google to join.
       </p>
     </div>
   ) : isLeaving ? (

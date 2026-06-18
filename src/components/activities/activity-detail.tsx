@@ -399,10 +399,7 @@ export default function ActivityDetailView({
   }, [initialShowPostedBanner]);
 
   const isHost = userId === activity.creator_id;
-  const heroTagline =
-    activity.sport && activity.sport !== "other"
-      ? `Find people for your next ${activity.sport} session`
-      : "Find people for your next activity";
+  const viewerCanSeeProfiles = isHost || isJoined;
   const participantCount = useRealtimeParticipantCount(activity);
   const spotsLeft =
     activity.max_participants === null
@@ -489,7 +486,7 @@ export default function ActivityDetailView({
         Sign in to join
       </Link>
       <p className="text-xs text-center text-brand-muted">
-        One tap with Google, no signup form.
+        Sign in with Google to join.
       </p>
     </div>
   ) : isFull ? (
@@ -573,12 +570,6 @@ export default function ActivityDetailView({
             </div>
           </div>
         )}
-        {/* Hero strip — logged-out visitors from shared links */}
-        {!userId && (
-          <div className="px-4 md:px-6 pt-5 pb-2">
-            <p className="text-sm text-brand-muted">{heroTagline}</p>
-          </div>
-        )}
         {/* xl: max-width wrapper with flex row; md/lg: centered single column */}
         <div className="xl:max-w-5xl xl:mx-auto xl:px-8 xl:flex xl:items-start xl:gap-10 xl:pt-8">
           {/* ── Main content column ─────────────────────────────────────────── */}
@@ -636,7 +627,7 @@ export default function ActivityDetailView({
             <div>
               <SectionLabel>Hosted by</SectionLabel>
               <div className="flex items-center gap-3">
-                {userId && activity.host.username ? (
+                {activity.host.username ? (
                   <Link href={`/profile/${activity.host.username}`}>
                     <Avatar
                       url={activity.host.avatar_url}
@@ -730,16 +721,16 @@ export default function ActivityDetailView({
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
-                          <div className={`relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg${!userId ? " blur-sm" : ""}`}>
+                          <div className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
                             {p.profiles?.avatar_url ? (
                               <Image
                                 src={p.profiles.avatar_url}
                                 alt=""
                                 fill
-                                className="object-cover"
+                                className={`object-cover${!userId ? " blur-sm" : ""}`}
                               />
                             ) : (
-                              <span className="text-xs font-semibold text-brand-avatar-text">
+                              <span className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}>
                                 {initials(name)}
                               </span>
                             )}
@@ -750,16 +741,18 @@ export default function ActivityDetailView({
                             key={p.id}
                             className="flex flex-col items-center gap-1.5 flex-none w-13"
                           >
-                            {userId && p.profiles?.username ? (
+                            {viewerCanSeeProfiles && p.profiles?.username ? (
                               <Link href={`/profile/${p.profiles.username}`}>
                                 {avatarEl}
                               </Link>
                             ) : (
                               avatarEl
                             )}
-                            <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
-                              {firstName}
-                            </span>
+                            {userId && (
+                              <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
+                                {firstName}
+                              </span>
+                            )}
                           </div>
                         );
                       })}
@@ -777,16 +770,16 @@ export default function ActivityDetailView({
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
                         const avatarEl = (
-                          <div className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg${!userId ? " blur-sm" : ""}`}>
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
                             {p.profiles?.avatar_url ? (
                               <Image
                                 src={p.profiles.avatar_url}
                                 alt=""
                                 fill
-                                className="object-cover"
+                                className={`object-cover${!userId ? " blur-sm" : ""}`}
                               />
                             ) : (
-                              <span className="text-xs font-semibold text-brand-avatar-text">
+                              <span className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}>
                                 {initials(name)}
                               </span>
                             )}
@@ -797,16 +790,18 @@ export default function ActivityDetailView({
                             key={p.id}
                             className="flex flex-col items-center gap-1.5 flex-none w-13"
                           >
-                            {userId && p.profiles?.username ? (
+                            {viewerCanSeeProfiles && p.profiles?.username ? (
                               <Link href={`/profile/${p.profiles.username}`}>
                                 {avatarEl}
                               </Link>
                             ) : (
                               avatarEl
                             )}
-                            <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
-                              {firstName}
-                            </span>
+                            {userId && (
+                              <span className="text-xs text-brand-text truncate w-full text-center leading-tight">
+                                {firstName}
+                              </span>
+                            )}
                           </div>
                         );
                       })}
