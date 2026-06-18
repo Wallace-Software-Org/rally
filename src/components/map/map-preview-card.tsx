@@ -161,18 +161,6 @@ export default function MapPreviewCard({
   const ghostButtonClass =
     "btn-tier-3 w-full flex items-center justify-center gap-1.5 transition-colors";
 
-  const registerBtn = userId !== null && activity.external_link ? (
-    <a
-      href={activity.external_link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={ghostButtonClass}
-    >
-      <ExternalLinkIcon />
-      Register here
-    </a>
-  ) : null;
-
   return (
     <>
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[320px] rounded-2xl bg-brand-bg shadow-xl border border-brand-border p-4 flex flex-col gap-3 z-10">
@@ -246,7 +234,6 @@ export default function MapPreviewCard({
           >
             View details
           </Link>
-          {registerBtn}
           {userId !== null && (
             <button
               onClick={handleShare}
@@ -287,28 +274,3 @@ function ShareIcon() {
   );
 }
 
-function ExternalLinkIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M13 5h6m0 0v6m0-6-9 9"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M11 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
