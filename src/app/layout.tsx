@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-dvh overflow-hidden flex flex-col">
+      <body className="h-dvh overflow-hidden flex flex-col" suppressHydrationWarning>
         <NextTopLoader
           color="#4A9B8E"
           height={4}

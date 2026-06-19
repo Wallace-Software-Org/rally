@@ -1,18 +1,25 @@
-'use client'
+"use client";
 
 // 'use client' is required here: we use window.location and a click handler
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   async function handleGoogleSignIn() {
-    const supabase = createClient()
-
-    // Redirects the browser to Google's OAuth consent screen.
-    // After the user approves, Google sends them back to /auth/callback?code=...
+    const supabase = createClient();
+    const urlParams = new URLSearchParams(window.location.search);
+    const next = urlParams.get("next");
+    const join = urlParams.get("join");
+    const callbackParams = new URLSearchParams();
+    if (next) callbackParams.set("next", next);
+    if (join) callbackParams.set("join", join);
+    const qs = callbackParams.toString();
+    const redirectTo = `${window.location.origin}/auth/callback${qs ? `?${qs}` : ""}`;
+    //TODO: remove
+    console.log("redirectTo:", redirectTo);
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
+      provider: "google",
+      options: { redirectTo },
+    });
   }
 
   return (
@@ -20,7 +27,10 @@ export default function LoginPage() {
       <div className="flex flex-col items-center w-full max-w-xs gap-10">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="block w-3 h-3 rounded-full bg-brand-teal" aria-hidden="true" />
+            <span
+              className="block w-3 h-3 rounded-full bg-brand-teal"
+              aria-hidden="true"
+            />
             <span className="text-2xl font-bold tracking-tight text-brand-text">
               Rally
             </span>
@@ -37,12 +47,18 @@ export default function LoginPage() {
         </button>
       </div>
     </main>
-  )
+  );
 }
 
 function GoogleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
       <path
         d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908C16.658 14.121 17.64 11.813 17.64 9.205z"
         fill="white"
@@ -64,5 +80,5 @@ function GoogleIcon() {
         fillOpacity="0.9"
       />
     </svg>
-  )
+  );
 }

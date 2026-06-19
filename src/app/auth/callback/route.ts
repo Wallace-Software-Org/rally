@@ -6,6 +6,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next')
+  const join = searchParams.get('join')
 
   if (code) {
     const supabase = await createClient()
@@ -28,8 +30,33 @@ export async function GET(request: NextRequest) {
           .eq('id', user.id)
           .maybeSingle()
 
+        const isQuickJoin = join === 'true' && typeof next === 'string' && next.startsWith('/activity/')
+
         if (!profile) {
+          if (isQuickJoin) {
+            // New user via quick-join: create a minimal profile and skip the onboarding flow.
+            // Username: display name lowercased, spaces to hyphens, plus a 4-digit suffix.
+            const displayName: string =
+              (user.user_metadata?.full_name as string | undefined) ??
+              (user.user_metadata?.name as string | undefined) ??
+              'user'
+            const base = displayName
+              .toLowerCase()
+              .replace(/\s+/g, '-')
+              .replace(/[^a-z0-9-]/g, '')
+            const suffix = Math.floor(1000 + Math.random() * 9000)
+            await supabase.from('profiles').insert({
+              id: user.id,
+              full_name: displayName,
+              username: `${base}${suffix}`,
+            })
+            return NextResponse.redirect(new URL(`${next}?join=true`, origin))
+          }
           return NextResponse.redirect(new URL('/onboarding', origin))
+        }
+
+        if (isQuickJoin) {
+          return NextResponse.redirect(new URL(`${next}?join=true`, origin))
         }
       }
 

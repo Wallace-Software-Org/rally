@@ -350,10 +350,12 @@ export default function ActivityDetailView({
   activity,
   userId,
   showPostedBanner: initialShowPostedBanner = false,
+  justJoined = false,
 }: {
   activity: ActivityDetail;
   userId: string | null;
   showPostedBanner?: boolean;
+  justJoined?: boolean;
 }) {
   const initiallyJoined = activity.participants.some(
     (p) => p.user_id === userId,
@@ -367,6 +369,7 @@ export default function ActivityDetailView({
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
   );
+  const [showJustJoinedBanner, setShowJustJoinedBanner] = useState(justJoined);
 
   useEffect(() => {
     if (!leaveConfirm) return;
@@ -397,6 +400,17 @@ export default function ActivityDetailView({
     window.addEventListener("pagehide", hidePostedBanner);
     return () => window.removeEventListener("pagehide", hidePostedBanner);
   }, [initialShowPostedBanner]);
+
+  useEffect(() => {
+    if (!justJoined) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("joined");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }, [justJoined]);
 
   const isHost = userId === activity.creator_id;
   const viewerCanSeeProfiles = isHost || isJoined;
@@ -480,7 +494,7 @@ export default function ActivityDetailView({
   ) : userId === null ? (
     <div className="flex flex-col items-center gap-1.5 w-full max-w-156">
       <Link
-        href="/login"
+        href={`/login?next=/activity/${activity.id}&join=true`}
         className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
       >
         Sign in to join
@@ -530,17 +544,18 @@ export default function ActivityDetailView({
     </button>
   ) : null;
 
-  const registerBtn = userId && activity.external_link ? (
-    <a
-      href={activity.external_link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="btn-tier-3 w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors"
-    >
-      <ExternalLinkIcon />
-      Register here
-    </a>
-  ) : null;
+  const registerBtn =
+    userId && activity.external_link ? (
+      <a
+        href={activity.external_link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-tier-3 w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors"
+      >
+        <ExternalLinkIcon />
+        Register here
+      </a>
+    ) : null;
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
@@ -562,6 +577,24 @@ export default function ActivityDetailView({
               )}
               <button
                 onClick={() => setShowPostedBanner(false)}
+                aria-label="Dismiss"
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+        {showJustJoinedBanner && (
+          <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
+            <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm text-brand-teal">
+              You&apos;re in.{" "}
+              <Link href="/onboarding" className="font-semibold underline">
+                Finish setting up your profile
+              </Link>{" "}
+              when you&apos;re ready.
+              <button
+                onClick={() => setShowJustJoinedBanner(false)}
                 aria-label="Dismiss"
                 className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
               >
@@ -730,7 +763,9 @@ export default function ActivityDetailView({
                                 className={`object-cover${!userId ? " blur-sm" : ""}`}
                               />
                             ) : (
-                              <span className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}>
+                              <span
+                                className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}
+                              >
                                 {initials(name)}
                               </span>
                             )}
@@ -763,7 +798,7 @@ export default function ActivityDetailView({
                   {/* md+: horizontal scroll row */}
                   <div className="hidden md:block relative">
                     <div
-                      className="flex gap-5 overflow-x-auto pb-1"
+                      className="flex gap-2 overflow-x-auto pb-1"
                       style={{ scrollbarWidth: "none" }}
                     >
                       {activity.participants.map((p) => {
@@ -779,7 +814,9 @@ export default function ActivityDetailView({
                                 className={`object-cover${!userId ? " blur-sm" : ""}`}
                               />
                             ) : (
-                              <span className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}>
+                              <span
+                                className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}
+                              >
                                 {initials(name)}
                               </span>
                             )}
@@ -788,7 +825,7 @@ export default function ActivityDetailView({
                         return (
                           <div
                             key={p.id}
-                            className="flex flex-col items-center gap-1.5 flex-none w-13"
+                            className="flex flex-col items-center gap-1 flex-none w-13"
                           >
                             {viewerCanSeeProfiles && p.profiles?.username ? (
                               <Link href={`/profile/${p.profiles.username}`}>

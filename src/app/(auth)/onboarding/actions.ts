@@ -23,14 +23,14 @@ export async function createProfile({
 
   if (!user) return { error: 'Not authenticated' }
 
-  const { error } = await supabase.from('profiles').insert({
+  const { error } = await supabase.from('profiles').upsert({
     id: user.id,
     full_name: full_name.trim(),
     username: username.trim(),
     bio: bio.trim() || null,
     instagram_handle: instagram_handle.replace(/^@/, '').trim() || null,
     sports,
-  })
+  }, { onConflict: 'id' })
 
   if (error) return { error: error.message }
   return {}

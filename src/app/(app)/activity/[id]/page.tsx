@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivityById } from "@/lib/queries/activities";
+import { joinActivity } from "@/lib/actions/activities";
 import ActivityDetailView from "@/components/activities/activity-detail";
 
 export default async function ActivityPage({
@@ -16,6 +17,10 @@ export default async function ActivityPage({
   const postedParam = Array.isArray(query.posted)
     ? query.posted[0]
     : query.posted;
+  const joinParam = Array.isArray(query.join) ? query.join[0] : query.join;
+  const joinedParam = Array.isArray(query.joined)
+    ? query.joined[0]
+    : query.joined;
   const supabase = await createClient();
 
   const {
@@ -52,11 +57,26 @@ export default async function ActivityPage({
     );
   }
 
+  // Auto-join: triggered when the user lands here after completing OAuth from
+  // a shared activity link. Join server-side, then redirect to strip ?join=true.
+  if (joinParam === "true" && userId) {
+    const isCreator = userId === activity.creator_id;
+    const isParticipant = activity.participants.some(
+      (p) => p.user_id === userId,
+    );
+    if (!isCreator && !isParticipant) {
+      const { error } = await joinActivity(id);
+      redirect(`/activity/${id}${error ? "" : "?joined=true"}`);
+    }
+    redirect(`/activity/${id}`);
+  }
+
   return (
     <ActivityDetailView
       activity={activity}
       userId={userId}
       showPostedBanner={postedParam === "true"}
+      justJoined={joinedParam === "true"}
     />
   );
 }
