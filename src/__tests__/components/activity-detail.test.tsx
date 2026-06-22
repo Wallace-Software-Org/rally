@@ -220,7 +220,7 @@ describe("ActivityDetailView — unauthenticated", () => {
     expect(
       screen.getAllByRole("link", { name: /sign in to join/i }).length,
     ).toBeGreaterThan(0);
-    expect(screen.getAllByText("One tap with Google, no signup form.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Sign in with Google to join.").length).toBeGreaterThan(0);
     expect(
       screen.queryByRole("link", { name: /register here/i }),
     ).not.toBeInTheDocument();

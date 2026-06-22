@@ -14,8 +14,7 @@ export default function LoginPage() {
     if (join) callbackParams.set("join", join);
     const qs = callbackParams.toString();
     const redirectTo = `${window.location.origin}/auth/callback${qs ? `?${qs}` : ""}`;
-    //TODO: remove
-    console.log("redirectTo:", redirectTo);
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },

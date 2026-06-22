@@ -95,7 +95,6 @@ function useRealtimeParticipants(
 
   useEffect(() => {
     if (state.deleteLogKey === 0) return;
-    console.log("participants after DELETE length", state.participants.length);
   }, [state.deleteLogKey, state.participants.length]);
 
   useEffect(() => {
@@ -160,7 +159,6 @@ function useRealtimeParticipants(
 
           if (payload.eventType === "DELETE") {
             const row = payload.old as { id: string };
-            console.log("participants DELETE payload.old", payload.old);
             setState((prev) => {
               const isCurrent =
                 prev.activityId === activity.id &&

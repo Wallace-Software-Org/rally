@@ -146,28 +146,20 @@ describe("MapPreviewCard", () => {
     expect(screen.getByRole("button", { name: /going/i })).toBeInTheDocument();
   });
 
-  it("button order is: primary action, View details, Register here, Share to Story", () => {
-    renderCard({
-      activity: {
-        ...mockActivity,
-        external_link: "https://example.com/register",
-      },
-    });
+  it("button order is: primary action, View details, Share to Story", () => {
+    renderCard();
 
     const primaryAction = screen.getByRole("button", { name: /join/i });
     const viewDetails = screen.getByRole("link", { name: /view details/i });
-    const registerHere = screen.getByRole("link", { name: /register here/i });
     const shareToStory = screen.getByRole("button", {
       name: /share to story/i,
     });
 
     expect(primaryAction).toHaveClass("btn-tier-1");
     expect(viewDetails).toHaveClass("btn-tier-2");
-    expect(registerHere).toHaveClass("btn-tier-3");
     expect(shareToStory).toHaveClass("btn-tier-3");
     expectBefore(primaryAction, viewDetails);
-    expectBefore(viewDetails, registerHere);
-    expectBefore(registerHere, shareToStory);
+    expectBefore(viewDetails, shareToStory);
   });
 
   it("hides Register here and Share to Story for logged-out users", () => {
@@ -180,11 +172,8 @@ describe("MapPreviewCard", () => {
     });
 
     expect(screen.getByRole("link", { name: /sign in to join/i })).toBeInTheDocument();
-    expect(screen.getByText("One tap with Google, no signup form.")).toBeInTheDocument();
+    expect(screen.getByText("Sign in with Google to join.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /view details/i })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: /register here/i }),
-    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /share to story/i }),
     ).not.toBeInTheDocument();
