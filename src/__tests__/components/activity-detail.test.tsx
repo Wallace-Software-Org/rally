@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import ActivityDetailView from "@/components/activities/activity-detail";
 import type { ActivityDetail } from "@/types";
 
@@ -177,9 +183,12 @@ describe("ActivityDetailView — rendering", () => {
     expect(screen.getAllByText("@jakekline").length).toBeGreaterThan(0);
   });
 
-  it('shows "No one yet — be the first" when participants is empty', () => {
+  it("shows the host in Who's going when participants are empty", () => {
     renderAsViewer({ participants: [] });
-    expect(screen.getByText(/no one yet/i)).toBeInTheDocument();
+
+    const section = screen.getByText("Who's going").parentElement!;
+    expect(within(section).getAllByText("Jake").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/no one yet/i)).not.toBeInTheDocument();
   });
 
   it("renders the About section when description is present", () => {
@@ -227,6 +236,54 @@ describe("ActivityDetailView — unauthenticated", () => {
     expect(
       screen.queryByRole("button", { name: /share to story/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps host avatar sharp and blurs participant avatars when userId is null", () => {
+    renderUnauthenticated({
+      host: {
+        ...mockActivity.host,
+        full_name: "Wallace Palmer",
+        avatar_url: null,
+      },
+      participants: [
+        {
+          id: "p-2",
+          user_id: "participant-1",
+          profiles: {
+            full_name: "Pat Avery",
+            avatar_url: null,
+            instagram_handle: "patavery",
+            username: "patavery",
+          },
+        },
+        {
+          id: "p-1",
+          user_id: "host-1",
+          profiles: {
+            full_name: "Wrong Host",
+            avatar_url: null,
+            instagram_handle: "wronghost",
+            username: "wronghost",
+          },
+        },
+      ],
+    });
+
+    const section = screen.getByText("Who's going").parentElement!;
+    const hostInitials = within(section).getAllByText("WP");
+    const participantInitials = within(section).getAllByText("PA");
+
+    expect(within(section).queryByText("WH")).not.toBeInTheDocument();
+    expect(
+      hostInitials[0].compareDocumentPosition(participantInitials[0]) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      hostInitials.every((el) => !el.classList.contains("blur-sm")),
+    ).toBe(true);
+    expect(
+      participantInitials.every((el) => el.classList.contains("blur-sm")),
+    ).toBe(true);
   });
 });
 

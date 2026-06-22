@@ -17,6 +17,10 @@ const mockActivity: ActivityWithParticipants = {
   skill_level: "beginner",
   lat: 33.4584,
   lng: -111.9503,
+  host: {
+    full_name: "Host Person",
+    avatar_url: null,
+  },
   participants: [],
 };
 

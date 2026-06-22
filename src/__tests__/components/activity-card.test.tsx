@@ -24,6 +24,10 @@ const mockActivity: ActivityWithParticipants = {
   skill_level: "beginner",
   lat: 33.4584,
   lng: -111.9503,
+  host: {
+    full_name: "Host Person",
+    avatar_url: null,
+  },
   participants: [],
 };
 
@@ -128,6 +132,41 @@ describe("ActivityCardDesktop", () => {
     expect(screen.queryByText("••••••••••••")).not.toBeInTheDocument();
   });
 
+  it("keeps host avatar sharp and blurs participant avatars when userId is null", () => {
+    render(
+      <ActivityCardDesktop
+        {...base}
+        userId={null}
+        activity={{
+          ...mockActivity,
+          participants: [
+            {
+              id: "other-participant",
+              user_id: "participant-1",
+              profiles: { full_name: "Participant Avery", avatar_url: null },
+            },
+            {
+              id: "host-participant",
+              user_id: "creator-999",
+              profiles: { full_name: "Wrong Host", avatar_url: null },
+            },
+          ],
+        }}
+      />,
+    );
+
+    const hostAvatar = screen.getByText("HP");
+    const participantAvatar = screen.getByText("PA");
+
+    expect(screen.queryByText("WH")).not.toBeInTheDocument();
+    expect(
+      hostAvatar.compareDocumentPosition(participantAvatar) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(hostAvatar).not.toHaveClass("blur-sm");
+    expect(participantAvatar).toHaveClass("blur-sm");
+  });
+
   it("shows spots remaining when max_participants is set", () => {
     render(<ActivityCardDesktop {...base} />);
     expect(screen.getByText("10 spots left")).toBeInTheDocument();
@@ -146,5 +185,40 @@ describe("ActivityCardMobile", () => {
     render(<ActivityCardMobile {...base} userId={null} />);
     expect(screen.getByText("Papago Park")).toBeInTheDocument();
     expect(screen.queryByText("••••••••••••")).not.toBeInTheDocument();
+  });
+
+  it("keeps host avatar sharp and blurs participant avatars when userId is null", () => {
+    render(
+      <ActivityCardMobile
+        {...base}
+        userId={null}
+        activity={{
+          ...mockActivity,
+          participants: [
+            {
+              id: "other-participant",
+              user_id: "participant-1",
+              profiles: { full_name: "Participant Avery", avatar_url: null },
+            },
+            {
+              id: "host-participant",
+              user_id: "creator-999",
+              profiles: { full_name: "Wrong Host", avatar_url: null },
+            },
+          ],
+        }}
+      />,
+    );
+
+    const hostAvatar = screen.getByText("HP");
+    const participantAvatar = screen.getByText("PA");
+
+    expect(screen.queryByText("WH")).not.toBeInTheDocument();
+    expect(
+      hostAvatar.compareDocumentPosition(participantAvatar) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(hostAvatar).not.toHaveClass("blur-sm");
+    expect(participantAvatar).toHaveClass("blur-sm");
   });
 });

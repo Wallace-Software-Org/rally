@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import type { ActivityWithParticipants, ActivityDetail } from "@/types";
+import type {
+  ActivityDetail,
+  ActivityHostSummary,
+  ActivityWithParticipants,
+  DetailParticipantProfile,
+  ParticipantProfile,
+} from "@/types";
 
 export async function getActivities(): Promise<ActivityWithParticipants[]> {
   const supabase = await createClient();
@@ -13,6 +19,7 @@ export async function getActivities(): Promise<ActivityWithParticipants[]> {
       `
       id, creator_id, title, sport, external_link, location_name, starts_at,
       ends_at, visibility, max_participants, skill_level, lat, lng,
+      host:profiles!activities_creator_id_fkey ( full_name, avatar_url ),
       participants ( id, user_id, profiles ( full_name, avatar_url ) )
     `,
     )
@@ -52,18 +59,24 @@ export async function getActivities(): Promise<ActivityWithParticipants[]> {
 // type level but they are objects at runtime. Normalize so Participant matches.
 function normalize(
   data: {
+    host: unknown;
     participants: { id: string; user_id: string; profiles: unknown }[];
     [key: string]: unknown;
   }[] | null,
 ): ActivityWithParticipants[] {
   return (data ?? []).map((a) => ({
     ...(a as ActivityWithParticipants),
+    host: normalizeRelation<ActivityHostSummary>(a.host),
     participants: a.participants.map((p) => ({
       ...p,
-      profiles:
-        (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) ?? null,
+      profiles: normalizeRelation<ParticipantProfile>(p.profiles),
     })),
   }));
+}
+
+function normalizeRelation<T>(value: unknown): T | null {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return (normalized ?? null) as T | null;
 }
 
 export async function getActivityById(
@@ -117,8 +130,7 @@ export async function getActivityById(
     ...data,
     participants: data.participants.map((p) => ({
       ...p,
-      profiles:
-        (Array.isArray(p.profiles) ? p.profiles[0] : p.profiles) ?? null,
+      profiles: normalizeRelation<DetailParticipantProfile>(p.profiles),
     })),
     host,
     hosted_count: hostedCount ?? 0,

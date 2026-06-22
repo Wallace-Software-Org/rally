@@ -6,17 +6,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ActivityWithParticipants, Participant } from "@/types";
 import { createClient } from "@/lib/supabase/client";
+import { getParticipantsWithHostFirst } from "@/lib/utils/activity-participants";
 import { formatActivityDate } from "@/lib/utils/format-time";
+import {
+  getInitials,
+  shouldBlurAvatarForViewer,
+} from "@/lib/utils/avatar";
 import ActivityPill from "@/components/ui/activity-pill";
-
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0] ?? "")
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 type CardProps = {
   activity: ActivityWithParticipants;
@@ -35,11 +31,10 @@ function initialParticipants(
 ): Participant[] {
   if (!Array.isArray(activity.participants)) return [];
 
-  const seenUserIds = new Set<string>();
-  return activity.participants.filter((participant) => {
-    if (seenUserIds.has(participant.user_id)) return false;
-    seenUserIds.add(participant.user_id);
-    return true;
+  return getParticipantsWithHostFirst({
+    participants: activity.participants,
+    creatorId: activity.creator_id,
+    hostProfile: activity.host,
   });
 }
 
@@ -197,6 +192,19 @@ function useRealtimeParticipants(
   return { participantCount, liveParticipants, hasJoined };
 }
 
+function getAvatarParticipants(
+  activity: ActivityWithParticipants,
+  participants: Participant[],
+) {
+  return getParticipantsWithHostFirst({
+    participants,
+    creatorId: activity.creator_id,
+    hostProfile: activity.host,
+  })
+    .filter((participant) => participant.profiles)
+    .slice(0, 5);
+}
+
 function spotsLeftText(
   maxParticipants: number | null,
   participantCount: number,
@@ -313,10 +321,7 @@ export function ActivityCardMobile({
     activity.max_participants === null
       ? null
       : Math.max(0, activity.max_participants - participantCount);
-  const avatars = liveParticipants
-    .filter((p) => p.profiles)
-    .map((p) => p.profiles!)
-    .slice(0, 5);
+  const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
   const { time, date } = formatActivityDate(activity.starts_at);
 
   return (
@@ -361,27 +366,41 @@ export function ActivityCardMobile({
       </div>
       {/* mt-auto pushes this row to the bottom when the grid stretches cards to equal height */}
       <div className="flex items-center gap-2 mt-auto pt-0.5">
-        {avatars.length > 0 && (
+        {avatarParticipants.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
-            {avatars.map((av, i) => (
-              <div
-                key={i}
-                className="relative w-5.5 h-5.5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
-              >
-                {av.avatar_url ? (
-                  <Image
-                    src={av.avatar_url}
-                    alt=""
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="text-[8px] font-semibold text-brand-avatar-text">
-                    {av.full_name ? initials(av.full_name) : "?"}
-                  </span>
-                )}
-              </div>
-            ))}
+            {avatarParticipants.map((participant) => {
+              const profile = participant.profiles!;
+              const shouldBlurAvatar = shouldBlurAvatarForViewer(
+                userId,
+                participant.user_id === activity.creator_id,
+              );
+
+              return (
+                <div
+                  key={participant.id}
+                  className="relative w-5.5 h-5.5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
+                >
+                  {profile.avatar_url ? (
+                    <Image
+                      src={profile.avatar_url}
+                      alt=""
+                      fill
+                      className={`object-cover${
+                        shouldBlurAvatar ? " blur-sm" : ""
+                      }`}
+                    />
+                  ) : (
+                    <span
+                      className={`text-[8px] font-semibold text-brand-avatar-text${
+                        shouldBlurAvatar ? " blur-sm" : ""
+                      }`}
+                    >
+                      {getInitials(profile.full_name)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         <span className="text-xs text-brand-muted flex-1">
@@ -432,10 +451,7 @@ export function ActivityCardDesktop({
     activity.max_participants === null
       ? null
       : Math.max(0, activity.max_participants - participantCount);
-  const avatars = liveParticipants
-    .filter((p) => p.profiles)
-    .map((p) => p.profiles!)
-    .slice(0, 5);
+  const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
   const { time, date } = formatActivityDate(activity.starts_at);
 
   const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-1 transition-all border ${
@@ -482,29 +498,41 @@ export function ActivityCardDesktop({
       </div>
       {/* mt-auto pushes this row to the bottom when the grid stretches cards to equal height */}
       <div className="flex items-center gap-2 mt-auto pt-1">
-        {avatars.length > 0 && (
+        {avatarParticipants.length > 0 && (
           <div className="flex -space-x-1.5 flex-none">
-            {avatars.map((av, i) => (
-              <div
-                key={i}
-                className="relative w-5 h-5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
-              >
-                {av.avatar_url ? (
-                  <Image
-                    src={av.avatar_url}
-                    alt=""
-                    fill
-                    className={`object-cover${userId === null ? " blur-sm" : ""}`}
-                  />
-                ) : (
-                  <span
-                    className={`text-[8px] font-semibold text-brand-avatar-text${userId === null ? " blur-sm" : ""}`}
-                  >
-                    {av.full_name ? initials(av.full_name) : "?"}
-                  </span>
-                )}
-              </div>
-            ))}
+            {avatarParticipants.map((participant) => {
+              const profile = participant.profiles!;
+              const shouldBlurAvatar = shouldBlurAvatarForViewer(
+                userId,
+                participant.user_id === activity.creator_id,
+              );
+
+              return (
+                <div
+                  key={participant.id}
+                  className="relative w-5 h-5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
+                >
+                  {profile.avatar_url ? (
+                    <Image
+                      src={profile.avatar_url}
+                      alt=""
+                      fill
+                      className={`object-cover${
+                        shouldBlurAvatar ? " blur-sm" : ""
+                      }`}
+                    />
+                  ) : (
+                    <span
+                      className={`text-[8px] font-semibold text-brand-avatar-text${
+                        shouldBlurAvatar ? " blur-sm" : ""
+                      }`}
+                    >
+                      {getInitials(profile.full_name)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         <span className="text-xs text-brand-muted flex-1">

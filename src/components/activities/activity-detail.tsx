@@ -16,16 +16,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
+import { getParticipantsWithHostFirst } from "@/lib/utils/activity-participants";
+import {
+  getInitials,
+  shouldBlurAvatarForViewer,
+} from "@/lib/utils/avatar";
 import { isIOSDevice } from "@/lib/utils/platform";
-
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0] ?? "")
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 function formatDetailDate(startsAt: string): string {
   const d = new Date(startsAt);
@@ -60,7 +56,7 @@ function Avatar({
         <Image src={url} alt="" fill className="object-cover" />
       ) : (
         <span className="font-semibold text-brand-avatar-text">
-          {initials(name)}
+          {getInitials(name)}
         </span>
       )}
     </div>
@@ -419,6 +415,22 @@ export default function ActivityDetailView({
     activity.max_participants === null
       ? null
       : Math.max(0, activity.max_participants - participantCount);
+  const hostParticipantProfile = {
+    full_name: activity.host.full_name,
+    avatar_url: activity.host.avatar_url,
+    instagram_handle: activity.host.instagram_handle,
+    username: activity.host.username,
+  };
+  const goingParticipants = getParticipantsWithHostFirst({
+    participants: activity.participants,
+    creatorId: activity.creator_id,
+    hostProfile: hostParticipantProfile,
+    createHostParticipant: (profile) => ({
+      id: `host-${activity.creator_id}`,
+      user_id: activity.creator_id,
+      profiles: profile,
+    }),
+  });
   const isFull = spotsLeft !== null && spotsLeft <= 0;
   const skillDisplay = activity.skill_level
     ? activity.skill_level.charAt(0).toUpperCase() +
@@ -738,7 +750,7 @@ export default function ActivityDetailView({
             {/* 5. Who's going */}
             <div>
               <SectionLabel>Who&apos;s going</SectionLabel>
-              {activity.participants.length === 0 ? (
+              {goingParticipants.length === 0 ? (
                 <p className="text-sm text-brand-muted">
                   No one yet — be the first
                 </p>
@@ -750,9 +762,13 @@ export default function ActivityDetailView({
                       className="flex gap-2 overflow-x-auto pb-1"
                       style={{ scrollbarWidth: "none" }}
                     >
-                      {activity.participants.map((p) => {
+                      {goingParticipants.map((p) => {
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
+                        const shouldBlurAvatar = shouldBlurAvatarForViewer(
+                          userId,
+                          p.user_id === activity.creator_id,
+                        );
                         const avatarEl = (
                           <div className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
                             {p.profiles?.avatar_url ? (
@@ -760,13 +776,17 @@ export default function ActivityDetailView({
                                 src={p.profiles.avatar_url}
                                 alt=""
                                 fill
-                                className={`object-cover${!userId ? " blur-sm" : ""}`}
+                                className={`object-cover${
+                                  shouldBlurAvatar ? " blur-sm" : ""
+                                }`}
                               />
                             ) : (
                               <span
-                                className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}
+                                className={`text-xs font-semibold text-brand-avatar-text${
+                                  shouldBlurAvatar ? " blur-sm" : ""
+                                }`}
                               >
-                                {initials(name)}
+                                {getInitials(name)}
                               </span>
                             )}
                           </div>
@@ -801,9 +821,13 @@ export default function ActivityDetailView({
                       className="flex gap-2 overflow-x-auto pb-1"
                       style={{ scrollbarWidth: "none" }}
                     >
-                      {activity.participants.map((p) => {
+                      {goingParticipants.map((p) => {
                         const name = p.profiles?.full_name ?? "?";
                         const firstName = name.split(" ")[0] ?? name;
+                        const shouldBlurAvatar = shouldBlurAvatarForViewer(
+                          userId,
+                          p.user_id === activity.creator_id,
+                        );
                         const avatarEl = (
                           <div className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
                             {p.profiles?.avatar_url ? (
@@ -811,13 +835,17 @@ export default function ActivityDetailView({
                                 src={p.profiles.avatar_url}
                                 alt=""
                                 fill
-                                className={`object-cover${!userId ? " blur-sm" : ""}`}
+                                className={`object-cover${
+                                  shouldBlurAvatar ? " blur-sm" : ""
+                                }`}
                               />
                             ) : (
                               <span
-                                className={`text-xs font-semibold text-brand-avatar-text${!userId ? " blur-sm" : ""}`}
+                                className={`text-xs font-semibold text-brand-avatar-text${
+                                  shouldBlurAvatar ? " blur-sm" : ""
+                                }`}
                               >
-                                {initials(name)}
+                                {getInitials(name)}
                               </span>
                             )}
                           </div>

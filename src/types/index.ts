@@ -17,6 +17,11 @@ export type Participant = {
   profiles: ParticipantProfile | null;
 };
 
+export type ActivityHostSummary = {
+  full_name: string;
+  avatar_url: string | null;
+};
+
 export type Activity = {
   id: string;
   creator_id: string;
@@ -35,6 +40,7 @@ export type Activity = {
 
 export type ActivityWithParticipants = Activity & {
   participants: Participant[];
+  host: ActivityHostSummary | null;
 };
 
 // Used by AppNav — includes username so the avatar can link to own profile
