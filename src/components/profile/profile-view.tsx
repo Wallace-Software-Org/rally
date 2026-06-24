@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
-import { CameraIcon, PencilIcon, InstagramIcon } from "@/components/ui/icons";
+import { CameraIcon, InstagramIcon } from "@/components/ui/icons";
 import { uploadAvatar } from "@/lib/actions/profiles";
 
 function initials(name: string): string {
@@ -203,30 +203,42 @@ function Avatar({
 
 function Identity({
   profile,
-  isOwner,
+  showInlineEdit,
 }: {
   profile: ProfilePage;
-  isOwner: boolean;
+  showInlineEdit?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center gap-1 text-center w-full">
-      <div className="relative inline-flex items-center">
-        <p className="text-lg font-bold text-brand-text leading-tight">
-          {profile.full_name}
-        </p>
-        {isOwner && (
-          <Link
-            href="/profile/edit"
-            aria-label="Edit profile"
-            className="absolute left-full ml-1.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-text transition-colors"
-          >
-            <PencilIcon />
-          </Link>
-        )}
-      </div>
+      <p className="text-lg font-bold text-brand-text leading-tight">
+        {profile.full_name}
+      </p>
       <p className="text-sm text-brand-muted font-medium">
         @{profile.username}
       </p>
+      {showInlineEdit && (
+        <Link
+          href="/profile/edit"
+          className="mt-1 flex items-center gap-1.5 rounded-[10px] bg-[#E8DCC8] text-[#6B5430] text-sm font-medium px-3 py-2 transition-colors hover:bg-[#DDD0B5]"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Edit profile
+        </Link>
+      )}
 
       {profile.instagram_handle && (
         <a
@@ -331,6 +343,51 @@ function ActivityList({
   );
 }
 
+// ── Completeness nudge ────────────────────────────────────────────────────────
+
+function NudgeCard() {
+  return (
+    <div
+      className="w-full rounded-xl p-4 flex flex-col gap-3"
+      style={{
+        backgroundColor: "#DFD3C0",
+        border: "0.5px solid rgba(90,74,58,0.25)",
+      }}
+    >
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-semibold text-brand-text">
+          Finish your profile
+        </p>
+        <p className="text-sm text-brand-muted">
+          Add a photo and the activities you are into so people know who is
+          showing up.
+        </p>
+      </div>
+      <Link
+        href="/profile/edit"
+        className="btn-tier-1 flex items-center justify-center gap-1.5 transition-colors"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Edit profile
+      </Link>
+    </div>
+  );
+}
+
 // ── ProfileView ───────────────────────────────────────────────────────────────
 
 export default function ProfileView({
@@ -342,6 +399,8 @@ export default function ProfileView({
 }) {
   const router = useRouter();
   const isOwner = currentUserId === profile.id;
+  const showNudge =
+    isOwner && (!profile.avatar_url || profile.sports.length === 0);
 
   const [tab, setTab] = useState<"going" | "hosting">(
     isOwner ? "hosting" : "going",
@@ -405,8 +464,13 @@ export default function ProfileView({
                     {uploadError}
                   </p>
                 )}
-                <Identity profile={profile} isOwner={isOwner} />
+                <Identity
+                  profile={profile}
+                  showInlineEdit={isOwner && !showNudge}
+                />
               </div>
+
+              {showNudge && <NudgeCard />}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
@@ -459,9 +523,9 @@ export default function ProfileView({
       <div className="hidden xl:flex flex-1 min-h-0 overflow-hidden">
         <div className="flex-1 max-w-6xl xl:max-w-7xl mx-auto flex flex-cols min-h-0 pt-6 xl:pt-12 gap-6">
           {/* Sidebar */}
-          <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4">
+          <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4 xl:w-96">
             {/* Identity card */}
-            <div className="bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4 max-w-sm xl:max-w-auto xl:w-md">
+            <div className="w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
               <Avatar
                 profile={profile}
                 isOwner={isOwner}
@@ -471,7 +535,10 @@ export default function ProfileView({
               {uploadError && (
                 <p className="text-xs text-brand-danger -mt-2">{uploadError}</p>
               )}
-              <Identity profile={profile} isOwner={isOwner} />
+              <Identity
+                profile={profile}
+                showInlineEdit={isOwner && !showNudge}
+              />
               {profile.sports.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {profile.sports.map((sport) => (
@@ -481,8 +548,10 @@ export default function ProfileView({
               )}
             </div>
 
+            {showNudge && <NudgeCard />}
+
             {/* Stats card */}
-            <div className="bg-brand-surface border border-brand-border rounded-xl overflow-hidden">
+            <div className="w-full bg-brand-surface border border-brand-border rounded-xl overflow-hidden">
               <div className="grid grid-cols-2 divide-x divide-brand-border text-center">
                 <div className="py-4 flex flex-col gap-0.5">
                   <span className="text-2xl font-bold text-brand-text leading-none">

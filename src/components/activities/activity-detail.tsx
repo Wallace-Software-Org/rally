@@ -16,7 +16,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
-import { getParticipantsWithHostFirst } from "@/lib/utils/activity-participants";
+import {
+  getParticipantsWithHostFirst,
+  quickJoinLoginHref,
+} from "@/lib/utils/activity-participants";
 import {
   getInitials,
   shouldBlurAvatarForViewer,
@@ -506,7 +509,7 @@ export default function ActivityDetailView({
   ) : userId === null ? (
     <div className="flex flex-col items-center gap-1.5 w-full max-w-156">
       <Link
-        href={`/login?next=/activity/${activity.id}&join=true`}
+        href={quickJoinLoginHref(activity.id)}
         className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
       >
         Sign in to join

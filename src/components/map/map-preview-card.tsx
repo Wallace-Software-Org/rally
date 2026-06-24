@@ -8,6 +8,7 @@ import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import { isIOSDevice } from "@/lib/utils/platform";
+import { quickJoinLoginHref } from "@/lib/utils/activity-participants";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
@@ -105,7 +106,7 @@ export default function MapPreviewCard({
   ) : userId === null ? (
     <div className="flex w-full flex-col items-center gap-1.5">
       <Link
-        href="/login"
+        href={quickJoinLoginHref(activity.id)}
         className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
       >
         Sign in to join

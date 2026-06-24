@@ -153,7 +153,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
     e.target.value = "";
   }
 
-  const canSave = usernameStatus === "available" || usernameStatus === "idle";
+  const canSave = usernameStatus === "available";
 
   async function handleSave() {
     if (submitting || !canSave) return;

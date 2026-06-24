@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ActivityWithParticipants, Participant } from "@/types";
 import { createClient } from "@/lib/supabase/client";
-import { getParticipantsWithHostFirst } from "@/lib/utils/activity-participants";
+import {
+  getParticipantsWithHostFirst,
+  quickJoinLoginHref,
+} from "@/lib/utils/activity-participants";
 import { formatActivityDate } from "@/lib/utils/format-time";
 import {
   getInitials,
@@ -250,11 +253,11 @@ function CardAction({
           // tappable div/Link that would also fire without these.
           e.preventDefault();
           e.stopPropagation();
-          router.push("/login");
+          router.push(quickJoinLoginHref(activity.id));
         }}
         className={`${pill} border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors`}
       >
-        Sign in
+        Sign in to join
       </button>
     );
   }

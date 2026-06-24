@@ -4,6 +4,12 @@ type ParticipantWithProfile<Profile> = {
   profiles: Profile | null;
 };
 
+// Quick-join login link for logged-out viewers. After Google OAuth the user
+// returns to the activity and auto-joins via the next and join params.
+export function quickJoinLoginHref(activityId: string): string {
+  return `/login?next=/activity/${activityId}&join=true`;
+}
+
 export function getParticipantsWithHostFirst<
   Participant extends ParticipantWithProfile<Profile>,
   Profile,

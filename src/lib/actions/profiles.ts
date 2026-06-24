@@ -65,6 +65,13 @@ export async function updateProfile(data: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  const username = data.username.trim();
+  if (!username || !USERNAME_RE.test(username)) {
+    return {
+      error: "Lowercase letters, numbers, and hyphens only, no spaces.",
+    };
+  }
+
   const { data: current } = await supabase
     .from("profiles")
     .select("username")
@@ -75,7 +82,7 @@ export async function updateProfile(data: {
     .from("profiles")
     .update({
       full_name: data.full_name.trim() || null,
-      username: data.username.trim() || null,
+      username,
       bio: data.bio.trim() || null,
       instagram_handle: data.instagram_handle.replace(/^@/, "").trim() || null,
       sports: data.sports,
@@ -85,9 +92,8 @@ export async function updateProfile(data: {
   if (error) return { error: error.message };
 
   if (current?.username) revalidatePath(`/profile/${current.username}`);
-  const newUsername = data.username.trim();
-  if (newUsername && newUsername !== current?.username) {
-    revalidatePath(`/profile/${newUsername}`);
+  if (username !== current?.username) {
+    revalidatePath(`/profile/${username}`);
   }
   revalidatePath("/");
 

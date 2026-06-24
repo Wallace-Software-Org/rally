@@ -1,6 +1,6 @@
 import type { UsernameStatus } from "@/types";
 
-export const USERNAME_RE = /^[a-z0-9]{3,20}$/;
+export const USERNAME_RE = /^[a-z0-9-]{3,20}$/;
 
 export function usernameHint(
   status: UsernameStatus,
@@ -12,7 +12,7 @@ export function usernameHint(
       return { color: "text-brand-muted", text: "At least 3 characters required." };
     return {
       color: "text-brand-danger",
-      text: "Lowercase letters and numbers only, no spaces.",
+      text: "Lowercase letters, numbers, and hyphens only, no spaces.",
     };
   }
   if (status === "checking")
