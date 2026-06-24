@@ -551,10 +551,11 @@ export default function ActivityDetailView({
     </button>
   );
 
-  const shareBtn = userId ? (
+  const shareBtn = (tier: string) =>
+    userId ? (
     <button
       onClick={handleShare}
-      className="btn-tier-3 cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors"
+      className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
     >
       <svg
         width="15"
@@ -575,13 +576,13 @@ export default function ActivityDetailView({
     </button>
   ) : null;
 
-  const registerBtn =
+  const registerBtn = (tier: string) =>
     userId && activity.external_link ? (
       <a
         href={activity.external_link}
         target="_blank"
         rel="noopener noreferrer"
-        className="btn-tier-3 w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors"
+        className={`${tier} w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
       >
         <ExternalLinkIcon />
         Register here
@@ -896,6 +897,14 @@ export default function ActivityDetailView({
               )}
             </div>
 
+            {/* 6. Secondary actions — mobile/tablet only; xl keeps them in the right panel */}
+            {userId && (
+              <div className="xl:hidden flex flex-col items-center gap-3">
+                {registerBtn("btn-tier-2")}
+                {shareBtn("btn-tier-2")}
+              </div>
+            )}
+
             {/* 6. CTAs — md/lg inline (hidden on mobile and xl) */}
             {/* <div className="hidden md:flex xl:hidden flex-col gap-3 pt-2 pb-4">
               {ctaButton}
@@ -927,8 +936,8 @@ export default function ActivityDetailView({
                   {linkCopied ? "Copied!" : "Copy link"}
                 </button>
               )}
-              {registerBtn}
-              {shareBtn}
+              {registerBtn("btn-tier-2")}
+              {shareBtn("btn-tier-2")}
             </div>
           </div>
         </div>
@@ -937,8 +946,6 @@ export default function ActivityDetailView({
       {/* ── Bottom CTA bar — mobile/tablet only ────────────────────────────────────── */}
       <div className="xl:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col items-center gap-2">
         {ctaButton}
-        {registerBtn}
-        {shareBtn}
       </div>
 
       <AnimatePresence>

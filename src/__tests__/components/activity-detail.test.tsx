@@ -318,7 +318,7 @@ describe("ActivityDetailView — share flow and CTA tiers", () => {
     });
   });
 
-  it("Share to Story and Register here have btn-tier-3 class", () => {
+  it("Share to Story and Register here use btn-tier-2 in both placements", () => {
     renderAsViewer({ external_link: "https://example.com/register" });
 
     const shareButtons = screen.getAllByRole("button", {
@@ -328,13 +328,15 @@ describe("ActivityDetailView — share flow and CTA tiers", () => {
       name: /register here/i,
     });
 
+    // Both the mobile placement (below Who's going) and the desktop right
+    // panel use btn-tier-2. Both render in jsdom since media queries don't apply.
     expect(shareButtons.length).toBeGreaterThan(0);
     expect(registerLinks.length).toBeGreaterThan(0);
     shareButtons.forEach((button) => {
-      expect(button).toHaveClass("btn-tier-3");
+      expect(button).toHaveClass("btn-tier-2");
     });
     registerLinks.forEach((link) => {
-      expect(link).toHaveClass("btn-tier-3");
+      expect(link).toHaveClass("btn-tier-2");
     });
   });
 
