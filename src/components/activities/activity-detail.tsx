@@ -357,6 +357,10 @@ export default function ActivityDetailView({
     (p) => p.user_id === userId,
   );
   const [isJoined, setIsJoined] = useState(initiallyJoined);
+  // Participants are held in state (not read straight from the prop) so the
+  // "Who's going" stack can re-render when the viewer joins or leaves. The
+  // realtime count hook only tracks a number and can't drive the avatar list.
+  const [participants, setParticipants] = useState(activity.participants);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
@@ -422,7 +426,7 @@ export default function ActivityDetailView({
     username: activity.host.username,
   };
   const goingParticipants = getParticipantsWithHostFirst({
-    participants: activity.participants,
+    participants,
     creatorId: activity.creator_id,
     hostProfile: hostParticipantProfile,
     createHostParticipant: (profile) => ({
@@ -440,7 +444,19 @@ export default function ActivityDetailView({
     if (!userId || joining || isJoined) return;
     setJoining(true);
     const { error } = await joinActivity(activity.id);
-    if (!error) setIsJoined(true);
+    if (!error) {
+      setIsJoined(true);
+      // Restore the viewer's original participant entry (with profile) if they
+      // had previously left this session; otherwise the count hook reflects the
+      // new join and the avatar appears on next load.
+      setParticipants((prev) => {
+        if (prev.some((p) => p.user_id === userId)) return prev;
+        const original = activity.participants.find(
+          (p) => p.user_id === userId,
+        );
+        return original ? [...prev, original] : prev;
+      });
+    }
     setJoining(false);
   }
 
@@ -448,7 +464,10 @@ export default function ActivityDetailView({
     if (!userId || leaving || !isJoined) return;
     setLeaving(true);
     const { error } = await leaveActivity(activity.id);
-    if (!error) setIsJoined(false);
+    if (!error) {
+      setIsJoined(false);
+      setParticipants((prev) => prev.filter((p) => p.user_id !== userId));
+    }
     setLeaving(false);
     setLeaveConfirm(false);
   }
@@ -601,10 +620,7 @@ export default function ActivityDetailView({
           <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
             <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm text-brand-teal">
               You&apos;re in.{" "}
-              <Link
-                href="/onboarding"
-                className="font-semibold hover:underline"
-              >
+              <Link href="/onboarding" className="underline">
                 Finish setting up your profile
               </Link>{" "}
               when you&apos;re ready.
