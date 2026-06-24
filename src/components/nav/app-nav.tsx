@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import type { Profile } from "@/types";
+import { SettingsIcon } from "@/components/ui/icons";
 
 function initials(name: string): string {
   return name
@@ -20,6 +22,10 @@ export default function AppNav({
   profile: Profile;
   userId: string | null;
 }) {
+  const pathname = usePathname();
+  const isOwnProfilePage =
+    !!profile?.username && pathname === `/profile/${profile.username}`;
+
   const logo = (
     <Link href="/" className="flex items-center gap-2 flex-none">
       <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
@@ -82,43 +88,56 @@ export default function AppNav({
           Post activity
         </Link>
 
-        {/* Avatar — links to own profile when username is set */}
-        {profile?.username ? (
-          <Link
-            href={`/profile/${profile.username}`}
-            className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center"
-          >
-            {profile.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt=""
-                width={36}
-                height={36}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-xs font-semibold text-brand-avatar-text">
-                {initials(profile.full_name)}
-              </span>
-            )}
-          </Link>
-        ) : (
-          <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
-            {profile?.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt=""
-                width={36}
-                height={36}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-xs font-semibold text-brand-avatar-text">
-                {profile?.full_name ? initials(profile.full_name) : "?"}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Avatar (+ settings gear on own profile page) */}
+        <div className="flex items-center gap-2 flex-none">
+          {/* Avatar — links to own profile when username is set */}
+          {profile?.username ? (
+            <Link
+              href={`/profile/${profile.username}`}
+              className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center"
+            >
+              {profile.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-semibold text-brand-avatar-text">
+                  {initials(profile.full_name)}
+                </span>
+              )}
+            </Link>
+          ) : (
+            <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
+              {profile?.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-semibold text-brand-avatar-text">
+                  {profile?.full_name ? initials(profile.full_name) : "?"}
+                </span>
+              )}
+            </div>
+          )}
+
+          {isOwnProfilePage && (
+            <Link
+              href="/profile/edit"
+              aria-label="Settings"
+              className="xl:hidden w-9 h-9 rounded-full flex-none flex items-center justify-center border border-brand-border bg-transparent text-brand-muted hover:text-brand-text hover:border-brand-border-hover transition-colors"
+            >
+              <SettingsIcon size={18} />
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

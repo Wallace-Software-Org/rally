@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
-import { CameraIcon, InstagramIcon } from "@/components/ui/icons";
+import { CameraIcon, InstagramIcon, SettingsIcon } from "@/components/ui/icons";
 import { uploadAvatar } from "@/lib/actions/profiles";
 
 function initials(name: string): string {
@@ -201,13 +201,7 @@ function Avatar({
   );
 }
 
-function Identity({
-  profile,
-  showInlineEdit,
-}: {
-  profile: ProfilePage;
-  showInlineEdit?: boolean;
-}) {
+function Identity({ profile }: { profile: ProfilePage }) {
   return (
     <div className="flex flex-col items-center gap-1 text-center w-full">
       <p className="text-lg font-bold text-brand-text leading-tight">
@@ -216,30 +210,6 @@ function Identity({
       <p className="text-sm text-brand-muted font-medium">
         @{profile.username}
       </p>
-      {showInlineEdit && (
-        <Link
-          href="/profile/edit"
-          className="mt-1 flex items-center gap-1.5 rounded-[10px] bg-[#E8DCC8] text-[#6B5430] text-sm font-medium px-3 py-2 transition-colors hover:bg-[#DDD0B5]"
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 16 16"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Edit profile
-        </Link>
-      )}
-
       {profile.instagram_handle && (
         <a
           href={`https://instagram.com/${profile.instagram_handle}`}
@@ -365,24 +335,9 @@ function NudgeCard() {
       </div>
       <Link
         href="/profile/edit"
-        className="btn-tier-1 flex items-center justify-center gap-1.5 transition-colors"
+        className="btn-tier-1 flex items-center justify-center transition-colors"
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 16 16"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M11.5 2.5a1.414 1.414 0 0 1 2 2L5 13H3v-2L11.5 2.5Z"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        Edit profile
+        Complete your profile
       </Link>
     </div>
   );
@@ -464,10 +419,7 @@ export default function ProfileView({
                     {uploadError}
                   </p>
                 )}
-                <Identity
-                  profile={profile}
-                  showInlineEdit={isOwner && !showNudge}
-                />
+                <Identity profile={profile} />
               </div>
 
               {showNudge && <NudgeCard />}
@@ -525,7 +477,16 @@ export default function ProfileView({
           {/* Sidebar */}
           <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4 xl:w-96">
             {/* Identity card */}
-            <div className="w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
+            <div className="relative w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
+              {isOwner && (
+                <Link
+                  href="/profile/edit"
+                  aria-label="Settings"
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-transparent text-brand-muted hover:text-brand-text hover:border-brand-border-hover transition-colors"
+                >
+                  <SettingsIcon size={16} />
+                </Link>
+              )}
               <Avatar
                 profile={profile}
                 isOwner={isOwner}
@@ -535,10 +496,7 @@ export default function ProfileView({
               {uploadError && (
                 <p className="text-xs text-brand-danger -mt-2">{uploadError}</p>
               )}
-              <Identity
-                profile={profile}
-                showInlineEdit={isOwner && !showNudge}
-              />
+              <Identity profile={profile} />
               {profile.sports.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {profile.sports.map((sport) => (
