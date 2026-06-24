@@ -196,13 +196,13 @@ export default function MapPreviewCard({
         </div>
 
         {/* Title */}
-        <p className="text-base font-semibold text-brand-text leading-snug">
+        <p className="text-base xl:text-sm font-semibold text-brand-text leading-snug">
           {activity.title}
         </p>
 
         {/* Location + skill + spots */}
         <div className="flex flex-col gap-1">
-          <p className="text-sm text-brand-muted flex items-center gap-1">
+          <p className="text-sm xl:text-xs text-brand-muted flex items-center gap-1">
             <svg
               width="8"
               height="10"

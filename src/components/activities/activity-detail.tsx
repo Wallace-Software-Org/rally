@@ -725,7 +725,7 @@ export default function ActivityDetailView({
             {/* 3. About + meta pills */}
             <div>
               <SectionLabel>About</SectionLabel>
-              <p className="text-base leading-relaxed text-brand-text">
+              <p className="text-base xl:text-sm leading-relaxed text-brand-text">
                 {activity.description}
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
@@ -823,7 +823,7 @@ export default function ActivityDetailView({
                               avatarEl
                             )}
                             {userId && (
-                              <span className="text-sm text-brand-text truncate w-full text-center leading-tight">
+                              <span className="text-sm xl:text-xs text-brand-text truncate w-full text-center leading-tight">
                                 {firstName}
                               </span>
                             )}
@@ -882,7 +882,7 @@ export default function ActivityDetailView({
                               avatarEl
                             )}
                             {userId && (
-                              <span className="text-sm text-brand-text truncate w-full text-center leading-tight">
+                              <span className="text-sm xl:text-xs text-brand-text truncate w-full text-center leading-tight">
                                 {firstName}
                               </span>
                             )}
