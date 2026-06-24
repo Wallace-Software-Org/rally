@@ -20,10 +20,7 @@ import {
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
 } from "@/lib/utils/activity-participants";
-import {
-  getInitials,
-  shouldBlurAvatarForViewer,
-} from "@/lib/utils/avatar";
+import { getInitials, shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import { isIOSDevice } from "@/lib/utils/platform";
 
 function formatDetailDate(startsAt: string): string {
@@ -604,14 +601,17 @@ export default function ActivityDetailView({
           <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
             <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm text-brand-teal">
               You&apos;re in.{" "}
-              <Link href="/onboarding" className="font-semibold underline">
+              <Link
+                href="/onboarding"
+                className="font-semibold hover:underline"
+              >
                 Finish setting up your profile
               </Link>{" "}
               when you&apos;re ready.
               <button
                 onClick={() => setShowJustJoinedBanner(false)}
                 aria-label="Dismiss"
-                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
+                className="absolute top-1/2 -translate-y-1/2 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
               >
                 ×
               </button>

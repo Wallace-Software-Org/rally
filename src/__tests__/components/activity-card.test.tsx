@@ -92,7 +92,7 @@ describe("ActivityCardDesktop", () => {
   it("clicking Details link does not propagate to onSelect", () => {
     const onSelect = vi.fn();
     render(<ActivityCardDesktop {...base} showDetails={true} onSelect={onSelect} userId={null} />);
-    fireEvent.click(screen.getByRole("button", { name: "Sign in to join" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(onSelect).not.toHaveBeenCalled();
   });
 
@@ -121,10 +121,10 @@ describe("ActivityCardDesktop", () => {
 
   // ── Shared ────────────────────────────────────────────────────────────────
 
-  it('shows "Sign in to join" link when userId is null', () => {
+  it('shows "Sign in" link when userId is null', () => {
     render(<ActivityCardDesktop {...base} userId={null} />);
     expect(
-      screen.getByRole("button", { name: "Sign in to join" }),
+      screen.getByRole("button", { name: "Sign in" }),
     ).toBeInTheDocument();
   });
 

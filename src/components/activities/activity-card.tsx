@@ -257,7 +257,7 @@ function CardAction({
         }}
         className={`${pill} border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors`}
       >
-        Sign in to join
+        Sign in
       </button>
     );
   }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivityById } from "@/lib/queries/activities";
+import { getProfileById } from "@/lib/queries/profiles";
 import { joinActivity } from "@/lib/actions/activities";
 import ActivityDetailView from "@/components/activities/activity-detail";
 
@@ -71,12 +72,26 @@ export default async function ActivityPage({
     redirect(`/activity/${id}`);
   }
 
+  const ranJoin = joinedParam === "true";
+
+  // Only show the onboarding banner to users whose profile still needs setup.
+  // Existing users with a complete profile (activities + avatar) skip it.
+  let profileIsComplete = false;
+  if (ranJoin && userId) {
+    const profile = await getProfileById(userId);
+    profileIsComplete =
+      !!profile &&
+      Array.isArray(profile.sports) &&
+      profile.sports.length > 0 &&
+      profile.avatar_url !== null;
+  }
+
   return (
     <ActivityDetailView
       activity={activity}
       userId={userId}
       showPostedBanner={postedParam === "true"}
-      justJoined={joinedParam === "true"}
+      justJoined={ranJoin && !profileIsComplete}
     />
   );
 }
