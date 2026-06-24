@@ -339,17 +339,17 @@ export function ActivityCardMobile({
       <div className="flex items-start justify-between gap-1">
         <ActivityPill sport={activity.sport} />
         <div className="flex flex-col items-end shrink-0">
-          <span className="text-xs font-medium text-brand-text leading-tight">
+          <span className="text-sm font-medium text-brand-text leading-tight">
             {time}
           </span>
-          <span className="text-xs text-brand-muted leading-tight">{date}</span>
+          <span className="text-sm text-brand-muted leading-tight">{date}</span>
         </div>
       </div>
       <p className="text-base font-medium text-brand-text leading-snug">
         {activity.title}
       </p>
       <div className="flex flex-col gap-0.5">
-        <p className="text-xs text-brand-muted flex items-center gap-1 min-w-0">
+        <p className="text-sm text-brand-muted flex items-center gap-1 min-w-0">
           <svg
             width="8"
             height="10"
@@ -362,7 +362,7 @@ export function ActivityCardMobile({
           </svg>
           <span className="truncate">{activity.location_name}</span>
         </p>
-        <p className="text-xs text-brand-muted">
+        <p className="text-sm text-brand-muted">
           {"— mi" /* distance placeholder */}
           {activity.skill_level ? ` · ${activity.skill_level}` : ""}
         </p>
@@ -468,10 +468,10 @@ export function ActivityCardDesktop({
       <div className="flex items-start justify-between gap-2">
         <ActivityPill sport={activity.sport} />
         <div className="flex flex-col items-end shrink-0">
-          <span className="text-xs font-medium text-brand-text leading-tight">
+          <span className="text-sm font-medium text-brand-text leading-tight">
             {time}
           </span>
-          <span className="text-xs text-brand-muted leading-tight">{date}</span>
+          <span className="text-sm text-brand-muted leading-tight">{date}</span>
         </div>
       </div>
 
@@ -480,7 +480,7 @@ export function ActivityCardDesktop({
           {activity.title}
         </p>
 
-        <p className="text-xs text-brand-muted flex items-center gap-1 min-w-0">
+        <p className="text-sm text-brand-muted flex items-center gap-1 min-w-0">
           <svg
             width="8"
             height="10"
