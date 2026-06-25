@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfileById } from "@/lib/queries/profiles";
 import EditProfileForm from "@/components/profile/edit-profile-form";
+import BackButton from "@/components/ui/back-button";
 
 export default async function EditProfilePage() {
   const supabase = await createClient();
@@ -13,5 +14,10 @@ export default async function EditProfilePage() {
   const profile = await getProfileById(user.id);
   if (!profile) redirect("/login");
 
-  return <EditProfileForm profile={profile} />;
+  return (
+    <>
+      <BackButton />
+      <EditProfileForm profile={profile} />
+    </>
+  );
 }

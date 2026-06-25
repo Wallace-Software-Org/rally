@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
+import BackButton from "@/components/ui/back-button";
 import {
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
@@ -576,28 +577,28 @@ export default function ActivityDetailView({
 
   const shareBtn = (tier: string) =>
     userId ? (
-    <button
-      onClick={handleShare}
-      className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
-    >
-      <svg
-        width="15"
-        height="15"
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
+      <button
+        onClick={handleShare}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
       >
-        <path
-          d="M12 3v12M7 8l5-5 5 5M20 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      Share to Story
-    </button>
-  ) : null;
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 3v12M7 8l5-5 5 5M20 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Share to Story
+      </button>
+    ) : null;
 
   const registerBtn = (tier: string) =>
     userId && activity.external_link ? (
@@ -614,8 +615,10 @@ export default function ActivityDetailView({
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
+      {/* Fixed floating back button (mobile) — overlays content, arrives via feed */}
+      <BackButton />
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="page-with-back flex-1 overflow-y-auto">
         {showPostedBanner && (
           <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
             <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

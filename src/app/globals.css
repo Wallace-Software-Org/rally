@@ -72,6 +72,15 @@ body {
   }
 }
 
+@utility page-with-back {
+  /* Matches the floating BackButton's top-[68px] so content clears it on mobile. */
+  padding-top: 42px;
+  /* BackButton is xl:hidden, so desktop needs no offset. */
+  @media (width >= 80rem) {
+    padding-top: 0;
+  }
+}
+
 @utility tag-teal {
   background-color: color-mix(in srgb, var(--color-brand-teal) 8%, transparent);
   color: var(--color-brand-teal);

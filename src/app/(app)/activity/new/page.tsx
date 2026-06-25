@@ -2,6 +2,7 @@ import { createActivity } from "@/lib/actions/activities";
 import ActivityForm, {
   type ActivityFormSubmitData,
 } from "@/components/activities/activity-form";
+import BackButton from "@/components/ui/back-button";
 
 export default function NewActivityPage() {
   async function handleSubmit(data: ActivityFormSubmitData) {
@@ -11,5 +12,10 @@ export default function NewActivityPage() {
     if (error) return { error };
   }
 
-  return <ActivityForm mode="new" onSubmit={handleSubmit} />;
+  return (
+    <>
+      <BackButton />
+      <ActivityForm mode="new" onSubmit={handleSubmit} />
+    </>
+  );
 }

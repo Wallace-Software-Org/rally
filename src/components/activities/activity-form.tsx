@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { cancelActivity } from "@/lib/actions/activities";
 import { getSportLabel, SPORTS_LIST } from "@/lib/utils/sport-config";
-import PageHeader from "@/components/ui/page-header";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
 import Select from "@/components/ui/select";
@@ -380,8 +379,6 @@ export default function ActivityForm({
   const showDescriptionError = touched.description && !descriptionValid;
   const showSportError = touched.sport && !sportValid;
   const pageTitle = mode === "edit" ? "Edit activity" : "New activity";
-  const backHref =
-    mode === "edit" && initialData.id ? `/activity/${initialData.id}` : "/";
   const submitLabel =
     mode === "edit"
       ? submitting
@@ -402,12 +399,10 @@ export default function ActivityForm({
       : "";
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col bg-brand-bg">
-      <PageHeader
-        title={pageTitle}
-        backHref={backHref}
-        containerClassName="max-w-lg xl:max-w-5xl"
-      />
+    <div className="page-with-back xl:pt-0 flex-1 overflow-y-auto flex flex-col bg-brand-bg">
+      <div className="px-4 pt-6 pb-4 max-w-lg xl:max-w-5xl mx-auto w-full">
+        <h1 className="text-xl font-semibold text-brand-text">{pageTitle}</h1>
+      </div>
 
       {mode === "duplicate" && (
         <div className="px-4 max-w-lg xl:max-w-5xl mx-auto w-full">

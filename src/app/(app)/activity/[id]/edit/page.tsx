@@ -5,6 +5,7 @@ import { updateActivity } from "@/lib/actions/activities";
 import ActivityForm, {
   type ActivityFormSubmitData,
 } from "@/components/activities/activity-form";
+import BackButton from "@/components/ui/back-button";
 
 export default async function EditActivityPage({
   params,
@@ -48,5 +49,10 @@ export default async function EditActivityPage({
     redirect(`/activity/${id}`);
   }
 
-  return <ActivityForm initialData={activity} mode="edit" onSubmit={handleSubmit} />;
+  return (
+    <>
+      <BackButton />
+      <ActivityForm initialData={activity} mode="edit" onSubmit={handleSubmit} />
+    </>
+  );
 }
