@@ -795,11 +795,11 @@ export default function ActivityForm({
                     setCancelConfirm(true);
                   }}
                   disabled={cancelling}
-                  className={`w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 ${
+                  className={
                     cancelConfirm
-                      ? "border-brand-danger-dark bg-brand-danger-dark text-white hover:opacity-90"
-                      : "border-brand-danger text-brand-danger hover:bg-brand-danger/5"
-                  }`}
+                      ? "w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 border-brand-danger-dark bg-brand-danger-dark text-white hover:opacity-90"
+                      : "btn-tier-danger w-full xl:w-auto xl:px-6 flex items-center justify-center transition-colors disabled:opacity-40"
+                  }
                 >
                   {cancelling
                     ? "Cancelling..."
@@ -827,11 +827,11 @@ export default function ActivityForm({
                 <button
                   ref={duplicateButtonRef}
                   onClick={handleDuplicateActivity}
-                  className={`w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 ${
+                  className={
                     duplicateConfirm
-                      ? "border-brand-teal bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
-                      : "border-brand-border text-brand-muted hover:border-brand-border-hover hover:text-brand-text"
-                  }`}
+                      ? "w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 border-brand-teal bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
+                      : "btn-tier-2 w-full xl:w-auto xl:px-6 flex items-center justify-center transition-colors disabled:opacity-40"
+                  }
                 >
                   {duplicateConfirm
                     ? "Confirm duplicate"

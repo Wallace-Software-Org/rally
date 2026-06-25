@@ -957,9 +957,33 @@ export default function ActivityDetailView({
               {isHost && activity.visibility === "private" && (
                 <button
                   onClick={handleCopyLink}
-                  className="cursor-pointer w-full flex items-center justify-center gap-2 rounded-xl border border-brand-border text-brand-muted text-sm font-medium py-3.5 hover:border-brand-secondary hover:text-brand-secondary hover:bg-brand-secondary/10 transition-colors"
+                  className="btn-tier-private cursor-pointer w-full flex items-center justify-center gap-2 transition-colors"
                 >
-                  {linkCopied ? "Copied!" : "Copy link"}
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="9"
+                      y="9"
+                      width="11"
+                      height="11"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                    <path
+                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  {linkCopied ? "Copied!" : "Copy invite link"}
                 </button>
               )}
               {registerBtn("btn-tier-2")}

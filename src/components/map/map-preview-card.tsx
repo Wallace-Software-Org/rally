@@ -160,7 +160,7 @@ export default function MapPreviewCard({
   );
 
   const ghostButtonClass =
-    "btn-tier-3 w-full flex items-center justify-center gap-1.5 transition-colors";
+    "btn-tier-2 w-full flex items-center justify-center gap-1.5 transition-colors";
 
   return (
     <>

@@ -410,18 +410,18 @@ describe("ActivityDetailView — host actions", () => {
     expect(screen.getByText("Private")).toBeInTheDocument();
   });
 
-  it("shows Copy link button for host on private activity", () => {
+  it("shows Copy invite link button for host on private activity", () => {
     renderAsHost({ visibility: "private" });
-    expect(screen.getByRole("button", { name: /copy link/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy invite link/i })).toBeInTheDocument();
   });
 
-  it("does not show Copy link button for non-host on private activity", () => {
+  it("does not show Copy invite link button for non-host on private activity", () => {
     renderAsViewer({ visibility: "private" });
-    expect(screen.queryByRole("button", { name: /copy link/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /copy invite link/i })).not.toBeInTheDocument();
   });
 
-  it("does not show Copy link button for host on public activity", () => {
+  it("does not show Copy invite link button for host on public activity", () => {
     renderAsHost({ visibility: "public" });
-    expect(screen.queryByRole("button", { name: /copy link/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /copy invite link/i })).not.toBeInTheDocument();
   });
 });

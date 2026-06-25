@@ -161,7 +161,7 @@ describe("MapPreviewCard", () => {
 
     expect(primaryAction).toHaveClass("btn-tier-1");
     expect(viewDetails).toHaveClass("btn-tier-2");
-    expect(shareToStory).toHaveClass("btn-tier-3");
+    expect(shareToStory).toHaveClass("btn-tier-2");
     expectBefore(primaryAction, viewDetails);
     expectBefore(viewDetails, shareToStory);
   });

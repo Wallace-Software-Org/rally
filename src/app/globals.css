@@ -162,3 +162,40 @@ body {
     outline-offset: 2px;
   }
 }
+
+@utility btn-tier-danger {
+  background-color: rgba(204, 51, 51, 0.08);
+  border: 1px solid rgba(204, 51, 51, 0.4);
+  color: var(--color-brand-danger);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  outline: none;
+  &:hover {
+    background-color: rgba(204, 51, 51, 0.14);
+    border-color: rgba(204, 51, 51, 0.55);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-danger);
+    outline-offset: 2px;
+  }
+}
+
+@utility btn-tier-private {
+  background-color: var(--color-brand-warm-muted);
+  color: var(--color-brand-warm);
+  border: 1px solid color-mix(in srgb, var(--color-brand-warm) 40%, transparent);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  outline: none;
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-brand-warm-muted) 85%, var(--color-brand-warm));
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-warm);
+    outline-offset: 2px;
+  }
+}
