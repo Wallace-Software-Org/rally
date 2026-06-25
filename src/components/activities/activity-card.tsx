@@ -570,16 +570,11 @@ export function ActivityCardDesktop({
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => router.push(`/activity/${activity.id}`)}
-      onKeyDown={(e) =>
-        e.key === "Enter" && router.push(`/activity/${activity.id}`)
-      }
+    <Link
+      href={`/activity/${activity.id}`}
       className={`cursor-pointer ${cardClass}`}
     >
       {inner}
-    </div>
+    </Link>
   );
 }

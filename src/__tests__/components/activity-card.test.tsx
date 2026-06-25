@@ -105,13 +105,13 @@ describe("ActivityCardDesktop", () => {
 
   // ── showDetails=false (< xl): Link wrapper, no Details pill ──────────────
 
-  it("card wrapper is a div[role=button] when showDetails=false", () => {
+  it("card wrapper is a Link to the activity when showDetails=false", () => {
     const { container } = render(
       <ActivityCardDesktop {...base} showDetails={false} />,
     );
     const card = container.firstChild as HTMLElement;
-    expect(card.tagName).toBe("DIV");
-    expect(card).toHaveAttribute("role", "button");
+    expect(card.tagName).toBe("A");
+    expect(card).toHaveAttribute("href", "/activity/act-1");
   });
 
   it("does not render Details link when showDetails=false", () => {
