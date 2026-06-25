@@ -90,6 +90,16 @@ export default function AppNav({
 
         {/* Avatar (+ settings gear on own profile page) */}
         <div className="flex items-center gap-2 flex-none">
+          {isOwnProfilePage && (
+            <Link
+              href="/profile/edit"
+              aria-label="Settings"
+              className="xl:hidden flex-none text-brand-muted hover:text-brand-text transition-colors"
+            >
+              <SettingsIcon size={18} />
+            </Link>
+          )}
+
           {/* Avatar — links to own profile when username is set */}
           {profile?.username ? (
             <Link
@@ -126,16 +136,6 @@ export default function AppNav({
                 </span>
               )}
             </div>
-          )}
-
-          {isOwnProfilePage && (
-            <Link
-              href="/profile/edit"
-              aria-label="Settings"
-              className="xl:hidden w-9 h-9 rounded-full flex-none flex items-center justify-center border border-brand-border bg-transparent text-brand-muted hover:text-brand-text hover:border-brand-border-hover transition-colors"
-            >
-              <SettingsIcon size={18} />
-            </Link>
           )}
         </div>
       </div>
