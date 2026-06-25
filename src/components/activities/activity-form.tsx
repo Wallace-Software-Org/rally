@@ -29,6 +29,10 @@ const SEARCH_BOX_THEME = {
     boxShadow: "none",
     padding: "0.75em 1em",
   },
+  // Match the other inputs (text-base xl:text-sm): 16px on mobile to avoid iOS
+  // auto-zoom, 14px on desktop (xl, 1280px+).
+  cssText:
+    "input { font-size: 16px; } @media (min-width: 1280px) { input { font-size: 14px; } }",
 } as const;
 
 const SKILL_LEVELS = [
