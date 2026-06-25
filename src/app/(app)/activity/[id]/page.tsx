@@ -74,17 +74,17 @@ export default async function ActivityPage({
 
   const ranJoin = joinedParam === "true";
 
+  // Fetch the viewer's profile once when authenticated and reuse it for both
+  // the onboarding banner check and the optimistic Who's going avatar.
+  const viewerProfile = userId ? await getProfileById(userId) : null;
+
   // Only show the onboarding banner to users whose profile still needs setup.
   // Existing users with a complete profile (activities + avatar) skip it.
-  let profileIsComplete = false;
-  if (ranJoin && userId) {
-    const profile = await getProfileById(userId);
-    profileIsComplete =
-      !!profile &&
-      Array.isArray(profile.sports) &&
-      profile.sports.length > 0 &&
-      profile.avatar_url !== null;
-  }
+  const profileIsComplete =
+    !!viewerProfile &&
+    Array.isArray(viewerProfile.sports) &&
+    viewerProfile.sports.length > 0 &&
+    viewerProfile.avatar_url !== null;
 
   return (
     <ActivityDetailView
@@ -92,6 +92,16 @@ export default async function ActivityPage({
       userId={userId}
       showPostedBanner={postedParam === "true"}
       justJoined={ranJoin && !profileIsComplete}
+      viewerProfile={
+        viewerProfile
+          ? {
+              id: viewerProfile.id,
+              full_name: viewerProfile.full_name,
+              username: viewerProfile.username,
+              avatar_url: viewerProfile.avatar_url,
+            }
+          : null
+      }
     />
   );
 }

@@ -347,11 +347,18 @@ export default function ActivityDetailView({
   userId,
   showPostedBanner: initialShowPostedBanner = false,
   justJoined = false,
+  viewerProfile = null,
 }: {
   activity: ActivityDetail;
   userId: string | null;
   showPostedBanner?: boolean;
   justJoined?: boolean;
+  viewerProfile?: {
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    avatar_url: string | null;
+  } | null;
 }) {
   const initiallyJoined = activity.participants.some(
     (p) => p.user_id === userId,
@@ -446,15 +453,31 @@ export default function ActivityDetailView({
     const { error } = await joinActivity(activity.id);
     if (!error) {
       setIsJoined(true);
-      // Restore the viewer's original participant entry (with profile) if they
-      // had previously left this session; otherwise the count hook reflects the
-      // new join and the avatar appears on next load.
+      // Optimistically add the viewer to "Who's going" so their avatar appears
+      // immediately. Prefer their original participant entry if they left this
+      // session; otherwise build one from viewerProfile.
       setParticipants((prev) => {
         if (prev.some((p) => p.user_id === userId)) return prev;
         const original = activity.participants.find(
           (p) => p.user_id === userId,
         );
-        return original ? [...prev, original] : prev;
+        if (original) return [...prev, original];
+        if (viewerProfile) {
+          return [
+            ...prev,
+            {
+              id: `viewer-${userId}`,
+              user_id: userId,
+              profiles: {
+                full_name: viewerProfile.full_name ?? "",
+                avatar_url: viewerProfile.avatar_url,
+                instagram_handle: null,
+                username: viewerProfile.username,
+              },
+            },
+          ];
+        }
+        return prev;
       });
     }
     setJoining(false);
