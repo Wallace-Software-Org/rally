@@ -298,6 +298,40 @@ function CardAction({
   );
 }
 
+// ── CardTags ──────────────────────────────────────────────────────────────────
+// Top-left tag row: Sport tag, then Hosting (host only), then Private (private
+// activities, shown only to the creator or a participant who can already see it).
+
+function CardTags({
+  activity,
+  userId,
+  isParticipant,
+}: {
+  activity: ActivityWithParticipants;
+  userId: string | null;
+  isParticipant: boolean;
+}) {
+  const isHost = userId !== null && activity.creator_id === userId;
+  const showPrivate =
+    activity.visibility === "private" && (isHost || isParticipant);
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+      <ActivityPill sport={activity.sport} />
+      {isHost && (
+        <span className="tag-warm w-min rounded-full px-2.5 py-0.5 text-xs font-medium">
+          Hosting
+        </span>
+      )}
+      {showPrivate && (
+        <span className="tag-private w-min rounded-full px-2.5 py-0.5 text-xs font-medium">
+          Private
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── ActivityCardMobile ────────────────────────────────────────────────────────
 // Full-width Link card used on xs screens. Tapping navigates directly to the
 // detail page — no map popup interaction.
@@ -337,7 +371,11 @@ export function ActivityCardMobile({
       }`}
     >
       <div className="flex items-start justify-between gap-1">
-        <ActivityPill sport={activity.sport} />
+        <CardTags
+          activity={activity}
+          userId={userId}
+          isParticipant={isJoinedLive}
+        />
         <div className="flex flex-col items-end shrink-0">
           <span className="text-sm xl:text-xs font-medium text-brand-text leading-tight">
             {time}
@@ -466,7 +504,11 @@ export function ActivityCardDesktop({
   const inner = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <ActivityPill sport={activity.sport} />
+        <CardTags
+          activity={activity}
+          userId={userId}
+          isParticipant={isJoinedLive}
+        />
         <div className="flex flex-col items-end shrink-0">
           <span className="text-sm xl:text-xs font-medium text-brand-text leading-tight">
             {time}
