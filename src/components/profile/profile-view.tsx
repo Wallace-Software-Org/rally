@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import type { ProfilePage, ProfileActivity } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
-import { CameraIcon, InstagramIcon, SettingsIcon } from "@/components/ui/icons";
-import { uploadAvatar } from "@/lib/actions/profiles";
+import { InstagramIcon, SettingsIcon } from "@/components/ui/icons";
 
 function initials(name: string): string {
   return name
@@ -153,49 +151,21 @@ function ActivityCard({
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
-function Avatar({
-  profile,
-  isOwner,
-  uploading,
-  onCameraClick,
-}: {
-  profile: ProfilePage;
-  isOwner: boolean;
-  uploading?: boolean;
-  onCameraClick?: () => void;
-}) {
+function Avatar({ profile }: { profile: ProfilePage }) {
   return (
-    <div className="relative flex-none">
-      <button
-        onClick={isOwner ? onCameraClick : undefined}
-        disabled={uploading}
-        aria-label={isOwner ? "Change photo" : undefined}
-        className={`w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center${isOwner ? " cursor-pointer" : ""}`}
-      >
-        {profile.avatar_url ? (
-          <Image
-            src={profile.avatar_url}
-            alt=""
-            width={96}
-            height={96}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="text-2xl font-semibold text-brand-avatar-text">
-            {initials(profile.full_name)}
-          </span>
-        )}
-      </button>
-
-      {isOwner && (
-        <button
-          onClick={onCameraClick}
-          disabled={uploading}
-          aria-label="Change photo"
-          className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-brand-teal flex items-center justify-center border-2 border-brand-bg hover:bg-brand-teal-hover transition-colors"
-        >
-          <CameraIcon />
-        </button>
+    <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center flex-none">
+      {profile.avatar_url ? (
+        <Image
+          src={profile.avatar_url}
+          alt=""
+          width={96}
+          height={96}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <span className="text-2xl font-semibold text-brand-avatar-text">
+          {initials(profile.full_name)}
+        </span>
       )}
     </div>
   );
@@ -352,7 +322,6 @@ export default function ProfileView({
   profile: ProfilePage;
   currentUserId: string | null;
 }) {
-  const router = useRouter();
   const isOwner = currentUserId === profile.id;
   const showNudge =
     isOwner && (!profile.avatar_url || profile.sports.length === 0);
@@ -361,46 +330,8 @@ export default function ProfileView({
     isOwner ? "hosting" : "going",
   );
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setUploadError("Photo must be under 2MB");
-      e.target.value = "";
-      return;
-    }
-    setUploadError(null);
-    setUploading(true);
-    const { error } = await uploadAvatar(file);
-    setUploading(false);
-    if (error) {
-      setUploadError(error);
-    } else {
-      router.refresh();
-    }
-    e.target.value = "";
-  }
-
-  function handleCameraClick() {
-    fileInputRef.current?.click();
-  }
-
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
-      {isOwner && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-      )}
-
       {/* ── MOBILE LAYOUT (< lg) ────────────────────────────────────── */}
       <div className="xl:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
@@ -408,17 +339,7 @@ export default function ProfileView({
             {/* Hero */}
             <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
               <div className="flex flex-col items-center gap-4">
-                <Avatar
-                  profile={profile}
-                  isOwner={isOwner}
-                  uploading={uploading}
-                  onCameraClick={handleCameraClick}
-                />
-                {uploadError && (
-                  <p className="text-xs text-brand-danger -mt-2">
-                    {uploadError}
-                  </p>
-                )}
+                <Avatar profile={profile} />
                 <Identity profile={profile} />
               </div>
 
@@ -487,15 +408,7 @@ export default function ProfileView({
                   <SettingsIcon size={16} />
                 </Link>
               )}
-              <Avatar
-                profile={profile}
-                isOwner={isOwner}
-                uploading={uploading}
-                onCameraClick={handleCameraClick}
-              />
-              {uploadError && (
-                <p className="text-xs text-brand-danger -mt-2">{uploadError}</p>
-              )}
+              <Avatar profile={profile} />
               <Identity profile={profile} />
               {profile.sports.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
