@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ProfilePage, ProfileActivity } from "@/types";
@@ -313,6 +313,53 @@ function NudgeCard() {
   );
 }
 
+// ── Sport tags row ────────────────────────────────────────────────────────────
+// Horizontal scroll row. Scrolls via touch on mobile; this adds click-and-drag
+// scrolling for mouse users.
+
+function SportTagsScroller({ sports }: { sports: string[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const drag = useRef({ down: false, startX: 0, startScrollLeft: 0 });
+
+  function onMouseDown(e: React.MouseEvent) {
+    const el = scrollRef.current;
+    if (!el) return;
+    drag.current = {
+      down: true,
+      startX: e.pageX,
+      startScrollLeft: el.scrollLeft,
+    };
+  }
+
+  function onMouseMove(e: React.MouseEvent) {
+    const el = scrollRef.current;
+    if (!drag.current.down || !el) return;
+    e.preventDefault();
+    el.scrollLeft = drag.current.startScrollLeft - (e.pageX - drag.current.startX);
+  }
+
+  function endDrag() {
+    drag.current.down = false;
+  }
+
+  return (
+    <div
+      ref={scrollRef}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={endDrag}
+      onMouseLeave={endDrag}
+      className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none cursor-grab active:cursor-grabbing select-none"
+    >
+      <div className="flex gap-2 w-fit mx-auto">
+        {sports.map((sport) => (
+          <ActivityPill key={sport} sport={sport} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── ProfileView ───────────────────────────────────────────────────────────────
 
 export default function ProfileView({
@@ -365,13 +412,7 @@ export default function ProfileView({
               </div>
 
               {profile.sports.length > 0 && (
-                <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none">
-                  <div className="flex gap-2 w-fit mx-auto">
-                    {profile.sports.map((sport) => (
-                      <ActivityPill key={sport} sport={sport} />
-                    ))}
-                  </div>
-                </div>
+                <SportTagsScroller sports={profile.sports} />
               )}
             </div>
 
