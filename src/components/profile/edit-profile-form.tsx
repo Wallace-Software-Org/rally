@@ -39,7 +39,7 @@ function initials(name: string | null): string {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
+  "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
 
 export default function EditProfileForm({ profile }: { profile: ProfileData }) {
   const router = useRouter();
@@ -366,7 +366,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                   setInstagramHandle(e.target.value.replace(/[@\s]/g, ""))
                 }
                 placeholder="yourhandle"
-                className="w-full rounded-xl border border-brand-teal bg-transparent pl-7 pr-4 py-3 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal"
+                className="w-full rounded-xl border border-brand-teal bg-transparent pl-7 pr-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal"
               />
             </div>
             <p className="text-xs text-brand-muted">
