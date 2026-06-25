@@ -263,11 +263,9 @@ function CardAction({
   }
 
   if (userId === activity.creator_id) {
-    return (
-      <span className="h-9 xl:w-20 xl:border xl:border-brand-muted/40 rounded-full flex justify-center items-center text-xs font-medium text-brand-muted/80">
-        Hosting
-      </span>
-    );
+    // Host indicator now lives in the top-left tag row (see CardTags), so the
+    // CTA area shows nothing for the host.
+    return null;
   }
 
   if (isJoined) {

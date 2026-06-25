@@ -22,6 +22,9 @@
   --color-brand-surface-deep: #D4C5B3;
   --color-brand-warm: #6B5430;
   --color-brand-warm-muted: #E8DCC8;
+  --color-brand-private: #d7b6bb;
+  --color-brand-private-text: #4d252b;
+  --color-brand-private-border: #9b4a57;
   --color-brand-danger: #CC3333;
   --color-brand-danger-dark: #C0392B;
   /* ── Fonts ────────────────────────────────────────────────────────────────── */
@@ -70,9 +73,9 @@ body {
 }
 
 @utility tag-teal {
-  background-color: color-mix(in srgb, var(--color-brand-teal) 15%, transparent);
+  background-color: color-mix(in srgb, var(--color-brand-teal) 10%, transparent);
   color: var(--color-brand-teal);
-  border: 1px solid color-mix(in srgb, var(--color-brand-teal) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-brand-teal) 50%, transparent);
 }
 
 @utility tag-warm {
@@ -82,9 +85,13 @@ body {
 }
 
 @utility tag-private {
-  background-color: #d7b6bb;
-  color: #4d252b;
-  border: 1px solid #9b4a57;
+  /* Tweak these to play with opacity: 0% = transparent, 100% = solid. */
+  --tag-private-bg-opacity: 50%;
+  --tag-private-text-opacity: 80%;
+  --tag-private-border-opacity: 50%;
+  background-color: color-mix(in srgb, var(--color-brand-private) var(--tag-private-bg-opacity), transparent);
+  color: color-mix(in srgb, var(--color-brand-private-text) var(--tag-private-text-opacity), transparent);
+  border: 1px solid color-mix(in srgb, var(--color-brand-private-border) var(--tag-private-border-opacity), transparent);
 }
 
 @utility btn-tier-1 {
