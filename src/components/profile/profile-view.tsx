@@ -3,9 +3,12 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { AnimatePresence } from "framer-motion";
 import type { ProfilePage, ProfileActivity } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
+import ShareStoryModal from "@/components/ui/share-story-modal";
 import { InstagramIcon, SettingsIcon } from "@/components/ui/icons";
+import { isIOSDevice } from "@/lib/utils/platform";
 
 function initials(name: string): string {
   return name
@@ -41,6 +44,34 @@ function ActivityCard({
   showShare?: boolean;
 }) {
   const { date, time } = formatCardDate(activity.starts_at);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  // Mirrors the activity detail page share flow: generate the card image and
+  // copy the link, then show the shared ShareStoryModal.
+  async function handleShare() {
+    const activityUrl = `${window.location.origin}/activity/${activity.id}`;
+    const cardUrl = `/api/activity/${activity.id}/card`;
+    if (isIOSDevice()) {
+      window.open(cardUrl, "_blank");
+    } else {
+      try {
+        const res = await fetch(cardUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `rally-${activity.id}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        // best-effort; still show modal
+      }
+    }
+    await navigator.clipboard.writeText(activityUrl).catch(() => {});
+    setShowShareModal(true);
+  }
 
   return (
     <div className="xl:min-h-32 flex flex-col">
@@ -134,7 +165,7 @@ function ActivityCard({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  alert("Share card coming soon");
+                  handleShare();
                 }}
                 className="flex-none flex items-center gap-1.5 bg-brand-teal text-white text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
               >
@@ -145,6 +176,12 @@ function ActivityCard({
           </div>
         </div>
       </Link>
+
+      <AnimatePresence>
+        {showShareModal && (
+          <ShareStoryModal onClose={() => setShowShareModal(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

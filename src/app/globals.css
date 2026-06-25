@@ -73,9 +73,9 @@ body {
 }
 
 @utility tag-teal {
-  background-color: color-mix(in srgb, var(--color-brand-teal) 10%, transparent);
+  background-color: color-mix(in srgb, var(--color-brand-teal) 8%, transparent);
   color: var(--color-brand-teal);
-  border: 1px solid color-mix(in srgb, var(--color-brand-teal) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-brand-teal) 60%, transparent);
 }
 
 @utility tag-warm {
