@@ -2,7 +2,7 @@
 @import "mapbox-gl/dist/mapbox-gl.css";
 
 @theme {
-  /* ── Brand colors ─────────────────────────────────────────────────────────── */
+  /* ── Brand colors ────────────────────────────────────────────────────────── */
   --color-brand-bg: #E8DFD1;
   --color-brand-card: #D4C5B3;
   --color-brand-border: rgba(90, 74, 58, 0.25);
