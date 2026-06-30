@@ -47,7 +47,7 @@ const inputCls =
   "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
 
 const primaryBtn =
-  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:enabled:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
 export type ActivityFormMode = "edit" | "duplicate" | "new";
 
