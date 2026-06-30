@@ -9,6 +9,7 @@ import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import { InstagramIcon, SettingsIcon } from "@/components/ui/icons";
 import { isIOSDevice } from "@/lib/utils/platform";
+import { getSiteUrl } from "@/lib/utils/site-url";
 
 function initials(name: string): string {
   return name
@@ -49,7 +50,7 @@ function ActivityCard({
   // Mirrors the activity detail page share flow: generate the card image and
   // copy the link, then show the shared ShareStoryModal.
   async function handleShare() {
-    const activityUrl = `${window.location.origin}/activity/${activity.id}`;
+    const activityUrl = `${getSiteUrl()}/activity/${activity.id}`;
     const cardUrl = `/api/activity/${activity.id}/card`;
     if (isIOSDevice()) {
       window.open(cardUrl, "_blank");

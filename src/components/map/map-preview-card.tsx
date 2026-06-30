@@ -9,6 +9,7 @@ import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import { isIOSDevice } from "@/lib/utils/platform";
 import { quickJoinLoginHref } from "@/lib/utils/activity-participants";
+import { getSiteUrl } from "@/lib/utils/site-url";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
@@ -62,7 +63,7 @@ export default function MapPreviewCard({
   }
 
   async function handleShare() {
-    const activityUrl = `${window.location.origin}/activity/${activity.id}`;
+    const activityUrl = `${getSiteUrl()}/activity/${activity.id}`;
     const cardUrl = `/api/activity/${activity.id}/card`;
 
     if (isIOSDevice()) {
