@@ -57,7 +57,7 @@ export default function Select({ value, onChange, options, placeholder, listClas
 
       {open && (
         <div className="absolute top-full left-0 mt-1 w-full bg-brand-input border border-brand-border rounded-xl shadow-md z-50 overflow-hidden">
-          <div className={listClassName ?? ""}>
+          <div className={`${listClassName ?? ""} scrollbar-brand`}>
             {options.map((option) => (
               <button
                 key={option}

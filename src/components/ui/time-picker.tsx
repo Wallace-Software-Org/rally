@@ -78,7 +78,7 @@ export default function TimePicker({
       {open && (
         <div
           ref={listRef}
-          className="absolute top-full left-0 mt-1 w-full max-h-56 overflow-y-auto bg-brand-bg border border-brand-border rounded-xl shadow-md z-50 py-1"
+          className="absolute top-full left-0 mt-1 w-full max-h-56 overflow-y-auto bg-brand-bg border border-brand-border rounded-xl shadow-md z-50 py-1 scrollbar-brand"
         >
           {SLOTS.map((slot) => (
             <button
