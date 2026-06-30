@@ -28,7 +28,7 @@ export default function Select({ value, onChange, options, placeholder, listClas
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`w-full rounded-xl border bg-transparent px-4 py-3 text-sm text-brand-text text-left flex items-center justify-between focus:outline-none transition-colors ${
+        className={`w-full rounded-xl border bg-brand-input px-4 py-3 text-sm text-brand-text text-left flex items-center justify-between focus:outline-none transition-colors ${
           open
             ? "border-brand-teal ring-[1.5px] ring-brand-teal"
             : "border-brand-border"
@@ -56,14 +56,14 @@ export default function Select({ value, onChange, options, placeholder, listClas
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-full bg-brand-bg border border-brand-border rounded-xl shadow-md z-50 overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 w-full bg-brand-input border border-brand-border rounded-xl shadow-md z-50 overflow-hidden">
           <div className={listClassName ?? ""}>
             {options.map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => { onChange(option); setOpen(false); }}
-                className={`w-full px-4 py-3 text-sm text-left transition-colors hover:bg-brand-avatar-bg ${
+                className={`w-full px-4 py-3 text-sm text-left transition-colors hover:bg-brand-teal/10 ${
                   option === value
                     ? "text-brand-teal font-medium"
                     : "text-brand-text"

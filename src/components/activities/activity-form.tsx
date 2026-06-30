@@ -21,7 +21,7 @@ const SEARCH_BOX_THEME = {
     unit: "14px",
     borderRadius: "0.75rem",
     border: "1px solid rgba(90, 74, 58, 0.25)",
-    colorBackground: "#E8DFD1",
+    colorBackground: "#ece5da",
     colorText: "#5A4A3A",
     colorPrimary: "#4A9B8E",
     colorSecondary: "#7A6854",
@@ -44,7 +44,7 @@ const SKILL_LEVELS = [
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
+  "w-full rounded-xl border border-brand-border bg-brand-input px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
 
 const primaryBtn =
   "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:enabled:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
@@ -619,7 +619,7 @@ export default function ActivityForm({
             />
           </div>
 
-          <div className="border border-brand-border bg-brand-bg rounded-xl">
+          <div className="border border-brand-border bg-brand-input rounded-xl">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm text-brand-text">Limit spots</span>
@@ -677,7 +677,7 @@ export default function ActivityForm({
             )}
           </div>
 
-          <div className="border border-brand-border bg-brand-bg rounded-xl">
+          <div className="border border-brand-border bg-brand-input rounded-xl">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm text-brand-text">
@@ -707,7 +707,7 @@ export default function ActivityForm({
             </div>
           </div>
 
-          <div className="border border-brand-border bg-brand-bg rounded-xl">
+          <div className="border border-brand-border bg-brand-input rounded-xl">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm text-brand-text">

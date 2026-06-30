@@ -40,13 +40,13 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Proxy must only do optimistic checks (cookie read, no network call) — see Next.js auth docs.
-  // getUser() hits the Supabase auth server on every request, which causes request pile-up under
-  // prefetch load and exhausts memory. Real JWT validation belongs in server components / route handlers.
+  // getUser() validates the JWT against the Supabase auth server and refreshes the access token
+  // when it has expired. The refresh writes new cookies via setAll above — and middleware/proxy is
+  // the one place that write is allowed, so doing it here keeps Server Components from attempting
+  // (and failing) the same cookie write during render.
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  const user = session?.user ?? null
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 

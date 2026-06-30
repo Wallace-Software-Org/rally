@@ -4,6 +4,7 @@
 @theme {
   /* ── Brand colors ────────────────────────────────────────────────────────── */
   --color-brand-bg: #E8DFD1;
+  --color-brand-input: #ece5da;
   --color-brand-card: #D4C5B3;
   --color-brand-border: rgba(90, 74, 58, 0.25);
   --color-brand-border-hover: rgba(90, 74, 58, 0.4);
