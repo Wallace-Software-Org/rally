@@ -238,7 +238,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
 
           {/* Display name */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Display name
             </label>
             <input
@@ -252,7 +252,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
 
           {/* Username */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Username
             </label>
             <div className="relative">
@@ -337,7 +337,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
 
           {/* Bio */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">Bio</label>
+            <label className="field-label">Bio</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -351,7 +351,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
           <div className="flex flex-col gap-1.5">
             <label
               className="text-sm font-medium flex items-center gap-1.5"
-              style={{ color: "#1D9E75" }}
+              style={{ color: "var(--color-brand-teal)" }}
             >
               <InstagramIcon size={15} />
               Instagram handle
@@ -382,7 +382,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
               onClick={() => setTagsOpen((o) => !o)}
               className="flex items-center gap-2 py-1"
             >
-              <span className="text-sm font-medium text-brand-text flex-none">
+              <span className="field-label flex-none">
                 Activities
               </span>
               <div className="hidden xl:flex flex-1 flex-wrap gap-1.5 min-w-0 justify-start">

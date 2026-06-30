@@ -415,7 +415,7 @@ export default function ActivityForm({
       <div className="px-4 py-2 pb-12 xl:py-8 flex flex-col xl:flex-row xl:items-stretch gap-8 xl:gap-0 max-w-lg xl:max-w-5xl mx-auto w-full">
         <div className="flex flex-col gap-5 xl:flex-1 xl:pr-10 min-w-0">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Activity title
             </label>
             <input
@@ -427,12 +427,12 @@ export default function ActivityForm({
               className={inputCls}
             />
             {showTitleError && (
-              <p className="text-red-500 text-sm">Activity title is required</p>
+              <p className="field-error">Activity title is required</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">Sport</label>
+            <label className="field-label">Sport</label>
             <Select
               value={selectedSport ? getSportLabel(selectedSport) : ""}
               onChange={(label) => {
@@ -444,12 +444,12 @@ export default function ActivityForm({
               listClassName="max-h-[240px] overflow-y-auto"
             />
             {showSportError && (
-              <p className="text-red-500 text-sm">Select a sport to continue</p>
+              <p className="field-error">Select a sport to continue</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Location
             </label>
             <div className="w-full">
@@ -481,14 +481,14 @@ export default function ActivityForm({
               />
             </div>
             {showLocationError && (
-              <p className="text-red-500 text-sm">
+              <p className="field-error">
                 Select a location from the suggestions
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">Date</label>
+            <label className="field-label">Date</label>
             <div className={highlightedDateCls}>
               <div
                 onBlur={(e) => {
@@ -510,13 +510,13 @@ export default function ActivityForm({
               </div>
             </div>
             {showDateError && (
-              <p className="text-red-500 text-sm">Select a date</p>
+              <p className="field-error">Select a date</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center">
-              <label className="text-sm font-medium text-brand-text flex-1">
+              <label className="field-label flex-1">
                 Start time
               </label>
               <button
@@ -574,17 +574,17 @@ export default function ActivityForm({
               )}
             </div>
             {showTimeRequiredError && (
-              <p className="text-red-500 text-sm">Select a time</p>
+              <p className="field-error">Select a time</p>
             )}
             {showTimeLeadTimeError && (
-              <p className="text-red-500 text-sm">
+              <p className="field-error">
                 Choose a time at least 30 minutes from now
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Description
             </label>
             <textarea
@@ -596,7 +596,7 @@ export default function ActivityForm({
               className={`${inputCls} resize-none`}
             />
             {showDescriptionError && (
-              <p className="text-red-500 text-sm">
+              <p className="field-error">
                 Tell people what to expect (20 characters minimum)
               </p>
             )}
@@ -609,7 +609,7 @@ export default function ActivityForm({
           </p>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Skill level
             </label>
             <Select
@@ -744,7 +744,7 @@ export default function ActivityForm({
                     className={inputCls}
                   />
                   {showExternalLinkError && (
-                    <p className="text-red-500 text-sm">
+                    <p className="field-error">
                       Enter a valid http or https URL.
                     </p>
                   )}

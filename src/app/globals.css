@@ -104,6 +104,17 @@ body {
   border: 1px solid color-mix(in srgb, var(--color-brand-private-border) var(--tag-private-border-opacity), transparent);
 }
 
+@utility field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-brand-text);
+}
+
+@utility field-error {
+  font-size: 14px;
+  color: var(--color-brand-danger);
+}
+
 @utility btn-tier-1 {
   background-color: var(--color-brand-teal);
   color: white;
