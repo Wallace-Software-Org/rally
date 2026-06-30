@@ -8,9 +8,10 @@ interface SelectProps {
   options: readonly string[];
   placeholder?: string;
   listClassName?: string;
+  panelClassName?: string;
 }
 
-export default function Select({ value, onChange, options, placeholder, listClassName }: SelectProps) {
+export default function Select({ value, onChange, options, placeholder, listClassName, panelClassName = "bg-brand-input" }: SelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -56,14 +57,14 @@ export default function Select({ value, onChange, options, placeholder, listClas
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-full bg-brand-input border border-brand-border rounded-xl shadow-md z-50 overflow-hidden">
+        <div className={`absolute top-full left-0 mt-1 w-full ${panelClassName} border border-brand-border rounded-xl shadow-md z-50 overflow-hidden`}>
           <div className={`${listClassName ?? ""} scrollbar-brand`}>
             {options.map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => { onChange(option); setOpen(false); }}
-                className={`w-full px-4 py-3 text-sm text-left transition-colors hover:bg-brand-teal/10 ${
+                className={`w-full px-4 py-3 text-sm text-left transition-colors hover:bg-brand-muted/15 ${
                   option === value
                     ? "text-brand-teal font-medium"
                     : "text-brand-text"

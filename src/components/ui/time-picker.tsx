@@ -7,6 +7,7 @@ interface TimePickerProps {
   onChange: (value: string) => void;
   placeholder?: string;
   defaultOpenValue?: string;
+  panelClassName?: string;
 }
 
 type Slot = { value: string; label: string };
@@ -42,6 +43,7 @@ export default function TimePicker({
   onChange,
   placeholder = "Select a time",
   defaultOpenValue = "00:00",
+  panelClassName = "bg-brand-input",
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,7 +80,7 @@ export default function TimePicker({
       {open && (
         <div
           ref={listRef}
-          className="absolute top-full left-0 mt-1 w-full max-h-56 overflow-y-auto bg-brand-bg border border-brand-border rounded-xl shadow-md z-50 py-1 scrollbar-brand"
+          className={`absolute top-full left-0 mt-1 w-full max-h-56 overflow-y-auto ${panelClassName} border border-brand-border rounded-xl shadow-md z-50 py-1 scrollbar-brand`}
         >
           {SLOTS.map((slot) => (
             <button
@@ -91,7 +93,7 @@ export default function TimePicker({
               className={`w-full px-4 py-2.5 text-sm text-left transition-colors ${
                 slot.value === value
                   ? "bg-brand-teal text-white font-medium"
-                  : "text-brand-text hover:bg-brand-avatar-bg"
+                  : "text-brand-text hover:bg-brand-muted/15"
               }`}
             >
               {slot.label}

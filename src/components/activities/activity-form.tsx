@@ -22,6 +22,10 @@ const SEARCH_BOX_THEME = {
     borderRadius: "0.75rem",
     border: "1px solid rgba(90, 74, 58, 0.25)",
     colorBackground: "#ece5da",
+    // Highlighted suggestion row. Matches bg-brand-muted/15 (#7A6854 at 15%) so the
+    // location dropdown's hover state matches the time/sport dropdowns instead of the
+    // default near-white.
+    colorBackgroundHover: "rgba(122, 104, 84, 0.15)",
     colorText: "#5A4A3A",
     colorPrimary: "#4A9B8E",
     colorSecondary: "#7A6854",
