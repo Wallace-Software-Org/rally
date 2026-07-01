@@ -618,7 +618,7 @@ export default function ActivityDetailView({
       {/* Fixed floating back button (mobile) — overlays content, arrives via feed */}
       <BackButton />
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
-      <div className="page-with-back flex-1 overflow-y-auto">
+      <div className="page-with-back flex-1 overflow-y-auto px-3">
         {showPostedBanner && (
           <div className="px-4 pt-4 xl:px-8 md:pt-8 max-w-4xl xl:max-w-5xl git add ..mx-auto w-full">
             <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-wrap items-center justify-between gap-3">
