@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 
@@ -141,7 +141,7 @@ export async function createActivity(data: {
 
   revalidatePath("/");
   revalidatePath(`/activity/${activity.id}`);
-  redirect(`/activity/${activity.id}?posted=true`);
+  redirect(`/activity/${activity.id}?posted=true`, RedirectType.replace);
 }
 
 export async function updateActivity(

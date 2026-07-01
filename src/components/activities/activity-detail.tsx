@@ -620,11 +620,11 @@ export default function ActivityDetailView({
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
       <div className="page-with-back flex-1 overflow-y-auto">
         {showPostedBanner && (
-          <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
-            <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="px-4 pt-4 xl:px-8 md:pt-8 max-w-4xl xl:max-w-5xl git add ..mx-auto w-full">
+            <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-wrap items-center justify-between gap-3">
               <span>Your activity is live.</span>
               {userId && (
-                <div className="w-full sm:w-auto flex items-center sm:justify-end gap-2 flex-none">
+                <div className="flex items-center justify-end gap-2 flex-none">
                   <button
                     onClick={handleShare}
                     className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
