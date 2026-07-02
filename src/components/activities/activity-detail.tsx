@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
+import GroupChatModal from "@/components/activities/group-chat-modal";
 import BackButton from "@/components/ui/back-button";
 import {
   getParticipantsWithHostFirst,
@@ -373,6 +374,7 @@ export default function ActivityDetailView({
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showGroupChatModal, setShowGroupChatModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
@@ -443,6 +445,16 @@ export default function ActivityDetailView({
       profiles: profile,
     }),
   });
+  // Group-chat roster: confirmed participants only, host excluded.
+  const groupChatRoster = participants
+    .filter((p) => p.user_id !== activity.creator_id)
+    .map((p) => ({
+      id: p.id,
+      full_name: p.profiles?.full_name ?? "",
+      username: p.profiles?.username ?? null,
+      avatar_url: p.profiles?.avatar_url ?? null,
+      instagram_handle: p.profiles?.instagram_handle ?? null,
+    }));
   const isFull = spotsLeft !== null && spotsLeft <= 0;
   const skillDisplay = activity.skill_level
     ? activity.skill_level.charAt(0).toUpperCase() +
@@ -532,7 +544,7 @@ export default function ActivityDetailView({
       href={`/activity/${activity.id}/edit`}
       className="btn-tier-1 w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active transition-colors"
     >
-      Manage
+      Edit
     </Link>
   ) : isJoined ? (
     <button
@@ -597,6 +609,31 @@ export default function ActivityDetailView({
           />
         </svg>
         Share to Story
+      </button>
+    ) : null;
+
+  const groupChatBtn = (tier: string) =>
+    isHost ? (
+      <button
+        onClick={() => setShowGroupChatModal(true)}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 19v-1a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v1M16.5 9.5a2.5 2.5 0 1 0 0-5M17 14h.5a4 4 0 0 1 4 4v.5"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Invite to group chat
       </button>
     ) : null;
 
@@ -928,14 +965,9 @@ export default function ActivityDetailView({
               <div className="xl:hidden flex flex-col items-center gap-3">
                 {registerBtn("btn-tier-2")}
                 {shareBtn("btn-tier-2")}
+                {groupChatBtn("btn-tier-2")}
               </div>
             )}
-
-            {/* 6. CTAs — md/lg inline (hidden on mobile and xl) */}
-            {/* <div className="hidden md:flex xl:hidden flex-col gap-3 pt-2 pb-4">
-              {ctaButton}
-              {shareBtn}
-            </div> */}
           </div>
 
           {/* ── Right sticky panel — xl only ────────────────────────────────── */}
@@ -988,6 +1020,7 @@ export default function ActivityDetailView({
               )}
               {registerBtn("btn-tier-2")}
               {shareBtn("btn-tier-2")}
+              {groupChatBtn("btn-tier-2")}
             </div>
           </div>
         </div>
@@ -1003,6 +1036,14 @@ export default function ActivityDetailView({
           <ShareStoryModal onClose={() => setShowShareModal(false)} />
         )}
       </AnimatePresence>
+
+      {isHost && (
+        <GroupChatModal
+          participants={groupChatRoster}
+          isOpen={showGroupChatModal}
+          onClose={() => setShowGroupChatModal(false)}
+        />
+      )}
     </div>
   );
 }

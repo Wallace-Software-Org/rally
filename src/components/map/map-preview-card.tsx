@@ -99,7 +99,7 @@ export default function MapPreviewCard({
 
   const primaryAction = isHost ? (
     <Link
-      href={`/activity/${activity.id}/edit`}
+      href={`/activity/${activity.id}`}
       className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active transition-colors"
     >
       Manage
@@ -230,12 +230,14 @@ export default function MapPreviewCard({
 
         <div className="flex flex-col gap-2">
           {primaryAction}
-          <Link
-            href={`/activity/${activity.id}`}
-            className="btn-tier-2 w-full flex items-center justify-center transition-colors"
-          >
-            View details
-          </Link>
+          {!isHost && (
+            <Link
+              href={`/activity/${activity.id}`}
+              className="btn-tier-2 w-full flex items-center justify-center transition-colors"
+            >
+              View details
+            </Link>
+          )}
           {userId !== null && (
             <button
               onClick={handleShare}
