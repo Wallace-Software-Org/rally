@@ -360,6 +360,7 @@ export default function ActivityDetailView({
     full_name: string | null;
     username: string | null;
     avatar_url: string | null;
+    instagram_handle: string | null;
   } | null;
 }) {
   const initiallyJoined = activity.participants.some(
@@ -636,6 +637,24 @@ export default function ActivityDetailView({
         Invite to group chat
       </button>
     ) : null;
+
+  // Nudge joined participants who have no Instagram handle to add one, so hosts
+  // can pull them into a group chat. Hidden once a handle exists.
+  const viewerHasInstagram = Boolean(viewerProfile?.instagram_handle?.trim());
+  const showInstagramNudge = isJoined && !!viewerProfile && !viewerHasInstagram;
+  const instagramNudge = showInstagramNudge ? (
+    <div className="w-full max-w-156 rounded-xl border-[0.5px] border-brand-teal bg-brand-teal/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-sm text-brand-teal">
+      <span className="font-medium">
+        Add your Instagram so hosts can invite you to a group chat.
+      </span>
+      <Link
+        href="/profile/edit"
+        className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
+      >
+        Add Instagram
+      </Link>
+    </div>
+  ) : null;
 
   const registerBtn = (tier: string) =>
     userId && activity.external_link ? (
@@ -963,6 +982,7 @@ export default function ActivityDetailView({
             {/* 6. Secondary actions — mobile/tablet only; xl keeps them in the right panel */}
             {userId && (
               <div className="xl:hidden flex flex-col items-center gap-3">
+                {instagramNudge}
                 {registerBtn("btn-tier-2")}
                 {shareBtn("btn-tier-2")}
                 {groupChatBtn("btn-tier-2")}
@@ -1021,6 +1041,7 @@ export default function ActivityDetailView({
               {registerBtn("btn-tier-2")}
               {shareBtn("btn-tier-2")}
               {groupChatBtn("btn-tier-2")}
+              {instagramNudge}
             </div>
           </div>
         </div>

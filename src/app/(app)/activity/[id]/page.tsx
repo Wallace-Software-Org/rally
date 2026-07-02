@@ -99,6 +99,7 @@ export default async function ActivityPage({
               full_name: viewerProfile.full_name,
               username: viewerProfile.username,
               avatar_url: viewerProfile.avatar_url,
+              instagram_handle: viewerProfile.instagram_handle,
             }
           : null
       }
