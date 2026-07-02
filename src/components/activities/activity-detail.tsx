@@ -638,6 +638,42 @@ export default function ActivityDetailView({
       </button>
     ) : null;
 
+  // Host-only, shown on all activities (public and private) so any host can
+  // grab a shareable link. Uses a neutral tier to match the sibling actions.
+  const copyLinkBtn = (tier: string) =>
+    isHost ? (
+      <button
+        onClick={handleCopyLink}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-2 transition-colors`}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <rect
+            x="9"
+            y="9"
+            width="11"
+            height="11"
+            rx="2"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          />
+          <path
+            d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        {linkCopied ? "Copied!" : "Copy invite link"}
+      </button>
+    ) : null;
+
   // Nudge joined participants who have no Instagram handle to add one, so hosts
   // can pull them into a group chat. Hidden once a handle exists.
   const viewerHasInstagram = Boolean(viewerProfile?.instagram_handle?.trim());
@@ -983,6 +1019,7 @@ export default function ActivityDetailView({
             {userId && (
               <div className="xl:hidden flex flex-col items-center gap-3">
                 {instagramNudge}
+                {copyLinkBtn("btn-tier-2")}
                 {registerBtn("btn-tier-2")}
                 {shareBtn("btn-tier-2")}
                 {groupChatBtn("btn-tier-2")}
@@ -1006,38 +1043,7 @@ export default function ActivityDetailView({
             )}
             <div className="flex flex-col gap-3">
               {ctaButton}
-              {isHost && activity.visibility === "private" && (
-                <button
-                  onClick={handleCopyLink}
-                  className="btn-tier-private cursor-pointer w-full flex items-center justify-center gap-2 transition-colors"
-                >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <rect
-                      x="9"
-                      y="9"
-                      width="11"
-                      height="11"
-                      rx="2"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    />
-                    <path
-                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  {linkCopied ? "Copied!" : "Copy invite link"}
-                </button>
-              )}
+              {copyLinkBtn("btn-tier-2")}
               {registerBtn("btn-tier-2")}
               {shareBtn("btn-tier-2")}
               {groupChatBtn("btn-tier-2")}
