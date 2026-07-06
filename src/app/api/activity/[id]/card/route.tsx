@@ -37,19 +37,30 @@ type ActivityCardData = {
   starts_at: string;
 };
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 function formatInviteDate(startsAt: string): string {
   const date = new Date(startsAt);
-  const day = date.toLocaleDateString("en-US", {
-    weekday: "long",
-    timeZone: APP_TIME_ZONE,
-  });
   const time = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
     timeZone: APP_TIME_ZONE,
   });
-  return `${day}, ${time}`;
+  // Within the current week (7 days or fewer out): weekday name, for example
+  // "Saturday". Further out: full month and day, for example "July 18".
+  const withinWeek = date.getTime() - Date.now() <= WEEK_MS;
+  const datePart = withinWeek
+    ? date.toLocaleDateString("en-US", {
+        weekday: "long",
+        timeZone: APP_TIME_ZONE,
+      })
+    : date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        timeZone: APP_TIME_ZONE,
+      });
+  return `${datePart}, ${time}`;
 }
 
 async function getActivityCardData(id: string) {
