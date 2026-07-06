@@ -712,9 +712,16 @@ export default function ActivityDetailView({
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
       <div className="page-with-back flex-1 overflow-y-auto px-3">
         {showPostedBanner && (
-          <div className="px-4 pt-4 xl:px-8 md:pt-8 max-w-4xl xl:max-w-5xl git add ..mx-auto w-full">
+          <div className="px-4 pt-4 max-w-2xl mx-auto w-full">
             <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-wrap items-center justify-between gap-3">
-              <span>Your activity is live.</span>
+              <div className="flex flex-col gap-0.5">
+                <span>Your activity is live.</span>
+                {activity.visibility === "private" && (
+                  <span className="text-xs font-normal">
+                    This activity is private. Use copy invite link to share it.
+                  </span>
+                )}
+              </div>
               {userId && (
                 <div className="flex items-center justify-end gap-2 flex-none">
                   <button

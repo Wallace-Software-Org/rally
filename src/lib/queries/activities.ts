@@ -102,14 +102,11 @@ export async function getActivityById(
 
   if (!data) return null;
 
-  if (data.visibility === "private") {
-    const isCreator = requesterId === data.creator_id;
-    const isParticipant =
-      requesterId !== null &&
-      (data.participants as { user_id: string }[]).some(
-        (p) => p.user_id === requesterId,
-      );
-    if (!isCreator && !isParticipant) return "private";
+  // Private means unlisted, not invite-only: any authenticated user who has the
+  // direct link can view and join. Only logged-out visitors hit the gate, so
+  // they can log in and then view. Feed/map exclusion is handled by getActivities.
+  if (data.visibility === "private" && requesterId === null) {
+    return "private";
   }
 
   const [{ data: host }, { count: hostedCount }] = await Promise.all([
