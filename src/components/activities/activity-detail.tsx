@@ -11,7 +11,7 @@ const ActivityMiniMap = dynamic(
 import Image from "next/image";
 import type { ActivityDetail } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
-import { createClient } from "@/lib/supabase/client";
+import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
@@ -67,78 +67,6 @@ function Avatar({
 
 function Divider() {
   return <div className="h-px bg-brand-border" />;
-}
-
-function useRealtimeParticipantCount(activity: ActivityDetail) {
-  const initialCount = activity.participants.length;
-  const [participantState, setParticipantState] = useState(() => ({
-    activityId: activity.id,
-    initialCount,
-    count: initialCount,
-  }));
-  const participantCount =
-    participantState.activityId === activity.id &&
-    participantState.initialCount === initialCount
-      ? participantState.count
-      : initialCount;
-
-  useEffect(() => {
-    if (
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ) {
-      return;
-    }
-
-    function updateParticipantCount(update: (count: number) => number) {
-      setParticipantState((state) => {
-        const currentCount =
-          state.activityId === activity.id &&
-          state.initialCount === initialCount
-            ? state.count
-            : initialCount;
-
-        return {
-          activityId: activity.id,
-          initialCount,
-          count: update(currentCount),
-        };
-      });
-    }
-
-    const supabase = createClient();
-    const channelId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-    const channel = supabase
-      .channel(`participants:${activity.id}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "participants",
-          filter: `activity_id=eq.${activity.id}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            updateParticipantCount((count) => count + 1);
-          }
-
-          if (payload.eventType === "DELETE") {
-            updateParticipantCount((count) => Math.max(0, count - 1));
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [activity.id, initialCount]);
-
-  return participantCount;
 }
 
 function spotsLeftText(
@@ -367,10 +295,20 @@ export default function ActivityDetailView({
     (p) => p.user_id === userId,
   );
   const [isJoined, setIsJoined] = useState(initiallyJoined);
-  // Participants are held in state (not read straight from the prop) so the
-  // "Who's going" stack can re-render when the viewer joins or leaves. The
-  // realtime count hook only tracks a number and can't drive the avatar list.
-  const [participants, setParticipants] = useState(activity.participants);
+  // Live participant list drives both the "Who's going" avatars and the count.
+  // Remote joins/leaves stream in via realtime; the acting user's own join or
+  // leave is applied optimistically through the returned mutators (deduped by
+  // user_id so the realtime echo of their own change does not double-add).
+  const {
+    participants,
+    participantCount,
+    addParticipant,
+    removeParticipantByUserId,
+  } = useRealtimeParticipants({
+    activityId: activity.id,
+    initialParticipants: activity.participants,
+    profileColumns: "full_name, avatar_url, instagram_handle, username",
+  });
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
@@ -425,7 +363,6 @@ export default function ActivityDetailView({
 
   const isHost = userId === activity.creator_id;
   const viewerCanSeeProfiles = isHost || isJoined;
-  const participantCount = useRealtimeParticipantCount(activity);
   const spotsLeft =
     activity.max_participants === null
       ? null
@@ -469,30 +406,23 @@ export default function ActivityDetailView({
       setIsJoined(true);
       // Optimistically add the viewer to "Who's going" so their avatar appears
       // immediately. Prefer their original participant entry if they left this
-      // session; otherwise build one from viewerProfile.
-      setParticipants((prev) => {
-        if (prev.some((p) => p.user_id === userId)) return prev;
-        const original = activity.participants.find(
-          (p) => p.user_id === userId,
-        );
-        if (original) return [...prev, original];
-        if (viewerProfile) {
-          return [
-            ...prev,
-            {
-              id: `viewer-${userId}`,
-              user_id: userId,
-              profiles: {
-                full_name: viewerProfile.full_name ?? "",
-                avatar_url: viewerProfile.avatar_url,
-                instagram_handle: null,
-                username: viewerProfile.username,
-              },
-            },
-          ];
-        }
-        return prev;
-      });
+      // session; otherwise build one from viewerProfile. addParticipant dedupes
+      // by user_id, so the realtime echo of this insert will not double-add.
+      const original = activity.participants.find((p) => p.user_id === userId);
+      if (original) {
+        addParticipant(original);
+      } else if (viewerProfile) {
+        addParticipant({
+          id: `viewer-${userId}`,
+          user_id: userId,
+          profiles: {
+            full_name: viewerProfile.full_name ?? "",
+            avatar_url: viewerProfile.avatar_url,
+            instagram_handle: null,
+            username: viewerProfile.username,
+          },
+        });
+      }
     }
     setJoining(false);
   }
@@ -503,7 +433,7 @@ export default function ActivityDetailView({
     const { error } = await leaveActivity(activity.id);
     if (!error) {
       setIsJoined(false);
-      setParticipants((prev) => prev.filter((p) => p.user_id !== userId));
+      removeParticipantByUserId(userId);
     }
     setLeaving(false);
     setLeaveConfirm(false);
