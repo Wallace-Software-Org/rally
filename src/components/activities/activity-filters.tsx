@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { type DateFilter, DATE_FILTER_OPTIONS } from "@/lib/utils/date-filters";
+import {
+  type DistanceFilter,
+  DISTANCE_FILTER_OPTIONS,
+} from "@/lib/utils/distance";
 
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
@@ -194,6 +198,80 @@ export function DatePickerPill({
             </button>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── DistancePickerPill ──────────────────────────────────────────────────────────
+// disabled: no location available (geolocation denied AND no stored profile coords).
+// Shows a small muted hint prompting the user to enable location.
+export function DistancePickerPill({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: DistanceFilter;
+  onChange: (f: DistanceFilter) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e: MouseEvent) {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [open]);
+
+  const label =
+    DISTANCE_FILTER_OPTIONS.find((o) => o.value === value)?.label ??
+    "Any distance";
+  const isActive = value !== "any";
+
+  return (
+    <div className="flex items-center gap-1.5 flex-none">
+      <div ref={ref} className="relative flex-none">
+        <button
+          onClick={() => !disabled && setOpen((p) => !p)}
+          disabled={disabled}
+          className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+            disabled
+              ? "cursor-not-allowed border border-brand-border text-brand-muted opacity-60"
+              : isActive
+                ? "cursor-pointer border border-brand-teal text-brand-teal bg-brand-teal-muted"
+                : "cursor-pointer border border-brand-border text-brand-muted hover:border-brand-border-hover"
+          }`}
+        >
+          {label}
+          {chevron(open)}
+        </button>
+
+        {open && !disabled && (
+          <div className="absolute top-full mt-1.5 left-0 z-50 w-max min-w-36 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-2">
+            {DISTANCE_FILTER_OPTIONS.map((opt) => (
+              <button
+                key={String(opt.value)}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
+              >
+                {opt.label}
+                {value === opt.value && checkIcon}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {disabled && (
+        <span className="flex-none text-[10px] text-brand-muted">
+          Enable location
+        </span>
       )}
     </div>
   );

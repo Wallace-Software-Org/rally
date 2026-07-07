@@ -100,6 +100,26 @@ export async function updateProfile(data: {
   return { error: null };
 }
 
+export async function updateUserLocation(
+  lat: number,
+  lng: number,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // RLS restricts writes to the user's own row (auth.uid() = id); the
+  // .eq("id", user.id) makes that explicit and scopes the update.
+  const { error } = await supabase
+    .from("profiles")
+    .update({ lat, lng })
+    .eq("id", user.id);
+
+  return { error: error?.message ?? null };
+}
+
 export async function signOut(): Promise<{ error: string | null }> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut();

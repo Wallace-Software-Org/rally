@@ -5,13 +5,20 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
+import { updateUserLocation } from "@/lib/actions/profiles";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import ActivityFilters, {
   DatePickerPill,
+  DistancePickerPill,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
+import {
+  type DistanceFilter,
+  DEFAULT_DISTANCE_FILTER,
+  calculateDistance,
+} from "@/lib/utils/distance";
 
 const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
   ssr: false,
@@ -21,14 +28,25 @@ export default function ActivityFeed({
   activities,
   userId,
   userActivities = [],
+  profileLat = null,
+  profileLng = null,
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
   userActivities?: string[];
+  profileLat?: number | null;
+  profileLng?: number | null;
 }) {
-  const { lat: userLat, lng: userLng } = useLocation();
+  const {
+    lat: userLat,
+    lng: userLng,
+    loading: locationLoading,
+  } = useLocation();
   const [sports, setSports] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [distance, setDistance] = useState<DistanceFilter>(
+    DEFAULT_DISTANCE_FILTER,
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
@@ -41,6 +59,26 @@ export default function ActivityFeed({
   const [joining, setJoining] = useState<Set<string>>(new Set());
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // Persist browser coords to the user's profile on every successful read so
+  // their stored location stays current (and can serve as a fallback later).
+  // Fire and forget: never block feed render on the write.
+  useEffect(() => {
+    if (!userId || userLat == null || userLng == null) return;
+    void updateUserLocation(userLat, userLng);
+  }, [userId, userLat, userLng]);
+
+  // Location source + fallback chain for the distance filter:
+  //   1. browser geolocation (primary)
+  //   2. stored profile coords (when geolocation is denied/unsupported)
+  //   3. neither -> filter disabled, all activities shown
+  const filterLat = userLat ?? profileLat;
+  const filterLng = userLng ?? profileLng;
+  const hasCoords = filterLat != null && filterLng != null;
+  // While geolocation is still resolving, don't filter yet (avoids a flicker
+  // from filtering by profile coords and then re-filtering by browser coords).
+  const canFilterDistance = !locationLoading && hasCoords;
+  const distanceDisabled = !locationLoading && !hasCoords;
 
   const activitiesWithLocalParticipation = useMemo(() => {
     if (!userId) return activities;
@@ -71,11 +109,23 @@ export default function ActivityFeed({
     });
   }, [activities, joined, userId]);
 
+  // Client-side distance filtering for now. Move server-side (bounding box /
+  // PostGIS) once data scales beyond a single region.
+  function withinDistance(a: ActivityWithParticipants): boolean {
+    if (!canFilterDistance || distance === "any") return true;
+    // Never hide activities that are missing coordinates.
+    if (a.lat == null || a.lng == null) return true;
+    return (
+      calculateDistance(filterLat!, filterLng!, a.lat, a.lng) <= distance
+    );
+  }
+
   const visible = activitiesWithLocalParticipation.filter(
     (a) =>
       (sports.length === 0 ||
         sports.some((s) => s.toLowerCase() === a.sport.toLowerCase())) &&
-      matchesDateFilter(a.starts_at, dateFilter),
+      matchesDateFilter(a.starts_at, dateFilter) &&
+      withinDistance(a),
   );
 
   const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
@@ -150,8 +200,13 @@ export default function ActivityFeed({
 
       {/* ── Filter bar — mobile + md (< lg): date pill left, sport pills scroll right ── */}
       <div className="xl:hidden flex-none relative z-10 flex items-center border-b border-brand-border">
-        <div className="pl-4 pr-2 py-3 flex-none">
+        <div className="pl-4 pr-2 py-3 flex-none flex items-center gap-2">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
+          <DistancePickerPill
+            value={distance}
+            onChange={setDistance}
+            disabled={distanceDisabled}
+          />
         </div>
         <div className="w-px self-stretch bg-brand-border flex-none" />
         <div className="relative flex-1 overflow-hidden">
@@ -222,6 +277,11 @@ export default function ActivityFeed({
             {/* Filter bar — full width of left panel, date first */}
             <div className="flex-none relative z-10 border-b border-brand-border px-6 flex items-center gap-2 py-3">
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
+              <DistancePickerPill
+                value={distance}
+                onChange={setDistance}
+                disabled={distanceDisabled}
+              />
               <div className="w-px h-4 bg-brand-border flex-none mx-1" />
               <ActivityFilters sports={sports} onChange={setSports} toolbar userActivities={userActivities} />
             </div>
