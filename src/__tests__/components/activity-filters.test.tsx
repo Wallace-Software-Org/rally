@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ActivitiesPicker } from "@/components/activities/activity-filters";
+import {
+  ActivitiesPicker,
+  ShowPicker,
+} from "@/components/activities/activity-filters";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 
 const SPORTS = SPORTS_LIST.filter((s) => s !== "All");
@@ -79,5 +82,84 @@ describe("ActivitiesPicker", () => {
     fireEvent.click(screen.getByRole("button", { name: /Activities/ }));
     expect(screen.queryByText("Your activities")).not.toBeInTheDocument();
     expect(screen.getByText("Other activities")).toBeInTheDocument();
+  });
+});
+
+describe("ShowPicker", () => {
+  it("defaults its trigger label to the selected value", () => {
+    render(<ShowPicker value="all" onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /^All/ })).toBeInTheDocument();
+  });
+
+  it("reflects the selection in the trigger label", () => {
+    render(<ShowPicker value="hosting" onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /^Hosting/ })).toBeInTheDocument();
+  });
+
+  it("offers All, Hosting, and Attending when opened", () => {
+    render(<ShowPicker value="all" onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+    for (const opt of ["Hosting", "Attending"]) {
+      expect(screen.getByRole("button", { name: opt })).toBeInTheDocument();
+    }
+    // "All" appears twice when selected: the trigger and the option row.
+    expect(screen.getAllByRole("button", { name: "All" })).toHaveLength(2);
+  });
+
+  it("single-selects: calls onChange with the chosen value", () => {
+    const onChange = vi.fn();
+    render(<ShowPicker value="all" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Attending" }));
+    expect(onChange).toHaveBeenCalledWith("attending");
+  });
+
+  it("trigger is not active when All is selected", () => {
+    render(<ShowPicker value="all" onChange={vi.fn()} />);
+    const trigger = screen.getByRole("button", { name: /^All/ });
+    expect(trigger.className).not.toContain("border-brand-teal");
+  });
+});
+
+describe("FilterPanel edge awareness", () => {
+  it("anchors the panel left when the pill is left of the viewport midpoint", () => {
+    render(<ShowPicker value="all" onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+    // jsdom default rect left is 0, so the panel keeps its left anchor.
+    const panel = screen.getByRole("button", { name: "Hosting" }).parentElement!;
+    expect(panel.className).toContain("left-0");
+    expect(panel.className).not.toContain("right-0");
+  });
+
+  it("flips the panel to right-0 when the pill sits past the viewport midpoint", () => {
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 400;
+    HTMLElement.prototype.getBoundingClientRect = vi.fn(
+      () =>
+        ({
+          left: 320,
+          right: 380,
+          top: 0,
+          bottom: 20,
+          width: 60,
+          height: 20,
+          x: 320,
+          y: 0,
+          toJSON: () => {},
+        }) as DOMRect,
+    );
+    try {
+      render(<ShowPicker value="all" onChange={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button", { name: /^All/ }));
+      const panel = screen.getByRole("button", {
+        name: "Hosting",
+      }).parentElement!;
+      expect(panel.className).toContain("right-0");
+      expect(panel.className).not.toContain("left-0");
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = originalRect;
+      window.innerWidth = originalWidth;
+    }
   });
 });

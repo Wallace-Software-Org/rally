@@ -1,6 +1,12 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { type DateFilter, DATE_FILTER_OPTIONS } from "@/lib/utils/date-filters";
 import {
@@ -113,9 +119,24 @@ function FilterPanel({
   minWidth?: string;
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Flip the anchor when the trigger sits past the viewport midpoint so the
+  // panel opens inward instead of running off the right edge (mobile).
+  const [alignRight, setAlignRight] = useState(false);
+
+  useLayoutEffect(() => {
+    const parent = ref.current?.parentElement;
+    if (!parent) return;
+    const { left } = parent.getBoundingClientRect();
+    setAlignRight(left > window.innerWidth / 2);
+  }, []);
+
   return (
     <div
-      className={`absolute top-full mt-1.5 left-0 z-50 w-max ${minWidth} bg-brand-input border border-brand-border rounded-xl shadow-lg ${
+      ref={ref}
+      className={`absolute top-full mt-1.5 ${
+        alignRight ? "right-0" : "left-0"
+      } z-50 w-max ${minWidth} max-w-[calc(100vw-2rem)] bg-brand-input border border-brand-border rounded-xl shadow-lg ${
         scroll ? "max-h-80 overflow-y-auto scrollbar-brand py-1" : "py-2"
       }`}
     >
@@ -150,6 +171,57 @@ function FilterSectionHeader({ children }: { children: ReactNode }) {
     <p className="px-3.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
       {children}
     </p>
+  );
+}
+
+// ── ShowPicker ──────────────────────────────────────────────────────────────────
+// Single-select scope filter for logged-in users: All, Hosting, or Attending.
+export type ShowFilter = "all" | "hosting" | "attending";
+
+const SHOW_FILTER_OPTIONS: { label: string; value: ShowFilter }[] = [
+  { label: "All", value: "all" },
+  { label: "Hosting", value: "hosting" },
+  { label: "Attending", value: "attending" },
+];
+
+export function ShowPicker({
+  value,
+  onChange,
+}: {
+  value: ShowFilter;
+  onChange: (f: ShowFilter) => void;
+}) {
+  const { open, setOpen, ref } = useDropdown();
+
+  const label =
+    SHOW_FILTER_OPTIONS.find((o) => o.value === value)?.label ?? "All";
+  const isActive = value !== "all";
+
+  return (
+    <div ref={ref} className="relative flex-none">
+      <FilterPill
+        label={label}
+        open={open}
+        active={isActive}
+        onClick={() => setOpen((p) => !p)}
+      />
+
+      {open && (
+        <FilterPanel>
+          {SHOW_FILTER_OPTIONS.map((opt) => (
+            <FilterOption
+              key={opt.value}
+              label={opt.label}
+              selected={value === opt.value}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+            />
+          ))}
+        </FilterPanel>
+      )}
+    </div>
   );
 }
 

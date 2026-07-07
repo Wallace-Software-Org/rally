@@ -8,6 +8,7 @@ import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import {
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
+  spotsLeftText,
 } from "@/lib/utils/activity-participants";
 import { formatActivityDate } from "@/lib/utils/format-time";
 import {
@@ -59,17 +60,6 @@ function getAvatarParticipants(
     .slice(0, 5);
 }
 
-function spotsLeftText(
-  maxParticipants: number | null,
-  participantCount: number,
-) {
-  if (maxParticipants === null) return "Open";
-
-  const spotsLeft = Math.max(0, maxParticipants - participantCount);
-  if (spotsLeft === 0) return "Full";
-
-  return `${spotsLeft} spots left`;
-}
 
 // ── CardAction ────────────────────────────────────────────────────────────────
 // Shared CTA pill used by both card variants. Priority order:

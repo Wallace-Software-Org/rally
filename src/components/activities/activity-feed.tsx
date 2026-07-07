@@ -11,6 +11,8 @@ import {
   DatePickerPill,
   DistancePickerPill,
   ActivitiesPicker,
+  ShowPicker,
+  type ShowFilter,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import { useLocation } from "@/hooks/use-location";
@@ -48,6 +50,7 @@ export default function ActivityFeed({
   const [distance, setDistance] = useState<DistanceFilter>(
     DEFAULT_DISTANCE_FILTER,
   );
+  const [show, setShow] = useState<ShowFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
@@ -121,13 +124,29 @@ export default function ActivityFeed({
     );
   }
 
+  // Show scope (logged-in only). Hosting and Attending are mutually exclusive:
+  // Attending explicitly excludes activities the user created.
+  function matchesShow(a: ActivityWithParticipants): boolean {
+    if (!userId || show === "all") return true;
+    if (show === "hosting") return a.creator_id === userId;
+    return joined.has(a.id) && a.creator_id !== userId;
+  }
+
   const visible = activitiesWithLocalParticipation.filter(
     (a) =>
       (sports.length === 0 ||
         sports.some((s) => s.toLowerCase() === a.sport.toLowerCase())) &&
       matchesDateFilter(a.starts_at, dateFilter) &&
-      withinDistance(a),
+      withinDistance(a) &&
+      matchesShow(a),
   );
+
+  const emptyMessage =
+    show === "hosting"
+      ? "You are not hosting any activities."
+      : show === "attending"
+        ? "You are not attending any activities."
+        : "No open activities";
 
   const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
 
@@ -202,17 +221,18 @@ export default function ActivityFeed({
       {/* ── Filter bar — mobile + md (< xl): row of filter dropdowns ── */}
       <div className="xl:hidden flex-none relative z-10 border-b border-brand-border">
         <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+          <ActivitiesPicker
+            selected={sports}
+            onChange={setSports}
+            userActivities={userActivities}
+          />
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
           <DistancePickerPill
             value={distance}
             onChange={setDistance}
             disabled={distanceDisabled}
           />
-          <ActivitiesPicker
-            selected={sports}
-            onChange={setSports}
-            userActivities={userActivities}
-          />
+          {userId && <ShowPicker value={show} onChange={setShow} />}
         </div>
       </div>
 
@@ -229,7 +249,7 @@ export default function ActivityFeed({
 
             {visible.length === 0 ? (
               <p className="py-20 text-center text-sm text-brand-muted">
-                No open activities
+                {emptyMessage}
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
@@ -265,19 +285,20 @@ export default function ActivityFeed({
         <div className="hidden xl:flex flex-1 overflow-hidden">
           {/* Left panel — 720px fixed, scrolls independently */}
           <div className="w-180 flex-none flex flex-col border-r border-brand-border">
-            {/* Filter bar — full width of left panel, date first */}
+            {/* Filter bar — full width of left panel */}
             <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
+              <ActivitiesPicker
+                selected={sports}
+                onChange={setSports}
+                userActivities={userActivities}
+              />
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
               <DistancePickerPill
                 value={distance}
                 onChange={setDistance}
                 disabled={distanceDisabled}
               />
-              <ActivitiesPicker
-            selected={sports}
-            onChange={setSports}
-            userActivities={userActivities}
-          />
+              {userId && <ShowPicker value={show} onChange={setShow} />}
             </div>
 
             {/* Scrollable card area */}

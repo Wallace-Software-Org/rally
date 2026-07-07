@@ -8,7 +8,10 @@ import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import { isIOSDevice } from "@/lib/utils/platform";
-import { quickJoinLoginHref } from "@/lib/utils/activity-participants";
+import {
+  quickJoinLoginHref,
+  spotsLeftText,
+} from "@/lib/utils/activity-participants";
 import { getSiteUrl } from "@/lib/utils/site-url";
 
 type MapPreviewCardProps = {
@@ -220,11 +223,7 @@ export default function MapPreviewCard({
             </span>
           </p>
           <p className="text-xs text-brand-muted">
-            {activity.max_participants === null
-              ? "Open"
-              : spotsLeft <= 0
-                ? "Full"
-                : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left`}
+            {spotsLeftText(activity.max_participants, participantCount)}
           </p>
         </div>
 

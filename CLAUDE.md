@@ -13,7 +13,7 @@ Supabase (auth + postgres + realtime). Mapbox GL. Deployed on Vercel at rallytim
 - Supabase (@supabase/ssr): auth + postgres + realtime
 - Mapbox GL JS (via react-map-gl declarative Map/Marker)
 - Vercel deploy, Node 20.19.2, macOS arm64 local
-- proxy.ts (NOT middleware.ts — Next.js 16 convention)
+- proxy.ts (NOT middleware.ts, Next.js 16 convention)
 
 ## Environments
 
@@ -76,6 +76,13 @@ Other: scrollbar-brand (6px thin, brand-muted thumb, warm hover, transparent tra
 
 Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets cursor-not-allowed. Do not replay hover animation on disabled buttons.
 
+## Filter dropdowns (convention)
+
+- All feed filter pills use the shared primitives: useDropdown, FilterPill, FilterPanel, FilterOption (src/components/activities/activity-filters.tsx). Never build a bespoke dropdown.
+- Current pills: Show (All / Hosting / Attending, single-select, logged-in only, leftmost), Time, Distance, Activities (multiselect, grouped Your activities / Other activities)
+- Hosting = creator_id === userId. Attending = joined and not creator. Mutually exclusive by definition.
+- Filters combine as AND.
+
 ## Breakpoints
 
 - xl: is the ONLY layout breakpoint. Never md: or lg: for layout switching.
@@ -114,15 +121,17 @@ participants: id, activity_id (FK activities), user_id (FK profiles), status, jo
 
 FKs: profiles.id → auth.users; activities.creator_id → profiles; participants.activity_id → activities; participants.user_id → profiles.
 RLS policies exist on all tables. Storage: avatars bucket (public), own-folder policies (INSERT/UPDATE/SELECT on {uid}/ path).
+participants has REPLICA IDENTITY FULL (required so realtime DELETE events carry activity_id). Applied on prod and staging.
 
 ## Key decisions
 
 - creator_id not host_id
 - No communities table; community emerges via tags + location
 - Auth: Google OAuth via Supabase; publishable key (sb*publishable*...) not legacy anon
-- Feed distance uses browser geolocation, not profile city
+- Feed distance: browser geolocation primary; on success coords are written to profiles.lat/lng; falls back to stored profile coords when permission denied; filter disabled with hint when neither exists. Default 100 mi. Radius filtering is client-side for now (server-side is backlogged for scale).
+- Private activities are unlisted, not truly private: any authenticated user with the invite link can view and join; excluded from the public feed. Logged-out visitors see a login prompt.
+- Realtime participants: shared useRealtimeParticipants hook (detail page + feed cards) with optimistic deduplication
 - profiles.sports text[] is source of truth for activity preferences
-- Filter bar pins first 5 selected activities; rest in a More dropdown (Your activities / Other activities)
 - Activities list hardcoded in src/lib/utils/sport-config.ts; Supabase lookup migration planned when stable
 - Repeat activity is a one-click clone with 7-day offset, not RRULE
 - external_link: when set, Join becomes Register (opens external), Rally members shown separately
@@ -137,8 +146,8 @@ RLS policies exist on all tables. Storage: avatars bucket (public), own-folder p
 ## Shipped (not a roadmap, current reality)
 
 Two-week MVP complete: profile page, feed + map, activity detail (public/private, logged-in/out), quick-join OAuth flow, share card via @vercel/og, ShareStoryModal, edit activity, realtime spots + avatars, form validation, custom→fixed sport tags, private activity gating.
-Post-MVP shipped: mobile polish sprint, CI/CD + staging, site-url centralization, field utilities, scrollbar + dropdown styling, disabled button hover fix, activity-create back-button fix, mini-map HMR fix.
+Post-MVP shipped: mobile polish sprint, CI/CD + staging, site-url centralization, field utilities, scrollbar + dropdown styling, disabled button hover fix, activity-create back-button fix, mini-map HMR fix, Instagram group-chat modal (host-only), Instagram handle nudge on join, host IG copy, realtime avatar sync on detail page, private activities as unlisted, distance filter with geolocation + profile fallback, share card date format (weekday within 7 days), filter bar dropdown redesign (shared FilterPill primitives), hosting filter (Show: All / Hosting / Attending).
 
 ## Backlog
 
-Instagram group-chat modal (in progress), Instagram handle nudge on join, host IG copy, 50-mile radius feed filter, share card date format, code audit follow-ups (field-base extraction, inline hex to tokens, brand.ts constants, Toggle/Stepper components), email notifications via Resend, personal feed at rallytime.xyz/feed/[username], calendar view toggle, wipe prod test data before launch.
+Move radius filtering server-side for scale, host management surfaces (profile Hosting tab as management hub), email notifications via Resend, personal feed at rallytime.xyz/feed/[username], calendar view toggle, code audit follow-ups (field-base extraction, inline hex to tokens, brand.ts constants, Toggle/Stepper components), wipe prod test data before launch.

@@ -10,6 +10,20 @@ export function quickJoinLoginHref(activityId: string): string {
   return `/login?next=/activity/${activityId}&join=true`;
 }
 
+// Availability label for an activity's capacity. Singular/plural aware:
+// "Open" (no cap), "Full" (none left), "1 spot left", "2 spots left".
+export function spotsLeftText(
+  maxParticipants: number | null,
+  participantCount: number,
+): string {
+  if (maxParticipants === null) return "Open";
+
+  const spotsLeft = Math.max(0, maxParticipants - participantCount);
+  if (spotsLeft === 0) return "Full";
+
+  return `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left`;
+}
+
 export function getParticipantsWithHostFirst<
   Participant extends ParticipantWithProfile<Profile>,
   Profile,

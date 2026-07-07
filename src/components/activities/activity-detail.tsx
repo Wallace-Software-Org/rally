@@ -21,6 +21,7 @@ import BackButton from "@/components/ui/back-button";
 import {
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
+  spotsLeftText,
 } from "@/lib/utils/activity-participants";
 import { getInitials, shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import { isIOSDevice } from "@/lib/utils/platform";
@@ -69,17 +70,6 @@ function Divider() {
   return <div className="h-px bg-brand-border" />;
 }
 
-function spotsLeftText(
-  maxParticipants: number | null,
-  participantCount: number,
-) {
-  if (maxParticipants === null) return "Open";
-
-  const spotsLeft = Math.max(0, maxParticipants - participantCount);
-  if (spotsLeft === 0) return "Full";
-
-  return `${spotsLeft} spots left`;
-}
 
 function ExternalLinkIcon() {
   return (
