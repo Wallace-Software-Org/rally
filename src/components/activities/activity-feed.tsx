@@ -7,9 +7,10 @@ import type { ActivityWithParticipants } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { updateUserLocation } from "@/lib/actions/profiles";
 import MapPreviewCard from "@/components/map/map-preview-card";
-import ActivityFilters, {
+import {
   DatePickerPill,
   DistancePickerPill,
+  ActivitiesPicker,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import { useLocation } from "@/hooks/use-location";
@@ -198,30 +199,20 @@ export default function ActivityFeed({
         />
       </div>
 
-      {/* ── Filter bar — mobile + md (< lg): date pill left, sport pills scroll right ── */}
-      <div className="xl:hidden flex-none relative z-10 flex items-center border-b border-brand-border">
-        <div className="pl-4 pr-2 py-3 flex-none flex items-center gap-2">
+      {/* ── Filter bar — mobile + md (< xl): row of filter dropdowns ── */}
+      <div className="xl:hidden flex-none relative z-10 border-b border-brand-border">
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
           <DistancePickerPill
             value={distance}
             onChange={setDistance}
             disabled={distanceDisabled}
           />
-        </div>
-        <div className="w-px self-stretch bg-brand-border flex-none" />
-        <div className="relative flex-1 overflow-hidden">
-          <div
-            className="flex gap-2 px-3 py-3 overflow-x-scroll"
-            style={
-              {
-                scrollbarWidth: "none",
-                WebkitOverflowScrolling: "touch",
-              } as React.CSSProperties
-            }
-          >
-            <ActivityFilters sports={sports} onChange={setSports} userActivities={userActivities} />
-          </div>
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-brand-bg to-transparent" />
+          <ActivitiesPicker
+            selected={sports}
+            onChange={setSports}
+            userActivities={userActivities}
+          />
         </div>
       </div>
 
@@ -275,15 +266,18 @@ export default function ActivityFeed({
           {/* Left panel — 720px fixed, scrolls independently */}
           <div className="w-180 flex-none flex flex-col border-r border-brand-border">
             {/* Filter bar — full width of left panel, date first */}
-            <div className="flex-none relative z-10 border-b border-brand-border px-6 flex items-center gap-2 py-3">
+            <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
               <DistancePickerPill
                 value={distance}
                 onChange={setDistance}
                 disabled={distanceDisabled}
               />
-              <div className="w-px h-4 bg-brand-border flex-none mx-1" />
-              <ActivityFilters sports={sports} onChange={setSports} toolbar userActivities={userActivities} />
+              <ActivitiesPicker
+            selected={sports}
+            onChange={setSports}
+            userActivities={userActivities}
+          />
             </div>
 
             {/* Scrollable card area */}

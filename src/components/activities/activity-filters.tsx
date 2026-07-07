@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { type DateFilter, DATE_FILTER_OPTIONS } from "@/lib/utils/date-filters";
 import {
@@ -9,8 +9,6 @@ import {
 } from "@/lib/utils/distance";
 
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
-
-const MAX_PINNED = 5;
 
 const checkIcon = (
   <svg
@@ -52,18 +50,12 @@ const chevron = (open: boolean) => (
   </svg>
 );
 
-// ── MorePill (desktop toolbar) ────────────────────────────────────────────────
-function MorePill({
-  yourActivities,
-  otherActivities,
-  activeSports,
-  onSelect,
-}: {
-  yourActivities: string[];
-  otherActivities: string[];
-  activeSports: string[];
-  onSelect: (s: string) => void;
-}) {
+// ── Shared dropdown building blocks ─────────────────────────────────────────────
+// One trigger + panel + option treatment for every feed filter so their styling
+// (active state, panel bg, rows, headers) lives in a single place.
+
+// Outside-click close behavior shared by all filter dropdowns.
+function useDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -76,71 +68,88 @@ function MorePill({
     return () => document.removeEventListener("mousedown", onOutside);
   }, [open]);
 
-  const allItems = [...yourActivities, ...otherActivities];
-  const isActive = allItems.some((s) => activeSports.includes(s));
+  return { open, setOpen, ref };
+}
 
+// Trigger pill. Active = teal text + teal border, neutral background (no fill).
+function FilterPill({
+  label,
+  open,
+  active,
+  disabled = false,
+  onClick,
+}: {
+  label: string;
+  open: boolean;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div ref={ref} className="relative flex-none">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className={`cursor-pointer flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-          isActive
-            ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
-            : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
-        }`}
-      >
-        More
-        {chevron(open)}
-      </button>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center gap-1 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+        disabled
+          ? "cursor-not-allowed border-brand-border text-brand-muted opacity-60"
+          : active
+            ? "cursor-pointer border-brand-teal text-brand-teal"
+            : "cursor-pointer border-brand-border text-brand-muted hover:border-brand-border-hover"
+      }`}
+    >
+      {label}
+      {chevron(open)}
+    </button>
+  );
+}
 
-      {open && (
-        <div className="absolute top-full mt-1.5 left-0 z-50 w-max min-w-44 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-1">
-          {yourActivities.length > 0 && (
-            <>
-              <p className="px-3.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
-                Your activities
-              </p>
-              {yourActivities.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    onSelect(s);
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
-                >
-                  {s}
-                  {activeSports.includes(s) && checkIcon}
-                </button>
-              ))}
-            </>
-          )}
-          {yourActivities.length > 0 && otherActivities.length > 0 && (
-            <div className="my-1 border-t border-brand-border" />
-          )}
-          {otherActivities.length > 0 && (
-            <>
-              <p className="px-3.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
-                Other activities
-              </p>
-              {otherActivities.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    onSelect(s);
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
-                >
-                  {s}
-                  {activeSports.includes(s) && checkIcon}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-      )}
+// Dropdown panel container. scroll adds a capped, brand-scrollbar scroll area.
+function FilterPanel({
+  scroll = false,
+  minWidth = "min-w-36",
+  children,
+}: {
+  scroll?: boolean;
+  minWidth?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`absolute top-full mt-1.5 left-0 z-50 w-max ${minWidth} bg-brand-input border border-brand-border rounded-xl shadow-lg ${
+        scroll ? "max-h-80 overflow-y-auto scrollbar-brand py-1" : "py-2"
+      }`}
+    >
+      {children}
     </div>
+  );
+}
+
+// A single selectable row, checkmark when selected.
+function FilterOption({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="cursor-pointer w-full flex items-center justify-between gap-6 px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
+    >
+      {label}
+      {selected && checkIcon}
+    </button>
+  );
+}
+
+function FilterSectionHeader({ children }: { children: ReactNode }) {
+  return (
+    <p className="px-3.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
+      {children}
+    </p>
   );
 }
 
@@ -152,17 +161,7 @@ export function DatePickerPill({
   value: DateFilter;
   onChange: (f: DateFilter) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onOutside(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
-  }, [open]);
+  const { open, setOpen, ref } = useDropdown();
 
   const label =
     DATE_FILTER_OPTIONS.find((o) => o.value === value)?.label ?? "Any time";
@@ -170,34 +169,27 @@ export function DatePickerPill({
 
   return (
     <div ref={ref} className="relative flex-none">
-      <button
+      <FilterPill
+        label={label}
+        open={open}
+        active={isActive}
         onClick={() => setOpen((p) => !p)}
-        className={`cursor-pointer flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-          isActive
-            ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
-            : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
-        }`}
-      >
-        {label}
-        {chevron(open)}
-      </button>
+      />
 
       {open && (
-        <div className="absolute top-full mt-1.5 left-0 z-50 w-max min-w-36 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-2">
+        <FilterPanel>
           {DATE_FILTER_OPTIONS.map((opt) => (
-            <button
+            <FilterOption
               key={opt.value}
+              label={opt.label}
+              selected={value === opt.value}
               onClick={() => {
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
-            >
-              {opt.label}
-              {value === opt.value && checkIcon}
-            </button>
+            />
           ))}
-        </div>
+        </FilterPanel>
       )}
     </div>
   );
@@ -215,17 +207,7 @@ export function DistancePickerPill({
   onChange: (f: DistanceFilter) => void;
   disabled?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onOutside(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
-  }, [open]);
+  const { open, setOpen, ref } = useDropdown();
 
   const label =
     DISTANCE_FILTER_OPTIONS.find((o) => o.value === value)?.label ??
@@ -235,37 +217,28 @@ export function DistancePickerPill({
   return (
     <div className="flex items-center gap-1.5 flex-none">
       <div ref={ref} className="relative flex-none">
-        <button
-          onClick={() => !disabled && setOpen((p) => !p)}
+        <FilterPill
+          label={label}
+          open={open}
+          active={isActive}
           disabled={disabled}
-          className={`flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-            disabled
-              ? "cursor-not-allowed border border-brand-border text-brand-muted opacity-60"
-              : isActive
-                ? "cursor-pointer border border-brand-teal text-brand-teal bg-brand-teal-muted"
-                : "cursor-pointer border border-brand-border text-brand-muted hover:border-brand-border-hover"
-          }`}
-        >
-          {label}
-          {chevron(open)}
-        </button>
+          onClick={() => !disabled && setOpen((p) => !p)}
+        />
 
         {open && !disabled && (
-          <div className="absolute top-full mt-1.5 left-0 z-50 w-max min-w-36 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-2">
+          <FilterPanel>
             {DISTANCE_FILTER_OPTIONS.map((opt) => (
-              <button
+              <FilterOption
                 key={String(opt.value)}
+                label={opt.label}
+                selected={value === opt.value}
                 onClick={() => {
                   onChange(opt.value);
                   setOpen(false);
                 }}
-                className="cursor-pointer w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
-              >
-                {opt.label}
-                {value === opt.value && checkIcon}
-              </button>
+              />
             ))}
-          </div>
+          </FilterPanel>
         )}
       </div>
       {disabled && (
@@ -277,116 +250,79 @@ export function DistancePickerPill({
   );
 }
 
-// ── ActivityFilters ───────────────────────────────────────────────────────────
-// sports: currently selected (empty = All).
-// userActivities: logged-in user's saved activities — first 5 pinned as visible pills.
-// toolbar=false: plain fragment for mobile scroll row.
-// toolbar=true: pill strip with "More" sectioned dropdown for desktop.
-export default function ActivityFilters({
-  sports,
+// ── ActivitiesPicker ────────────────────────────────────────────────────────────
+// Multiselect dropdown, replaces the old sport pill row + More dropdown.
+// Empty selection = show all. Feed filters with OR logic across the selection.
+// Grouped into "Your activities" (the user's saved sports) and "Other activities".
+export function ActivitiesPicker({
+  selected,
   onChange,
-  toolbar = false,
-  userActivities,
+  userActivities = [],
 }: {
-  sports: string[];
+  selected: string[];
   onChange: (s: string[]) => void;
-  toolbar?: boolean;
   userActivities?: string[];
 }) {
+  const { open, setOpen, ref } = useDropdown();
+
   function toggle(s: string) {
-    if (sports.includes(s)) {
-      onChange(sports.filter((x) => x !== s));
+    if (selected.includes(s)) {
+      onChange(selected.filter((x) => x !== s));
     } else {
-      onChange([...sports, s]);
+      onChange([...selected, s]);
     }
   }
 
-  const allActive = sports.length === 0;
+  const label =
+    selected.length === 0 ? "Activities" : `Activities (${selected.length})`;
+  const isActive = selected.length > 0;
 
-  // Ordered by SPORT_ITEMS to match the list order, not the user's selection order
-  const pinned = userActivities?.length
+  // Ordered by SPORT_ITEMS (list order), not the user's selection order.
+  const yourActivities = userActivities.length
     ? SPORT_ITEMS.filter((s) =>
         userActivities.some((u) => u.toLowerCase() === s.toLowerCase()),
       )
     : [];
-
-  const pinnedVisible = pinned.slice(0, MAX_PINNED);
-  const pinnedOverflow = pinned.slice(MAX_PINNED);
-  const others = SPORT_ITEMS.filter((s) => !pinned.includes(s));
-
-  // Show separator only when there are pinned pills and items after them
-  const showSeparator =
-    pinnedVisible.length > 0 &&
-    (pinnedOverflow.length > 0 || others.length > 0);
-
-  function pillCls(active: boolean) {
-    return `cursor-pointer flex-none rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-      active
-        ? "border border-brand-teal text-brand-teal bg-brand-teal-muted"
-        : "border border-brand-border text-brand-muted hover:border-brand-border-hover"
-    }`;
-  }
-
-  const allPill = (
-    <button
-      key="All"
-      onClick={() => onChange([])}
-      className={pillCls(allActive)}
-    >
-      All
-    </button>
+  const otherActivities = SPORT_ITEMS.filter(
+    (s) => !yourActivities.includes(s),
   );
 
-  const pinnedVisiblePills = pinnedVisible.map((s) => (
-    <button
+  const row = (s: string) => (
+    <FilterOption
       key={s}
+      label={s}
+      selected={selected.includes(s)}
       onClick={() => toggle(s)}
-      className={pillCls(sports.includes(s))}
-    >
-      {s}
-    </button>
-  ));
-
-  const separator = showSeparator ? (
-    <div key="sep" className="w-px h-4 bg-brand-border flex-none self-center" />
-  ) : null;
-
-  if (!toolbar) {
-    // Mobile: pinned first, separator, then overflow + others in SPORT_ITEMS order
-    const afterSeparator = [...pinnedOverflow, ...others];
-    return (
-      <>
-        {allPill}
-        {pinnedVisiblePills}
-        {separator}
-        {afterSeparator.map((s) => (
-          <button
-            key={s}
-            onClick={() => toggle(s)}
-            className={pillCls(sports.includes(s))}
-          >
-            {s}
-          </button>
-        ))}
-      </>
-    );
-  }
-
-  // Desktop toolbar: pinned pills + More dropdown (sectioned)
-  const hasMore = pinnedOverflow.length > 0 || others.length > 0;
+    />
+  );
 
   return (
-    <div className="flex items-center gap-2">
-      {allPill}
-      {pinnedVisiblePills}
-      {separator}
-      {hasMore && (
-        <MorePill
-          yourActivities={pinnedOverflow}
-          otherActivities={others}
-          activeSports={sports}
-          onSelect={toggle}
-        />
+    <div ref={ref} className="relative flex-none">
+      <FilterPill
+        label={label}
+        open={open}
+        active={isActive}
+        onClick={() => setOpen((p) => !p)}
+      />
+
+      {open && (
+        <FilterPanel scroll minWidth="min-w-44">
+          {yourActivities.length > 0 && (
+            <>
+              <FilterSectionHeader>Your activities</FilterSectionHeader>
+              {yourActivities.map(row)}
+            </>
+          )}
+          {yourActivities.length > 0 && otherActivities.length > 0 && (
+            <div className="my-1 border-t border-brand-border" />
+          )}
+          {otherActivities.length > 0 && (
+            <>
+              <FilterSectionHeader>Other activities</FilterSectionHeader>
+              {otherActivities.map(row)}
+            </>
+          )}
+        </FilterPanel>
       )}
     </div>
   );

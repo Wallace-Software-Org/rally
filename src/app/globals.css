@@ -118,7 +118,7 @@ body {
 @utility scrollbar-brand {
   /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: var(--color-brand-muted) transparent;
+  scrollbar-color: var(--color-brand-map-bg) transparent;
   /* Webkit (Chrome/Safari/Edge) */
   &::-webkit-scrollbar {
     width: 6px;
