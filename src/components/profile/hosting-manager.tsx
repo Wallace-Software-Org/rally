@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ import GroupChatModal, {
 import {
   EditIcon,
   CopyIcon,
+  CheckIcon,
   RefreshIcon,
   ShareIcon,
   InstagramIcon,
@@ -36,7 +37,40 @@ import {
 
 const PARTICIPANT_COLUMNS = "full_name, avatar_url, username, instagram_handle";
 
-type Variant = "mobile" | "desktop";
+// Card action button. Icon-only below md (square, aria-label carries the name),
+// icon + visible label from md up. Density only: no layout/structure change.
+function ActionButton({
+  label,
+  icon,
+  tier = "btn-tier-3",
+  href,
+  onClick,
+  style,
+}: {
+  label: string;
+  icon: ReactNode;
+  tier?: string;
+  href?: string;
+  onClick?: () => void;
+  style?: React.CSSProperties;
+}) {
+  const cls = `${tier} text-sm flex items-center justify-center gap-1.5 h-10 w-10 md:h-auto md:w-auto`;
+  const inner = (
+    <>
+      {icon}
+      <span className="hidden md:inline">{label}</span>
+    </>
+  );
+  return href ? (
+    <Link href={href} aria-label={label} className={cls} style={style}>
+      {inner}
+    </Link>
+  ) : (
+    <button onClick={onClick} aria-label={label} className={cls} style={style}>
+      {inner}
+    </button>
+  );
+}
 
 function formatCardMeta(startsAt: string): { date: string; time: string } {
   const d = new Date(startsAt);
@@ -139,12 +173,10 @@ function UpcomingCard({
   activity,
   hostId,
   isOwner,
-  variant,
 }: {
   activity: HostedActivity;
   hostId: string;
   isOwner: boolean;
-  variant: Variant;
 }) {
   const { participants, participantCount } =
     useRealtimeParticipants<HostParticipantProfile>({
@@ -210,75 +242,42 @@ function UpcomingCard({
     }),
   );
 
-  const copyLabel = isPrivate ? "Copy invite link" : "Copy link";
-  const copyTier = isPrivate ? "btn-tier-2" : "btn-tier-3";
-  const copyStyle = isPrivate
+  const isPrivateCopy = isPrivate;
+  const copyLabel = copied
+    ? "Copied"
+    : isPrivateCopy
+      ? "Copy invite link"
+      : "Copy link";
+  const copyTier = isPrivateCopy ? "btn-tier-2" : "btn-tier-3";
+  const copyStyle = isPrivateCopy
     ? { borderColor: "var(--color-brand-private-border)" }
     : undefined;
 
-  const actionRow = variant === "desktop" ? (
+  const actionRow = (
     <div className="flex items-center gap-2 flex-wrap">
-      <Link
+      <ActionButton
+        tier="btn-tier-2"
         href={`/activity/${activity.id}/edit`}
-        className="btn-tier-2 text-sm flex items-center gap-1.5"
-      >
-        <EditIcon size={14} />
-        Edit
-      </Link>
-      <button
+        label="Edit"
+        icon={<EditIcon size={16} />}
+      />
+      <ActionButton
+        tier={copyTier}
         onClick={handleCopy}
         style={copyStyle}
-        className={`${copyTier} text-sm flex items-center gap-1.5`}
-      >
-        <CopyIcon size={14} />
-        {copied ? "Copied!" : copyLabel}
-      </button>
-      <button
+        label={copyLabel}
+        icon={copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
+      />
+      <ActionButton
         onClick={() => setShowGroupChat(true)}
-        className="btn-tier-3 text-sm flex items-center gap-1.5"
-      >
-        <InstagramIcon size={14} />
-        Group chat
-      </button>
-      <button
+        label="Group chat"
+        icon={<InstagramIcon size={16} />}
+      />
+      <ActionButton
         onClick={handleShare}
-        className="btn-tier-3 text-sm flex items-center gap-1.5"
-      >
-        <ShareIcon size={14} />
-        Share to Story
-      </button>
-    </div>
-  ) : (
-    <div className="flex items-center gap-2">
-      <Link
-        href={`/activity/${activity.id}/edit`}
-        aria-label="Edit"
-        className="btn-tier-2 w-10 h-10 !p-0 flex items-center justify-center"
-      >
-        <EditIcon size={16} />
-      </Link>
-      <button
-        onClick={handleCopy}
-        aria-label={copyLabel}
-        style={copyStyle}
-        className={`${copyTier} w-10 h-10 !p-0 flex items-center justify-center`}
-      >
-        <CopyIcon size={16} />
-      </button>
-      <button
-        onClick={() => setShowGroupChat(true)}
-        aria-label="Group chat"
-        className="btn-tier-3 w-10 h-10 !p-0 flex items-center justify-center"
-      >
-        <InstagramIcon size={16} />
-      </button>
-      <button
-        onClick={handleShare}
-        aria-label="Share to Story"
-        className="btn-tier-3 w-10 h-10 !p-0 flex items-center justify-center"
-      >
-        <ShareIcon size={16} />
-      </button>
+        label="Share to Story"
+        icon={<ShareIcon size={16} />}
+      />
     </div>
   );
 
@@ -317,8 +316,8 @@ function UpcomingCard({
       {/* Row 2: meta + (desktop) description */}
       <div className="flex flex-col gap-1">
         <p className="text-xs text-brand-muted">{metaLine(activity, true)}</p>
-        {variant === "desktop" && activity.description && (
-          <p className="text-xs text-brand-muted line-clamp-1">
+        {activity.description && (
+          <p className="hidden md:block text-xs text-brand-muted line-clamp-1">
             {activity.description}
           </p>
         )}
@@ -404,12 +403,10 @@ export default function HostingManager({
   activities,
   isOwner,
   hostId,
-  variant,
 }: {
   activities: HostedActivity[];
   isOwner: boolean;
   hostId: string;
-  variant: Variant;
 }) {
   const [pastOpen, setPastOpen] = useState(false);
 
@@ -462,7 +459,6 @@ export default function HostingManager({
                   activity={a}
                   hostId={hostId}
                   isOwner={isOwner}
-                  variant={variant}
                 />
               ),
             )}

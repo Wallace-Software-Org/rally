@@ -454,7 +454,6 @@ export default function ProfileView({
                   activities={profile.hosting}
                   isOwner={isOwner}
                   hostId={profile.id}
-                  variant="mobile"
                 />
               ) : (
                 <GoingList activities={profile.going} />
@@ -526,7 +525,6 @@ export default function ProfileView({
                   activities={profile.hosting}
                   isOwner={isOwner}
                   hostId={profile.id}
-                  variant="desktop"
                 />
               ) : (
                 <GoingList activities={profile.going} gridCols2 />
