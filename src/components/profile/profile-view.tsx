@@ -3,15 +3,12 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AnimatePresence } from "framer-motion";
-import type { ProfilePage, ProfileActivity } from "@/types";
+import type { ProfilePage } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
-import ShareStoryModal from "@/components/ui/share-story-modal";
 import { InstagramIcon, SettingsIcon } from "@/components/ui/icons";
-import { isIOSDevice } from "@/lib/utils/platform";
-import { getSiteUrl } from "@/lib/utils/site-url";
-import { hostingTabCount } from "@/lib/utils/hosting";
+import { upcomingOpenCount } from "@/lib/utils/hosting";
 import HostingManager from "@/components/profile/hosting-manager";
+import AttendingManager from "@/components/profile/attending-manager";
 
 function initials(name: string): string {
   return name
@@ -20,173 +17,6 @@ function initials(name: string): string {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-}
-
-function formatCardDate(startsAt: string): { date: string; time: string } {
-  const d = new Date(startsAt);
-  const date = d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const time = d.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  return { date, time };
-}
-
-// ── Activity card ─────────────────────────────────────────────────────────────
-
-function ActivityCard({
-  activity,
-  showShare,
-}: {
-  activity: ProfileActivity;
-  showShare?: boolean;
-}) {
-  const { date, time } = formatCardDate(activity.starts_at);
-  const [showShareModal, setShowShareModal] = useState(false);
-
-  // Mirrors the activity detail page share flow: generate the card image and
-  // copy the link, then show the shared ShareStoryModal.
-  async function handleShare() {
-    const activityUrl = `${getSiteUrl()}/activity/${activity.id}`;
-    const cardUrl = `/api/activity/${activity.id}/card`;
-    if (isIOSDevice()) {
-      window.open(cardUrl, "_blank");
-    } else {
-      try {
-        const res = await fetch(cardUrl);
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `rally-${activity.id}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-      } catch {
-        // best-effort; still show modal
-      }
-    }
-    await navigator.clipboard.writeText(activityUrl).catch(() => {});
-    setShowShareModal(true);
-  }
-
-  return (
-    <div className="xl:min-h-32 flex flex-col">
-      <Link
-        href={`/activity/${activity.id}`}
-        className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col justify-between h-full transition-all hover:border-brand-border-hover"
-      >
-        <div className="flex flex-col gap-2">
-          <ActivityPill sport={activity.sport} />
-          <p className="text-lg xl:text-base font-semibold text-brand-text leading-snug line-clamp-2">
-            {activity.title}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1.5 text-sm xl:text-xs text-brand-muted">
-          {activity.location_name && (
-            <span className="flex items-center gap-1">
-              <svg
-                width="10"
-                height="12"
-                viewBox="0 0 8 10"
-                fill="currentColor"
-                className="flex-none"
-                aria-hidden="true"
-              >
-                <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
-              </svg>
-              <span className="truncate text-sm xl:text-xs">
-                {activity.location_name}
-              </span>
-            </span>
-          )}
-          <div className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className="flex items-center gap-1">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="flex-none"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="1.5"
-                    y="3"
-                    width="13"
-                    height="11.5"
-                    rx="1.5"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                  />
-                  <path
-                    d="M5 1.5V4M11 1.5V4M1.5 7h13"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                {date}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="flex-none"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="8"
-                    cy="8"
-                    r="6.5"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                  />
-                  <path
-                    d="M8 4.5V8.5l2.5 1.5"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {time}
-              </span>
-            </span>
-            {showShare && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleShare();
-                }}
-                className="flex-none flex items-center gap-1.5 bg-brand-teal text-white text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
-              >
-                <InstagramIcon size={11} />
-                Share
-              </button>
-            )}
-          </div>
-        </div>
-      </Link>
-
-      <AnimatePresence>
-        {showShareModal && (
-          <ShareStoryModal onClose={() => setShowShareModal(false)} />
-        )}
-      </AnimatePresence>
-    </div>
-  );
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
@@ -256,8 +86,8 @@ function TabBar({
       {(["hosting", "going"] as const).map((t) => {
         const count =
           t === "hosting"
-            ? hostingTabCount(profile.hosting)
-            : profile.going.length;
+            ? upcomingOpenCount(profile.hosting)
+            : upcomingOpenCount(profile.going);
         const isActive = tab === t;
         return (
           <button
@@ -277,35 +107,6 @@ function TabBar({
         );
       })}
     </>
-  );
-}
-
-// Attending tab list. Hosting has its own management surface (HostingManager).
-function GoingList({
-  activities,
-  gridCols2,
-}: {
-  activities: ProfileActivity[];
-  gridCols2?: boolean;
-}) {
-  if (activities.length === 0) {
-    return (
-      <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
-        Nothing coming up.{" "}
-        <Link href="/" className="text-brand-teal hover:underline">
-          Find something on the feed.
-        </Link>
-      </p>
-    );
-  }
-  return (
-    <div
-      className={gridCols2 ? "grid grid-cols-2 gap-4" : "flex flex-col gap-3"}
-    >
-      {activities.map((a) => (
-        <ActivityCard key={a.id} activity={a} />
-      ))}
-    </div>
   );
 }
 
@@ -361,7 +162,8 @@ function SportTagsScroller({ sports }: { sports: string[] }) {
     const el = scrollRef.current;
     if (!drag.current.down || !el) return;
     e.preventDefault();
-    el.scrollLeft = drag.current.startScrollLeft - (e.pageX - drag.current.startX);
+    el.scrollLeft =
+      drag.current.startScrollLeft - (e.pageX - drag.current.startX);
   }
 
   function endDrag() {
@@ -408,7 +210,7 @@ export default function ProfileView({
       {/* ── MOBILE LAYOUT (< lg) ────────────────────────────────────── */}
       <div className="xl:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-120 mx-auto">
+          <div className="max-w-140 mx-auto">
             {/* Hero */}
             <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
               <div className="flex flex-col items-center gap-4">
@@ -456,7 +258,10 @@ export default function ProfileView({
                   hostId={profile.id}
                 />
               ) : (
-                <GoingList activities={profile.going} />
+                <AttendingManager
+                  activities={profile.going}
+                  isOwner={isOwner}
+                />
               )}
             </div>
           </div>
@@ -527,7 +332,10 @@ export default function ProfileView({
                   hostId={profile.id}
                 />
               ) : (
-                <GoingList activities={profile.going} gridCols2 />
+                <AttendingManager
+                  activities={profile.going}
+                  isOwner={isOwner}
+                />
               )}
             </div>
           </div>

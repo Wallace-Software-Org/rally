@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type {
+  AttendedActivity,
+  AttendedHost,
   HostedActivity,
   HostParticipantProfile,
   ProfilePage,
@@ -19,7 +21,6 @@ export async function getProfileByUsername(
   username: string,
 ): Promise<ProfilePage | null> {
   const supabase = await createClient();
-  const now = new Date().toISOString();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -65,19 +66,28 @@ export async function getProfileByUsername(
       .eq("user_id", profile.id),
   ]);
 
-  // Fetch upcoming activities the user is attending (but not hosting)
+  // Attending is a read-only hub mirroring Hosting: include past and cancelled
+  // activities the user joined (but does not host), with host + participant data.
   const activityIds = (participantRows ?? []).map((p) => p.activity_id);
-  let going: ProfilePage["going"] = [];
+  let going: AttendedActivity[] = [];
   if (activityIds.length > 0) {
     const { data: goingData } = await supabase
       .from("activities")
-      .select("id, title, sport, location_name, skill_level, starts_at")
+      .select(
+        `
+        id, title, sport, description, location_name, skill_level, starts_at,
+        max_participants, visibility, status,
+        host:profiles!activities_creator_id_fkey ( full_name, avatar_url, username ),
+        participants (
+          id, user_id,
+          profiles ( full_name, avatar_url, username, instagram_handle )
+        )
+      `,
+      )
       .in("id", activityIds)
       .neq("creator_id", profile.id)
-      .eq("status", "open")
-      .gt("starts_at", now)
       .order("starts_at", { ascending: true });
-    going = goingData ?? [];
+    going = normalizeAttending(goingData);
   }
 
   return {
@@ -88,6 +98,38 @@ export async function getProfileByUsername(
     going,
     hosting: normalizeHosting(hosting),
   };
+}
+
+function normalizeRelation<T>(value: unknown): T | null {
+  return (Array.isArray(value) ? (value[0] ?? null) : (value ?? null)) as
+    | T
+    | null;
+}
+
+function normalizeParticipants(
+  participants: { id: string; user_id: string; profiles: unknown }[] | null,
+) {
+  return (participants ?? []).map((p) => ({
+    id: p.id,
+    user_id: p.user_id,
+    profiles: normalizeRelation<HostParticipantProfile>(p.profiles),
+  }));
+}
+
+function normalizeAttending(
+  data:
+    | {
+        host: unknown;
+        participants: { id: string; user_id: string; profiles: unknown }[];
+        [key: string]: unknown;
+      }[]
+    | null,
+): AttendedActivity[] {
+  return (data ?? []).map((a) => ({
+    ...(a as unknown as AttendedActivity),
+    host: normalizeRelation<AttendedHost>(a.host),
+    participants: normalizeParticipants(a.participants),
+  }));
 }
 
 // Supabase infers the participant->profiles join as an array at the type level
@@ -102,12 +144,6 @@ function normalizeHosting(
 ): HostedActivity[] {
   return (data ?? []).map((a) => ({
     ...(a as unknown as HostedActivity),
-    participants: (a.participants ?? []).map((p) => ({
-      id: p.id,
-      user_id: p.user_id,
-      profiles: (Array.isArray(p.profiles)
-        ? (p.profiles[0] ?? null)
-        : (p.profiles ?? null)) as HostParticipantProfile | null,
-    })),
+    participants: normalizeParticipants(a.participants),
   }));
 }

@@ -1,16 +1,16 @@
-import type { HostedActivity, HostParticipant } from "@/types";
+import type { HostParticipant } from "@/types";
 import { spotsLeftText } from "@/lib/utils/activity-participants";
 
-// Split hosted activities into upcoming and past. Cancelled activities whose
-// start time is still in the future stay in Upcoming (shown cancelled) until
-// their date passes; then they fall into Past like any other. Upcoming is
-// soonest-first; Past is most-recent-first.
-export function splitHostedActivities(
-  activities: HostedActivity[],
+// Split activities into upcoming and past by start time. Cancelled activities
+// whose start time is still in the future stay in Upcoming (shown cancelled)
+// until their date passes; then they fall into Past like any other. Upcoming is
+// soonest-first; Past is most-recent-first. Shared by Hosting and Attending.
+export function splitActivitiesByTime<T extends { starts_at: string }>(
+  activities: T[],
   now: number = Date.now(),
-): { upcoming: HostedActivity[]; past: HostedActivity[] } {
-  const upcoming: HostedActivity[] = [];
-  const past: HostedActivity[] = [];
+): { upcoming: T[]; past: T[] } {
+  const upcoming: T[] = [];
+  const past: T[] = [];
 
   for (const a of activities) {
     if (new Date(a.starts_at).getTime() > now) upcoming.push(a);
@@ -29,11 +29,11 @@ export function splitHostedActivities(
   return { upcoming, past };
 }
 
-// The Hosting tab badge counts only upcoming, non-cancelled activities.
-export function hostingTabCount(
-  activities: HostedActivity[],
-  now: number = Date.now(),
-): number {
+// Tab badge count: only upcoming, non-cancelled activities. Shared by the
+// Hosting and Attending tabs.
+export function upcomingOpenCount<
+  T extends { status: string; starts_at: string },
+>(activities: T[], now: number = Date.now()): number {
   return activities.filter(
     (a) => a.status === "open" && new Date(a.starts_at).getTime() > now,
   ).length;
@@ -57,19 +57,14 @@ export type ParticipantLine = {
   tone: "muted" | "teal";
 };
 
-// The capacity/availability line for an open host card.
-//   - no one else joined -> nudge to share
-//   - full              -> teal "Full"
-//   - capped, room left -> "X of Y · Z spots left"
-//   - uncapped          -> "X joined"
-export function hostParticipantLine(
+// Capacity line shared by Hosting and Attending cards.
+//   - full     -> teal "Full"
+//   - capped   -> "X of Y · Z spots left"
+//   - uncapped -> "X joined"
+export function capacityLine(
   participantCount: number,
   maxParticipants: number | null,
-  others: number,
 ): ParticipantLine {
-  if (others === 0) {
-    return { text: "Share the link to fill spots", tone: "muted" };
-  }
   if (maxParticipants == null) {
     return { text: `${participantCount} joined`, tone: "muted" };
   }
@@ -81,6 +76,19 @@ export function hostParticipantLine(
     text: `${participantCount} of ${maxParticipants} · ${spots}`,
     tone: "muted",
   };
+}
+
+// The capacity/availability line for an open host card. Adds the host-only
+// "share to fill spots" nudge when no one else has joined.
+export function hostParticipantLine(
+  participantCount: number,
+  maxParticipants: number | null,
+  others: number,
+): ParticipantLine {
+  if (others === 0) {
+    return { text: "Share the link to fill spots", tone: "muted" };
+  }
+  return capacityLine(participantCount, maxParticipants);
 }
 
 // The participant line for a cancelled host card.

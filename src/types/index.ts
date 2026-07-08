@@ -118,6 +118,19 @@ export type HostedActivity = {
   participants: HostParticipant[];
 };
 
+// Host summary for the Attending cards' "Hosted by" line.
+export type AttendedHost = {
+  full_name: string;
+  avatar_url: string | null;
+  username: string | null;
+};
+
+// An attended activity (joined, not hosted) as shown in the Attending hub.
+// Same shape as a hosted activity plus the host profile.
+export type AttendedActivity = HostedActivity & {
+  host: AttendedHost | null;
+};
+
 export type ProfilePage = {
   id: string;
   username: string;
@@ -128,7 +141,7 @@ export type ProfilePage = {
   sports: string[];
   hosted_count: number;
   attended_count: number;
-  going: ProfileActivity[];
+  going: AttendedActivity[];
   hosting: HostedActivity[];
 };
 

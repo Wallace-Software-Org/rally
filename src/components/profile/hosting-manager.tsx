@@ -2,13 +2,8 @@
 
 import { type ReactNode, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { AnimatePresence } from "framer-motion";
-import type {
-  HostedActivity,
-  HostParticipant,
-  HostParticipantProfile,
-} from "@/types";
+import type { HostedActivity, HostParticipantProfile } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import GroupChatModal, {
@@ -22,13 +17,17 @@ import {
   ShareIcon,
   InstagramIcon,
 } from "@/components/ui/icons";
-import { getInitials } from "@/lib/utils/avatar";
+import {
+  AvatarStrip,
+  formatCardMeta,
+  metaLine,
+} from "@/components/profile/activity-card-parts";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import { isIOSDevice } from "@/lib/utils/platform";
 import { repeatActivity } from "@/lib/actions/activities";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import {
-  splitHostedActivities,
+  splitActivitiesByTime,
   isCancelled,
   joinedCount,
   hostParticipantLine,
@@ -69,73 +68,6 @@ function ActionButton({
     <button onClick={onClick} aria-label={label} className={cls} style={style}>
       {inner}
     </button>
-  );
-}
-
-function formatCardMeta(startsAt: string): { date: string; time: string } {
-  const d = new Date(startsAt);
-  return {
-    date: d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
-    time: d.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }),
-  };
-}
-
-function metaLine(activity: HostedActivity, withTime: boolean): string {
-  const { date, time } = formatCardMeta(activity.starts_at);
-  return [
-    date,
-    withTime ? time : null,
-    activity.location_name || null,
-    activity.skill_level || null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
-// ── Avatar strip ──────────────────────────────────────────────────────────────
-
-function AvatarStrip({ participants }: { participants: HostParticipant[] }) {
-  if (participants.length === 0) return null;
-  const shown = participants.slice(0, 3);
-  const overflow = participants.length - shown.length;
-  return (
-    <div className="flex items-center">
-      {shown.map((p, i) => (
-        <div
-          key={p.id}
-          className={`w-7 h-7 rounded-full overflow-hidden bg-brand-avatar-bg border border-brand-surface flex items-center justify-center flex-none ${
-            i > 0 ? "-ml-2" : ""
-          }`}
-        >
-          {p.profiles?.avatar_url ? (
-            <Image
-              src={p.profiles.avatar_url}
-              alt=""
-              width={28}
-              height={28}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-[10px] font-semibold text-brand-avatar-text">
-              {getInitials(p.profiles?.full_name)}
-            </span>
-          )}
-        </div>
-      ))}
-      {overflow > 0 && (
-        <div className="-ml-2 w-7 h-7 rounded-full bg-brand-avatar-bg border border-brand-surface flex items-center justify-center text-[10px] font-semibold text-brand-avatar-text flex-none">
-          +{overflow}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -414,7 +346,7 @@ export default function HostingManager({
   const visible = isOwner
     ? activities
     : activities.filter((a) => !isCancelled(a));
-  const { upcoming, past } = splitHostedActivities(visible);
+  const { upcoming, past } = splitActivitiesByTime(visible);
 
   if (upcoming.length === 0 && past.length === 0) {
     return (
