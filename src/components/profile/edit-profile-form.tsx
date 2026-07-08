@@ -126,7 +126,10 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
     setSigningOut(true);
     const { error } = await signOut();
     if (!error) {
-      router.push("/login");
+      // Land on the feed in its logged-out state. refresh() clears the cached
+      // server components so no stale signed-in UI carries over.
+      router.push("/");
+      router.refresh();
     } else {
       setSigningOut(false);
     }

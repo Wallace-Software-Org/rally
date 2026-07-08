@@ -79,7 +79,7 @@ Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets c
 ## Filter dropdowns (convention)
 
 - All feed filter pills use the shared primitives: useDropdown, FilterPill, FilterPanel, FilterOption (src/components/activities/activity-filters.tsx). Never build a bespoke dropdown.
-- Current pills: Show (All / Hosting / Attending, single-select, logged-in only, leftmost), Time, Distance, Activities (multiselect, grouped Your activities / Other activities)
+- Current pills in order: Activities (multiselect, grouped Your activities / Other activities), Time, Distance, Show (All / Hosting / Attending, single-select, logged-in only, rightmost). FilterPanel is edge-aware (flips anchor near the right viewport edge).
 - Hosting = creator_id === userId. Attending = joined and not creator. Mutually exclusive by definition.
 - Filters combine as AND.
 
