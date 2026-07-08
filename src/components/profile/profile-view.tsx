@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ProfilePage } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
-import { InstagramIcon, SettingsIcon } from "@/components/ui/icons";
+import { InstagramIcon, EditIcon } from "@/components/ui/icons";
 import { upcomingOpenCount } from "@/lib/utils/hosting";
 import HostingManager from "@/components/profile/hosting-manager";
 import AttendingManager from "@/components/profile/attending-manager";
@@ -21,9 +21,47 @@ function initials(name: string): string {
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
+// Profile header action row: Instagram (when set, all viewers) and Edit profile
+// (owner only), stacked full width. Renders nothing when neither applies.
+function ActionRow({
+  profile,
+  isOwner,
+}: {
+  profile: ProfilePage;
+  isOwner: boolean;
+}) {
+  const hasInstagram = !!profile.instagram_handle;
+  if (!hasInstagram && !isOwner) return null;
+
+  return (
+    <div className="w-full flex flex-col gap-2">
+      {hasInstagram && (
+        <a
+          href={`https://instagram.com/${profile.instagram_handle}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center justify-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold py-3 hover:bg-brand-teal/5 transition-colors"
+        >
+          <InstagramIcon size={14} />
+          Instagram
+        </a>
+      )}
+      {isOwner && (
+        <Link
+          href="/profile/edit"
+          className="btn-tier-2 text-sm w-full flex items-center justify-center gap-1.5"
+        >
+          <EditIcon size={14} />
+          Edit profile
+        </Link>
+      )}
+    </div>
+  );
+}
+
 function Avatar({ profile }: { profile: ProfilePage }) {
   return (
-    <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center flex-none">
+    <div className="w-36 xl:w-24 h-36 xl:h-24 rounded-full overflow-hidden bg-brand-avatar-bg border-3 border-brand-border flex items-center justify-center flex-none">
       {profile.avatar_url ? (
         <Image
           src={profile.avatar_url}
@@ -50,18 +88,6 @@ function Identity({ profile }: { profile: ProfilePage }) {
       <p className="text-sm text-brand-muted font-medium">
         @{profile.username}
       </p>
-      {profile.instagram_handle && (
-        <a
-          href={`https://instagram.com/${profile.instagram_handle}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-0.5 flex items-center gap-1.5 bg-brand-teal/10 text-brand-teal text-xs font-semibold px-3 py-1 rounded-full hover:opacity-80 transition-opacity"
-        >
-          <InstagramIcon size={12} />
-          {profile.instagram_handle}
-        </a>
-      )}
-
       {profile.bio && (
         <p className="text-sm text-brand-text leading-relaxed mt-3">
           {profile.bio}
@@ -216,6 +242,7 @@ export default function ProfileView({
               <div className="flex flex-col items-center gap-4">
                 <Avatar profile={profile} />
                 <Identity profile={profile} />
+                <ActionRow profile={profile} isOwner={isOwner} />
               </div>
 
               {showNudge && <NudgeCard />}
@@ -274,18 +301,10 @@ export default function ProfileView({
           {/* Sidebar */}
           <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4 xl:w-96">
             {/* Identity card */}
-            <div className="relative w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
-              {isOwner && (
-                <Link
-                  href="/profile/edit"
-                  aria-label="Settings"
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-transparent text-brand-muted hover:text-brand-text hover:border-brand-border-hover transition-colors"
-                >
-                  <SettingsIcon size={16} />
-                </Link>
-              )}
+            <div className="w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
               <Avatar profile={profile} />
               <Identity profile={profile} />
+              <ActionRow profile={profile} isOwner={isOwner} />
               {profile.sports.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {profile.sports.map((sport) => (

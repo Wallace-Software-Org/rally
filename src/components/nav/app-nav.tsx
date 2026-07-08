@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import type { Profile } from "@/types";
-import { SettingsIcon } from "@/components/ui/icons";
 
 function initials(name: string): string {
   return name
@@ -22,10 +20,6 @@ export default function AppNav({
   profile: Profile;
   userId: string | null;
 }) {
-  const pathname = usePathname();
-  const isOwnProfilePage =
-    !!profile?.username && pathname === `/profile/${profile.username}`;
-
   const logo = (
     <Link href="/" className="flex items-center gap-2 flex-none">
       <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
@@ -88,23 +82,13 @@ export default function AppNav({
           Post activity
         </Link>
 
-        {/* Avatar (+ settings gear on own profile page) */}
+        {/* Avatar */}
         <div className="flex items-center gap-2 flex-none">
-          {isOwnProfilePage && (
-            <Link
-              href="/profile/edit"
-              aria-label="Settings"
-              className="xl:hidden flex-none text-brand-muted hover:text-brand-text transition-colors"
-            >
-              <SettingsIcon size={18} />
-            </Link>
-          )}
-
           {/* Avatar — links to own profile when username is set */}
           {profile?.username ? (
             <Link
               href={`/profile/${profile.username}`}
-              className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center"
+              className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg border-[1.5px] border-brand-border flex items-center justify-center"
             >
               {profile.avatar_url ? (
                 <Image
@@ -121,7 +105,7 @@ export default function AppNav({
               )}
             </Link>
           ) : (
-            <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full flex-none overflow-hidden bg-brand-avatar-bg border-[1.5px] border-brand-border flex items-center justify-center">
               {profile?.avatar_url ? (
                 <Image
                   src={profile.avatar_url}
