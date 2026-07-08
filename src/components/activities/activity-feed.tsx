@@ -213,7 +213,7 @@ export default function ActivityFeed({
       {/* ── Filter bar — mobile + md (< xl): one row of pills, horizontal scroll
           (hidden scrollbar) if they overflow, never wraps ── */}
       <div className="xl:hidden flex-none relative z-10 border-b border-brand-border">
-        <div className="flex flex-nowrap items-center gap-2 px-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-nowrap items-center gap-2.5 px-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ActivitiesPicker
             selected={sports}
             onChange={setSports}

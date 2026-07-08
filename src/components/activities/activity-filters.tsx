@@ -113,7 +113,7 @@ function FilterPill({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-1 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+      className={`flex items-center gap-1 rounded-full border px-4 py-2 text-sm xl:px-3.5 xl:py-1.5 xl:text-xs font-medium transition-colors ${
         disabled
           ? "cursor-not-allowed border-brand-border text-brand-muted opacity-60"
           : active
@@ -170,7 +170,9 @@ function FilterPanel({
         visibility: pos ? "visible" : "hidden",
       }}
       className={`z-50 w-max ${minWidth} max-w-[calc(100vw-2rem)] bg-brand-input border border-brand-border rounded-xl shadow-lg ${
-        scroll ? "max-h-80 overflow-y-auto scrollbar-brand py-1" : "py-2"
+        scroll
+          ? "max-h-80 overflow-y-auto scrollbar-brand py-2 xl:py-1"
+          : "py-2"
       }`}
     >
       {children}
@@ -191,7 +193,7 @@ function FilterOption({
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer w-full flex items-center justify-between gap-6 px-3.5 py-2 text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
+      className="cursor-pointer w-full flex items-center justify-between gap-6 px-4 py-3 text-base xl:px-3.5 xl:py-2 xl:text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
     >
       {label}
       {selected && checkIcon}
@@ -201,7 +203,7 @@ function FilterOption({
 
 function FilterSectionHeader({ children }: { children: ReactNode }) {
   return (
-    <p className="px-3.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
+    <p className="px-4 xl:px-3.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
       {children}
     </p>
   );
@@ -376,10 +378,10 @@ function DistanceLocationPrompt({
   const blocked = status === "denied" || status === "unsupported";
 
   return (
-    <div className="w-60 px-3.5 py-2.5">
+    <div className="w-72 p-4 text-base xl:px-3.5 xl:py-2.5 xl:text-xs">
       {blocked ? (
         isLoggedIn ? (
-          <p className="text-xs text-brand-muted leading-relaxed">
+          <p className="text-brand-muted leading-relaxed">
             Location is blocked. Add a city to your{" "}
             <Link href="/profile/edit" className="text-brand-teal underline">
               profile
@@ -387,18 +389,18 @@ function DistanceLocationPrompt({
             to filter by distance.
           </p>
         ) : (
-          <p className="text-xs text-brand-muted leading-relaxed">
+          <p className="text-brand-muted leading-relaxed">
             Location is blocked. You can allow it in your browser settings.
           </p>
         )
       ) : (
         <>
-          <p className="mb-2.5 text-xs text-brand-muted leading-relaxed">
+          <p className="mb-2.5 text-center text-sm xl:text-xs text-brand-muted leading-relaxed">
             Distance filtering needs your location.
           </p>
           <button
             onClick={onRequestLocation}
-            className="btn-tier-1 w-full text-xs"
+            className="btn-tier-1 w-full text-base py-3 xl:text-xs"
           >
             Enable location
           </button>

@@ -114,7 +114,7 @@ export default function MapPanel({
         </div>
         <button
           onClick={() => setExpanded((prev) => !prev)}
-          className="absolute z-10 flex items-center gap-1 rounded-full bg-brand-input/75 border-[0.5px] border-brand-border px-3 py-1 text-xs font-medium text-brand-text bottom-1.5 left-1/2 -translate-x-1/2 xl:bottom-auto xl:left-auto xl:translate-x-0 xl:top-2 xl:right-2"
+          className="absolute z-10 flex items-center gap-1 rounded-full bg-brand-input/75 border-[0.5px] border-brand-border px-3 py-1 text-xs font-medium text-brand-text bottom-2 left-1/2 -translate-x-1/2 xl:bottom-auto xl:left-auto xl:translate-x-0 xl:top-2 xl:right-2"
         >
           <svg
             width="10"
@@ -139,7 +139,7 @@ export default function MapPanel({
               />
             )}
           </svg>
-          {expanded ? "Collapse map" : "Expand map"}
+          {expanded ? "" : "Expand"}
         </button>
       </motion.div>
     );
