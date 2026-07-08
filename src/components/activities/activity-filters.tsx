@@ -7,12 +7,14 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { type DateFilter, DATE_FILTER_OPTIONS } from "@/lib/utils/date-filters";
 import {
   type DistanceFilter,
   DISTANCE_FILTER_OPTIONS,
 } from "@/lib/utils/distance";
+import type { GeoStatus } from "@/hooks/use-location";
 
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
@@ -60,7 +62,9 @@ const chevron = (open: boolean) => (
 // One trigger + panel + option treatment for every feed filter so their styling
 // (active state, panel bg, rows, headers) lives in a single place.
 
-// Outside-click close behavior shared by all filter dropdowns.
+// Outside-click close behavior shared by all filter dropdowns. Panels are fixed
+// positioned (see FilterPanel), so they don't follow scroll; close on any scroll
+// outside the panel and on resize to avoid a detached, drifting menu.
 function useDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -70,8 +74,22 @@ function useDropdown() {
     function onOutside(e: MouseEvent) {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     }
+    function onScroll(e: Event) {
+      // Ignore scrolling inside the panel itself (e.g. the activities list).
+      if (ref.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    function onResize() {
+      setOpen(false);
+    }
     document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", onOutside);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
   }, [open]);
 
   return { open, setOpen, ref };
@@ -110,6 +128,9 @@ function FilterPill({
 }
 
 // Dropdown panel container. scroll adds a capped, brand-scrollbar scroll area.
+// Fixed positioned (anchored under its trigger) so it escapes the mobile filter
+// bar's horizontal-scroll overflow clip. Anchors inward when the trigger sits
+// past the viewport midpoint so it never runs off the right edge.
 function FilterPanel({
   scroll = false,
   minWidth = "min-w-36",
@@ -120,23 +141,35 @@ function FilterPanel({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  // Flip the anchor when the trigger sits past the viewport midpoint so the
-  // panel opens inward instead of running off the right edge (mobile).
-  const [alignRight, setAlignRight] = useState(false);
+  const [pos, setPos] = useState<{
+    top: number;
+    left?: number;
+    right?: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
-    const parent = ref.current?.parentElement;
-    if (!parent) return;
-    const { left } = parent.getBoundingClientRect();
-    setAlignRight(left > window.innerWidth / 2);
+    const trigger = ref.current?.previousElementSibling as HTMLElement | null;
+    if (!trigger) return;
+    const r = trigger.getBoundingClientRect();
+    const top = r.bottom + 6;
+    if (r.left > window.innerWidth / 2) {
+      setPos({ top, right: Math.round(window.innerWidth - r.right) });
+    } else {
+      setPos({ top, left: Math.round(r.left) });
+    }
   }, []);
 
   return (
     <div
       ref={ref}
-      className={`absolute top-full mt-1.5 ${
-        alignRight ? "right-0" : "left-0"
-      } z-50 w-max ${minWidth} max-w-[calc(100vw-2rem)] bg-brand-input border border-brand-border rounded-xl shadow-lg ${
+      style={{
+        position: "fixed",
+        top: pos?.top,
+        left: pos?.left,
+        right: pos?.right,
+        visibility: pos ? "visible" : "hidden",
+      }}
+      className={`z-50 w-max ${minWidth} max-w-[calc(100vw-2rem)] bg-brand-input border border-brand-border rounded-xl shadow-lg ${
         scroll ? "max-h-80 overflow-y-auto scrollbar-brand py-1" : "py-2"
       }`}
     >
@@ -268,38 +301,45 @@ export function DatePickerPill({
 }
 
 // ── DistancePickerPill ──────────────────────────────────────────────────────────
-// disabled: no location available (geolocation denied AND no stored profile coords).
-// Shows a small muted hint prompting the user to enable location.
+// With coords it filters by radius. Without coords it stays a normal (inactive)
+// pill labeled "Distance"; its panel prompts the user to enable location.
+// Geolocation is requested only on the in-panel button, never on load or tap.
 export function DistancePickerPill({
   value,
   onChange,
-  disabled = false,
+  hasCoords,
+  status,
+  isLoggedIn,
+  onRequestLocation,
 }: {
   value: DistanceFilter;
   onChange: (f: DistanceFilter) => void;
-  disabled?: boolean;
+  hasCoords: boolean;
+  status: GeoStatus;
+  isLoggedIn: boolean;
+  onRequestLocation: () => void;
 }) {
   const { open, setOpen, ref } = useDropdown();
 
-  const label =
-    DISTANCE_FILTER_OPTIONS.find((o) => o.value === value)?.label ??
-    "Any distance";
-  const isActive = value !== "any";
+  const label = hasCoords
+    ? (DISTANCE_FILTER_OPTIONS.find((o) => o.value === value)?.label ??
+      "Any distance")
+    : "Distance";
+  const isActive = hasCoords && value !== "any";
 
   return (
-    <div className="flex items-center gap-1.5 flex-none">
-      <div ref={ref} className="relative flex-none">
-        <FilterPill
-          label={label}
-          open={open}
-          active={isActive}
-          disabled={disabled}
-          onClick={() => !disabled && setOpen((p) => !p)}
-        />
+    <div ref={ref} className="relative flex-none">
+      <FilterPill
+        label={label}
+        open={open}
+        active={isActive}
+        onClick={() => setOpen((p) => !p)}
+      />
 
-        {open && !disabled && (
-          <FilterPanel>
-            {DISTANCE_FILTER_OPTIONS.map((opt) => (
+      {open && (
+        <FilterPanel>
+          {hasCoords ? (
+            DISTANCE_FILTER_OPTIONS.map((opt) => (
               <FilterOption
                 key={String(opt.value)}
                 label={opt.label}
@@ -309,14 +349,60 @@ export function DistancePickerPill({
                   setOpen(false);
                 }}
               />
-            ))}
-          </FilterPanel>
-        )}
-      </div>
-      {disabled && (
-        <span className="flex-none text-[10px] text-brand-muted">
-          Enable location
-        </span>
+            ))
+          ) : (
+            <DistanceLocationPrompt
+              status={status}
+              isLoggedIn={isLoggedIn}
+              onRequestLocation={onRequestLocation}
+            />
+          )}
+        </FilterPanel>
+      )}
+    </div>
+  );
+}
+
+// Panel content shown when no coords are available yet.
+function DistanceLocationPrompt({
+  status,
+  isLoggedIn,
+  onRequestLocation,
+}: {
+  status: GeoStatus;
+  isLoggedIn: boolean;
+  onRequestLocation: () => void;
+}) {
+  const blocked = status === "denied" || status === "unsupported";
+
+  return (
+    <div className="w-60 px-3.5 py-2.5">
+      {blocked ? (
+        isLoggedIn ? (
+          <p className="text-xs text-brand-muted leading-relaxed">
+            Location is blocked. Add a city to your{" "}
+            <Link href="/profile/edit" className="text-brand-teal underline">
+              profile
+            </Link>{" "}
+            to filter by distance.
+          </p>
+        ) : (
+          <p className="text-xs text-brand-muted leading-relaxed">
+            Location is blocked. You can allow it in your browser settings.
+          </p>
+        )
+      ) : (
+        <>
+          <p className="mb-2.5 text-xs text-brand-muted leading-relaxed">
+            Distance filtering needs your location.
+          </p>
+          <button
+            onClick={onRequestLocation}
+            className="btn-tier-1 w-full text-xs"
+          >
+            Enable location
+          </button>
+        </>
       )}
     </div>
   );

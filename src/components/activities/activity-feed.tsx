@@ -40,11 +40,15 @@ export default function ActivityFeed({
   profileLat?: number | null;
   profileLng?: number | null;
 }) {
+  const initialCoords =
+    profileLat != null && profileLng != null
+      ? { lat: profileLat, lng: profileLng }
+      : null;
   const {
-    lat: userLat,
-    lng: userLng,
-    loading: locationLoading,
-  } = useLocation();
+    coords,
+    status: locationStatus,
+    request: requestLocation,
+  } = useLocation(initialCoords);
   const [sports, setSports] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [distance, setDistance] = useState<DistanceFilter>(
@@ -64,25 +68,15 @@ export default function ActivityFeed({
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
 
-  // Persist browser coords to the user's profile on every successful read so
-  // their stored location stays current (and can serve as a fallback later).
-  // Fire and forget: never block feed render on the write.
+  // Persist browser-granted coords to the profile (logged-in only). status is
+  // "granted" only after an explicit request(), never for the initial profile
+  // coords, so this never echoes profile coords back. Fire and forget.
   useEffect(() => {
-    if (!userId || userLat == null || userLng == null) return;
-    void updateUserLocation(userLat, userLng);
-  }, [userId, userLat, userLng]);
+    if (!userId || locationStatus !== "granted" || !coords) return;
+    void updateUserLocation(coords.lat, coords.lng);
+  }, [userId, locationStatus, coords]);
 
-  // Location source + fallback chain for the distance filter:
-  //   1. browser geolocation (primary)
-  //   2. stored profile coords (when geolocation is denied/unsupported)
-  //   3. neither -> filter disabled, all activities shown
-  const filterLat = userLat ?? profileLat;
-  const filterLng = userLng ?? profileLng;
-  const hasCoords = filterLat != null && filterLng != null;
-  // While geolocation is still resolving, don't filter yet (avoids a flicker
-  // from filtering by profile coords and then re-filtering by browser coords).
-  const canFilterDistance = !locationLoading && hasCoords;
-  const distanceDisabled = !locationLoading && !hasCoords;
+  const hasCoords = coords != null;
 
   const activitiesWithLocalParticipation = useMemo(() => {
     if (!userId) return activities;
@@ -116,12 +110,10 @@ export default function ActivityFeed({
   // Client-side distance filtering for now. Move server-side (bounding box /
   // PostGIS) once data scales beyond a single region.
   function withinDistance(a: ActivityWithParticipants): boolean {
-    if (!canFilterDistance || distance === "any") return true;
+    if (!coords || distance === "any") return true;
     // Never hide activities that are missing coordinates.
     if (a.lat == null || a.lng == null) return true;
-    return (
-      calculateDistance(filterLat!, filterLng!, a.lat, a.lng) <= distance
-    );
+    return calculateDistance(coords.lat, coords.lng, a.lat, a.lng) <= distance;
   }
 
   // Show scope (logged-in only). Hosting and Attending are mutually exclusive:
@@ -218,9 +210,10 @@ export default function ActivityFeed({
         />
       </div>
 
-      {/* ── Filter bar — mobile + md (< xl): row of filter dropdowns ── */}
+      {/* ── Filter bar — mobile + md (< xl): one row of pills, horizontal scroll
+          (hidden scrollbar) if they overflow, never wraps ── */}
       <div className="xl:hidden flex-none relative z-10 border-b border-brand-border">
-        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+        <div className="flex flex-nowrap items-center gap-2 px-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ActivitiesPicker
             selected={sports}
             onChange={setSports}
@@ -230,7 +223,10 @@ export default function ActivityFeed({
           <DistancePickerPill
             value={distance}
             onChange={setDistance}
-            disabled={distanceDisabled}
+            hasCoords={hasCoords}
+            status={locationStatus}
+            isLoggedIn={userId != null}
+            onRequestLocation={requestLocation}
           />
           {userId && <ShowPicker value={show} onChange={setShow} />}
         </div>
@@ -296,7 +292,10 @@ export default function ActivityFeed({
               <DistancePickerPill
                 value={distance}
                 onChange={setDistance}
-                disabled={distanceDisabled}
+                hasCoords={hasCoords}
+                status={locationStatus}
+                isLoggedIn={userId != null}
+                onRequestLocation={requestLocation}
               />
               {userId && <ShowPicker value={show} onChange={setShow} />}
             </div>
@@ -347,8 +346,8 @@ export default function ActivityFeed({
               onDotClick={(id) =>
                 setSelectedId((prev) => (prev === id ? null : id))
               }
-              userLat={userLat}
-              userLng={userLng}
+              userLat={coords?.lat ?? null}
+              userLng={coords?.lng ?? null}
             >
               {selectedActivity && (
                 <MapPreviewCard

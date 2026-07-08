@@ -3,8 +3,26 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   ActivitiesPicker,
   ShowPicker,
+  DistancePickerPill,
 } from "@/components/activities/activity-filters";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
+
+// next/link needs the app-router context it can't get in a unit test; render a
+// plain anchor instead.
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 const SPORTS = SPORTS_LIST.filter((s) => s !== "All");
 
@@ -122,16 +140,17 @@ describe("ShowPicker", () => {
 });
 
 describe("FilterPanel edge awareness", () => {
-  it("anchors the panel left when the pill is left of the viewport midpoint", () => {
+  it("fixes the panel to the left edge when the pill is left of the midpoint", () => {
     render(<ShowPicker value="all" onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /^All/ }));
-    // jsdom default rect left is 0, so the panel keeps its left anchor.
+    // jsdom default rect is all zeros, so the panel anchors to the left.
     const panel = screen.getByRole("button", { name: "Hosting" }).parentElement!;
-    expect(panel.className).toContain("left-0");
-    expect(panel.className).not.toContain("right-0");
+    expect(panel.style.position).toBe("fixed");
+    expect(panel.style.left).toBe("0px");
+    expect(panel.style.right).toBe("");
   });
 
-  it("flips the panel to right-0 when the pill sits past the viewport midpoint", () => {
+  it("anchors the panel to the right when the pill sits past the midpoint", () => {
     const originalRect = HTMLElement.prototype.getBoundingClientRect;
     const originalWidth = window.innerWidth;
     window.innerWidth = 400;
@@ -155,11 +174,94 @@ describe("FilterPanel edge awareness", () => {
       const panel = screen.getByRole("button", {
         name: "Hosting",
       }).parentElement!;
-      expect(panel.className).toContain("right-0");
-      expect(panel.className).not.toContain("left-0");
+      expect(panel.style.position).toBe("fixed");
+      // right = innerWidth - trigger.right = 400 - 380 = 20
+      expect(panel.style.right).toBe("20px");
+      expect(panel.style.left).toBe("");
     } finally {
       HTMLElement.prototype.getBoundingClientRect = originalRect;
       window.innerWidth = originalWidth;
     }
+  });
+});
+
+describe("DistancePickerPill", () => {
+  const base = {
+    value: 100 as const,
+    onChange: vi.fn(),
+    hasCoords: false,
+    status: "idle" as const,
+    isLoggedIn: false,
+    onRequestLocation: vi.fn(),
+  };
+
+  it("labels the pill Distance and stays inactive without coords", () => {
+    render(<DistancePickerPill {...base} />);
+    const trigger = screen.getByRole("button", { name: "Distance" });
+    expect(trigger.className).not.toContain("border-brand-teal");
+  });
+
+  it("labels the pill with the radius when coords are available", () => {
+    render(<DistancePickerPill {...base} hasCoords status="granted" />);
+    expect(
+      screen.getByRole("button", { name: /100 mi/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("never requests location on render or on opening the panel", () => {
+    const onRequestLocation = vi.fn();
+    render(<DistancePickerPill {...base} onRequestLocation={onRequestLocation} />);
+    expect(onRequestLocation).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Distance" }));
+    expect(onRequestLocation).not.toHaveBeenCalled();
+  });
+
+  it("shows the prompt and requests location only on the button press", () => {
+    const onRequestLocation = vi.fn();
+    render(<DistancePickerPill {...base} onRequestLocation={onRequestLocation} />);
+    fireEvent.click(screen.getByRole("button", { name: "Distance" }));
+    expect(
+      screen.getByText("Distance filtering needs your location."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Enable location" }));
+    expect(onRequestLocation).toHaveBeenCalledOnce();
+  });
+
+  it("shows blocked copy with a profile link when denied and logged in", () => {
+    render(<DistancePickerPill {...base} status="denied" isLoggedIn />);
+    fireEvent.click(screen.getByRole("button", { name: "Distance" }));
+    expect(screen.getByText(/Location is blocked\. Add a city/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "profile" })).toHaveAttribute(
+      "href",
+      "/profile/edit",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Enable location" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows browser-settings copy when denied and logged out", () => {
+    render(<DistancePickerPill {...base} status="denied" isLoggedIn={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Distance" }));
+    expect(
+      screen.getByText(
+        "Location is blocked. You can allow it in your browser settings.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows radius options and toggles them when coords are available", () => {
+    const onChange = vi.fn();
+    render(
+      <DistancePickerPill
+        {...base}
+        onChange={onChange}
+        hasCoords
+        status="granted"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /100 mi/ }));
+    fireEvent.click(screen.getByRole("button", { name: "10 mi" }));
+    expect(onChange).toHaveBeenCalledWith(10);
   });
 });
