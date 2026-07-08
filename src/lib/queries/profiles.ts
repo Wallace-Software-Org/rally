@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import type { ProfilePage } from "@/types";
+import type {
+  HostedActivity,
+  HostParticipantProfile,
+  ProfilePage,
+} from "@/types";
 
 export async function getProfileById(userId: string) {
   const supabase = await createClient();
@@ -39,12 +43,21 @@ export async function getProfileByUsername(
       .from("participants")
       .select("id", { count: "exact", head: true })
       .eq("user_id", profile.id),
+    // Hosting is a management surface: include past and cancelled activities,
+    // plus the participant data the management cards render.
     supabase
       .from("activities")
-      .select("id, title, sport, location_name, skill_level, starts_at")
+      .select(
+        `
+        id, title, sport, description, location_name, skill_level, starts_at,
+        max_participants, visibility, status,
+        participants (
+          id, user_id,
+          profiles ( full_name, avatar_url, username, instagram_handle )
+        )
+      `,
+      )
       .eq("creator_id", profile.id)
-      .eq("status", "open")
-      .gt("starts_at", now)
       .order("starts_at", { ascending: true }),
     supabase
       .from("participants")
@@ -73,6 +86,28 @@ export async function getProfileByUsername(
     hosted_count: hostedCount ?? 0,
     attended_count: attendedCount ?? 0,
     going,
-    hosting: hosting ?? [],
+    hosting: normalizeHosting(hosting),
   };
+}
+
+// Supabase infers the participant->profiles join as an array at the type level
+// but it is an object at runtime; normalize so HostParticipant matches.
+function normalizeHosting(
+  data:
+    | {
+        participants: { id: string; user_id: string; profiles: unknown }[];
+        [key: string]: unknown;
+      }[]
+    | null,
+): HostedActivity[] {
+  return (data ?? []).map((a) => ({
+    ...(a as unknown as HostedActivity),
+    participants: (a.participants ?? []).map((p) => ({
+      id: p.id,
+      user_id: p.user_id,
+      profiles: (Array.isArray(p.profiles)
+        ? (p.profiles[0] ?? null)
+        : (p.profiles ?? null)) as HostParticipantProfile | null,
+    })),
+  }));
 }

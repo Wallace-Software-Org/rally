@@ -10,6 +10,8 @@ import ShareStoryModal from "@/components/ui/share-story-modal";
 import { InstagramIcon, SettingsIcon } from "@/components/ui/icons";
 import { isIOSDevice } from "@/lib/utils/platform";
 import { getSiteUrl } from "@/lib/utils/site-url";
+import { hostingTabCount } from "@/lib/utils/hosting";
+import HostingManager from "@/components/profile/hosting-manager";
 
 function initials(name: string): string {
   return name
@@ -252,7 +254,10 @@ function TabBar({
   return (
     <>
       {(["hosting", "going"] as const).map((t) => {
-        const count = profile[t].length;
+        const count =
+          t === "hosting"
+            ? hostingTabCount(profile.hosting)
+            : profile.going.length;
         const isActive = tab === t;
         return (
           <button
@@ -275,38 +280,21 @@ function TabBar({
   );
 }
 
-function ActivityList({
-  tab,
-  profile,
-  showShare,
+// Attending tab list. Hosting has its own management surface (HostingManager).
+function GoingList({
+  activities,
   gridCols2,
 }: {
-  tab: "going" | "hosting";
-  profile: ProfilePage;
-  showShare?: boolean;
+  activities: ProfileActivity[];
   gridCols2?: boolean;
 }) {
-  if (profile[tab].length === 0) {
+  if (activities.length === 0) {
     return (
       <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
-        {tab === "going" ? (
-          <>
-            Nothing coming up.{" "}
-            <Link href="/" className="text-brand-teal hover:underline">
-              Find something on the feed.
-            </Link>
-          </>
-        ) : (
-          <>
-            You haven&apos;t hosted anything yet.{" "}
-            <Link
-              href="/activity/new"
-              className="text-brand-teal hover:underline"
-            >
-              Post an activity.
-            </Link>
-          </>
-        )}
+        Nothing coming up.{" "}
+        <Link href="/" className="text-brand-teal hover:underline">
+          Find something on the feed.
+        </Link>
       </p>
     );
   }
@@ -314,8 +302,8 @@ function ActivityList({
     <div
       className={gridCols2 ? "grid grid-cols-2 gap-4" : "flex flex-col gap-3"}
     >
-      {profile[tab].map((a) => (
-        <ActivityCard key={a.id} activity={a} showShare={showShare} />
+      {activities.map((a) => (
+        <ActivityCard key={a.id} activity={a} />
       ))}
     </div>
   );
@@ -461,11 +449,16 @@ export default function ProfileView({
 
             {/* Activity cards */}
             <div className="bg-brand-bg px-4 py-4">
-              <ActivityList
-                tab={tab}
-                profile={profile}
-                showShare={isOwner && tab === "hosting"}
-              />
+              {tab === "hosting" ? (
+                <HostingManager
+                  activities={profile.hosting}
+                  isOwner={isOwner}
+                  hostId={profile.id}
+                  variant="mobile"
+                />
+              ) : (
+                <GoingList activities={profile.going} />
+              )}
             </div>
           </div>
         </div>
@@ -528,12 +521,16 @@ export default function ProfileView({
 
             {/* Activity cards */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
-              <ActivityList
-                tab={tab}
-                profile={profile}
-                showShare={isOwner && tab === "hosting"}
-                gridCols2
-              />
+              {tab === "hosting" ? (
+                <HostingManager
+                  activities={profile.hosting}
+                  isOwner={isOwner}
+                  hostId={profile.id}
+                  variant="desktop"
+                />
+              ) : (
+                <GoingList activities={profile.going} gridCols2 />
+              )}
             </div>
           </div>
         </div>

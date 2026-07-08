@@ -44,6 +44,16 @@ export async function joinActivity(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  // Block joining cancelled (or otherwise non-open) activities.
+  const { data: activity } = await supabase
+    .from("activities")
+    .select("status")
+    .eq("id", activityId)
+    .single();
+  if (!activity || activity.status !== "open") {
+    return { error: "This activity is no longer open" };
+  }
+
   const { error } = await supabase
     .from("participants")
     .insert({ activity_id: activityId, user_id: user.id, status: "joined" });
@@ -200,6 +210,8 @@ export async function cancelActivity(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  // Soft cancel: flip status only. Participants are kept so people who joined
+  // still see it as cancelled and the host card can show how many had joined.
   const { error } = await supabase
     .from("activities")
     .update({ status: "cancelled" })
@@ -208,9 +220,78 @@ export async function cancelActivity(
 
   if (error) return { error: error.message };
 
-  await supabase.from("participants").delete().eq("activity_id", activityId);
-
   revalidatePath("/");
   revalidatePath(`/activity/${activityId}`);
+  revalidatePath("/profile/[username]", "page");
   return { error: null };
+}
+
+// One-click repeat: clone an owned activity shifted 7 days forward, open, with
+// the host auto-joined. Not RRULE; a fresh single activity.
+export async function repeatActivity(
+  activityId: string,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: source } = await supabase
+    .from("activities")
+    .select(
+      `
+      title, sport, description, external_link, location_name, starts_at,
+      ends_at, visibility, max_participants, skill_level, lat, lng
+    `,
+    )
+    .eq("id", activityId)
+    .eq("creator_id", user.id)
+    .single();
+
+  if (!source) return { error: "Activity not found" };
+
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const shift = (iso: string | null): string | null =>
+    iso ? new Date(new Date(iso).getTime() + WEEK_MS).toISOString() : null;
+
+  const { data: activity, error: actErr } = await supabase
+    .from("activities")
+    .insert({
+      title: source.title,
+      sport: source.sport,
+      description: source.description,
+      external_link: source.external_link,
+      location_name: source.location_name,
+      starts_at: shift(source.starts_at),
+      ends_at: shift(source.ends_at),
+      visibility: source.visibility,
+      max_participants: source.max_participants,
+      skill_level: source.skill_level,
+      lat: source.lat,
+      lng: source.lng,
+      creator_id: user.id,
+      status: "open",
+    })
+    .select("id")
+    .single();
+
+  if (actErr) return { error: actErr.message };
+
+  const { error: partErr } = await supabase
+    .from("participants")
+    .insert({ activity_id: activity.id, user_id: user.id, status: "joined" });
+
+  if (partErr) {
+    await supabase
+      .from("activities")
+      .delete()
+      .eq("id", activity.id)
+      .eq("creator_id", user.id);
+    return { error: partErr.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath(`/activity/${activity.id}`);
+  redirect(`/activity/${activity.id}?posted=true`, RedirectType.replace);
 }

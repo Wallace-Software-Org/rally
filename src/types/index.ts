@@ -86,6 +86,38 @@ export type ProfileActivity = {
   starts_at: string;
 };
 
+// Richer participant shape for the host management cards: enough to render the
+// avatar strip and hand off to the Instagram group-chat modal.
+export type HostParticipantProfile = {
+  full_name: string;
+  avatar_url: string | null;
+  username: string | null;
+  instagram_handle: string | null;
+};
+
+export type HostParticipant = {
+  id: string;
+  user_id: string;
+  profiles: HostParticipantProfile | null;
+};
+
+// A hosted activity as shown in the Hosting management hub. Includes past and
+// cancelled activities (unlike the discovery feed), plus the data the
+// management card needs.
+export type HostedActivity = {
+  id: string;
+  title: string;
+  sport: string;
+  description: string | null;
+  location_name: string;
+  skill_level: string | null;
+  starts_at: string;
+  max_participants: number | null;
+  visibility: "public" | "private";
+  status: string; // 'open' | 'cancelled'
+  participants: HostParticipant[];
+};
+
 export type ProfilePage = {
   id: string;
   username: string;
@@ -97,7 +129,7 @@ export type ProfilePage = {
   hosted_count: number;
   attended_count: number;
   going: ProfileActivity[];
-  hosting: ProfileActivity[];
+  hosting: HostedActivity[];
 };
 
 export type ActivityDetail = {
