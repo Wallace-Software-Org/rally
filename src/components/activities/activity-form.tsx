@@ -781,8 +781,8 @@ export default function ActivityForm({
 
               {cancelConfirm && (
                 <p className="text-sm text-brand-muted text-center leading-relaxed">
-                  This will remove all participants and cancel the activity.
-                  This can&apos;t be undone.
+                  People who joined will see it as cancelled. This can&apos;t be
+                  undone.
                 </p>
               )}
 

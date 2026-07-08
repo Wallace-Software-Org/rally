@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import type {
   HostedActivity,
   HostParticipant,
   HostParticipantProfile,
 } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
+import ShareStoryModal from "@/components/ui/share-story-modal";
 import GroupChatModal, {
   type GroupChatParticipant,
 } from "@/components/activities/group-chat-modal";
@@ -17,11 +18,13 @@ import {
   EditIcon,
   CopyIcon,
   RefreshIcon,
+  ShareIcon,
   InstagramIcon,
 } from "@/components/ui/icons";
 import { getInitials } from "@/lib/utils/avatar";
 import { getSiteUrl } from "@/lib/utils/site-url";
-import { cancelActivity, repeatActivity } from "@/lib/actions/activities";
+import { isIOSDevice } from "@/lib/utils/platform";
+import { repeatActivity } from "@/lib/actions/activities";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import {
   splitHostedActivities,
@@ -143,7 +146,6 @@ function UpcomingCard({
   isOwner: boolean;
   variant: Variant;
 }) {
-  const router = useRouter();
   const { participants, participantCount } =
     useRealtimeParticipants<HostParticipantProfile>({
       activityId: activity.id,
@@ -151,10 +153,8 @@ function UpcomingCard({
       profileColumns: PARTICIPANT_COLUMNS,
     });
 
-  const [cancelled, setCancelled] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
   const [showGroupChat, setShowGroupChat] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const others = joinedCount(participants, hostId);
@@ -165,20 +165,6 @@ function UpcomingCard({
     others,
   );
 
-  async function handleCancel() {
-    setCancelling(true);
-    const { error } = await cancelActivity(activity.id);
-    if (error) {
-      setCancelling(false);
-      setConfirming(false);
-      return;
-    }
-    setCancelled(true);
-    setConfirming(false);
-    setCancelling(false);
-    router.refresh();
-  }
-
   async function handleCopy() {
     await navigator.clipboard
       .writeText(`${getSiteUrl()}/activity/${activity.id}`)
@@ -187,8 +173,31 @@ function UpcomingCard({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (cancelled) {
-    return <CancelledCard activity={activity} others={others} />;
+  // Mirrors the share flow elsewhere: generate the card image and copy the
+  // link, then open the shared ShareStoryModal.
+  async function handleShare() {
+    const activityUrl = `${getSiteUrl()}/activity/${activity.id}`;
+    const cardUrl = `/api/activity/${activity.id}/card`;
+    if (isIOSDevice()) {
+      window.open(cardUrl, "_blank");
+    } else {
+      try {
+        const res = await fetch(cardUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `rally-${activity.id}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        // best-effort; still show modal
+      }
+    }
+    await navigator.clipboard.writeText(activityUrl).catch(() => {});
+    setShowShareModal(true);
   }
 
   const groupChatParticipants: GroupChatParticipant[] = participants.map(
@@ -208,7 +217,7 @@ function UpcomingCard({
     : undefined;
 
   const actionRow = variant === "desktop" ? (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
       <Link
         href={`/activity/${activity.id}/edit`}
         className="btn-tier-2 text-sm flex items-center gap-1.5"
@@ -232,10 +241,11 @@ function UpcomingCard({
         Group chat
       </button>
       <button
-        onClick={() => setConfirming(true)}
-        className="ml-auto text-sm font-semibold text-brand-danger hover:opacity-80 transition-opacity px-2"
+        onClick={handleShare}
+        className="btn-tier-3 text-sm flex items-center gap-1.5"
       >
-        Cancel activity
+        <ShareIcon size={14} />
+        Share to Story
       </button>
     </div>
   ) : (
@@ -263,10 +273,11 @@ function UpcomingCard({
         <InstagramIcon size={16} />
       </button>
       <button
-        onClick={() => setConfirming(true)}
-        className="ml-auto text-sm font-semibold text-brand-danger hover:opacity-80 transition-opacity px-2"
+        onClick={handleShare}
+        aria-label="Share to Story"
+        className="btn-tier-3 w-10 h-10 !p-0 flex items-center justify-center"
       >
-        Cancel activity
+        <ShareIcon size={16} />
       </button>
     </div>
   );
@@ -315,33 +326,7 @@ function UpcomingCard({
 
       {/* Action row (owner only) */}
       {isOwner && (
-        <div className="border-t border-brand-border/70 pt-3">
-          {confirming ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-brand-text">
-                Cancel this activity? People who joined will see it as
-                cancelled.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="btn-tier-danger text-sm"
-                >
-                  {cancelling ? "Cancelling..." : "Yes, cancel"}
-                </button>
-                <button
-                  onClick={() => setConfirming(false)}
-                  className="btn-tier-3 text-sm"
-                >
-                  Keep it
-                </button>
-              </div>
-            </div>
-          ) : (
-            actionRow
-          )}
-        </div>
+        <div className="border-t border-brand-border/70 pt-3">{actionRow}</div>
       )}
 
       <GroupChatModal
@@ -349,6 +334,11 @@ function UpcomingCard({
         isOpen={showGroupChat}
         onClose={() => setShowGroupChat(false)}
       />
+      <AnimatePresence>
+        {showShareModal && (
+          <ShareStoryModal onClose={() => setShowShareModal(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

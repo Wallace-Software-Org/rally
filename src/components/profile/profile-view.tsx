@@ -520,7 +520,7 @@ export default function ProfileView({
             </div>
 
             {/* Activity cards */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto scrollbar-brand px-6 py-4">
               {tab === "hosting" ? (
                 <HostingManager
                   activities={profile.hosting}

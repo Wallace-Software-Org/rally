@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
+import { nextWeeklyOccurrence } from "@/lib/utils/next-occurrence";
 
 const PREDEFINED_SPORTS = new Set(
   SPORTS_LIST.filter((sport) => sport !== "All").map((sport) =>
@@ -226,8 +227,9 @@ export async function cancelActivity(
   return { error: null };
 }
 
-// One-click repeat: clone an owned activity shifted 7 days forward, open, with
-// the host auto-joined. Not RRULE; a fresh single activity.
+// Repeat: open the create form pre-filled from an owned activity, with the date
+// advanced 7 days. It inserts nothing; the host reviews and posts through the
+// normal create flow.
 export async function repeatActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
@@ -242,7 +244,7 @@ export async function repeatActivity(
     .select(
       `
       title, sport, description, external_link, location_name, starts_at,
-      ends_at, visibility, max_participants, skill_level, lat, lng
+      visibility, max_participants, skill_level, lat, lng
     `,
     )
     .eq("id", activityId)
@@ -251,47 +253,22 @@ export async function repeatActivity(
 
   if (!source) return { error: "Activity not found" };
 
-  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-  const shift = (iso: string | null): string | null =>
-    iso ? new Date(new Date(iso).getTime() + WEEK_MS).toISOString() : null;
-
-  const { data: activity, error: actErr } = await supabase
-    .from("activities")
-    .insert({
-      title: source.title,
-      sport: source.sport,
-      description: source.description,
-      external_link: source.external_link,
-      location_name: source.location_name,
-      starts_at: shift(source.starts_at),
-      ends_at: shift(source.ends_at),
-      visibility: source.visibility,
-      max_participants: source.max_participants,
-      skill_level: source.skill_level,
-      lat: source.lat,
-      lng: source.lng,
-      creator_id: user.id,
-      status: "open",
-    })
-    .select("id")
-    .single();
-
-  if (actErr) return { error: actErr.message };
-
-  const { error: partErr } = await supabase
-    .from("participants")
-    .insert({ activity_id: activity.id, user_id: user.id, status: "joined" });
-
-  if (partErr) {
-    await supabase
-      .from("activities")
-      .delete()
-      .eq("id", activity.id)
-      .eq("creator_id", user.id);
-    return { error: partErr.message };
+  const params = new URLSearchParams();
+  params.set("title", source.title ?? "");
+  params.set("sport", source.sport ?? "");
+  params.set("location", source.location_name ?? "");
+  params.set("description", source.description ?? "");
+  params.set("skill_level", source.skill_level ?? "");
+  params.set("visibility", source.visibility ?? "public");
+  if (source.starts_at) {
+    params.set("starts_at", nextWeeklyOccurrence(source.starts_at));
   }
+  if (typeof source.lat === "number") params.set("lat", String(source.lat));
+  if (typeof source.lng === "number") params.set("lng", String(source.lng));
+  if (source.max_participants != null) {
+    params.set("max_participants", String(source.max_participants));
+  }
+  if (source.external_link) params.set("external_link", source.external_link);
 
-  revalidatePath("/");
-  revalidatePath(`/activity/${activity.id}`);
-  redirect(`/activity/${activity.id}?posted=true`, RedirectType.replace);
+  redirect(`/activity/new?${params.toString()}`, RedirectType.replace);
 }

@@ -120,6 +120,27 @@ export function RefreshIcon({ size = 15 }: { size?: number }) {
   );
 }
 
+export function ShareIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+      <path d="M12 15V3" />
+      <path d="m8 7 4-4 4 4" />
+    </svg>
+  );
+}
+
 export function InstagramIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
