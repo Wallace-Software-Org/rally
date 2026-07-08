@@ -465,20 +465,24 @@ export function ActivitiesPicker({
 
       {open && (
         <FilterPanel scroll minWidth="min-w-44">
-          {yourActivities.length > 0 && (
+          {yourActivities.length > 0 ? (
+            // Logged-in with saved sports: two grouped sections.
             <>
               <FilterSectionHeader>Your activities</FilterSectionHeader>
               {yourActivities.map(row)}
+              {otherActivities.length > 0 && (
+                <div className="my-1 border-t border-brand-border" />
+              )}
+              {otherActivities.length > 0 && (
+                <>
+                  <FilterSectionHeader>Other activities</FilterSectionHeader>
+                  {otherActivities.map(row)}
+                </>
+              )}
             </>
-          )}
-          {yourActivities.length > 0 && otherActivities.length > 0 && (
-            <div className="my-1 border-t border-brand-border" />
-          )}
-          {otherActivities.length > 0 && (
-            <>
-              <FilterSectionHeader>Other activities</FilterSectionHeader>
-              {otherActivities.map(row)}
-            </>
+          ) : (
+            // Signed out or no saved sports: flat list, no section headers.
+            SPORT_ITEMS.map(row)
           )}
         </FilterPanel>
       )}

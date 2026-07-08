@@ -251,7 +251,7 @@ function TabBar({
   const TAB_LABELS = { going: "Attending", hosting: "Hosting" } as const;
   return (
     <>
-      {(["going", "hosting"] as const).map((t) => {
+      {(["hosting", "going"] as const).map((t) => {
         const count = profile[t].length;
         const isActive = tab === t;
         return (

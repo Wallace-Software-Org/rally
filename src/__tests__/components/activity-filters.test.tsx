@@ -95,11 +95,25 @@ describe("ActivitiesPicker", () => {
     }
   });
 
-  it("omits the Your activities section when the user has no saved sports", () => {
+  it("renders a flat list with no section headers when the user has no saved sports", () => {
     render(<ActivitiesPicker selected={[]} onChange={vi.fn()} userActivities={[]} />);
     fireEvent.click(screen.getByRole("button", { name: /Activities/ }));
     expect(screen.queryByText("Your activities")).not.toBeInTheDocument();
-    expect(screen.getByText("Other activities")).toBeInTheDocument();
+    expect(screen.queryByText("Other activities")).not.toBeInTheDocument();
+    // Full list still renders, just ungrouped.
+    for (const sport of SPORTS) {
+      expect(screen.getByRole("button", { name: sport })).toBeInTheDocument();
+    }
+  });
+
+  it("renders a flat list with no section headers when signed out (no userActivities)", () => {
+    render(<ActivitiesPicker selected={[]} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Activities/ }));
+    expect(screen.queryByText("Your activities")).not.toBeInTheDocument();
+    expect(screen.queryByText("Other activities")).not.toBeInTheDocument();
+    for (const sport of SPORTS) {
+      expect(screen.getByRole("button", { name: sport })).toBeInTheDocument();
+    }
   });
 });
 
