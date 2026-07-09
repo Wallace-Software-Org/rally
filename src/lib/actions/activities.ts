@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect, RedirectType } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { nextWeeklyOccurrence } from "@/lib/utils/next-occurrence";
+import { validateActivityInput } from "@/lib/utils/activity-validation";
+import { requireUser } from "@/lib/actions/require-user";
 
 const PREDEFINED_SPORTS = new Set(
   SPORTS_LIST.filter((sport) => sport !== "All").map((sport) =>
@@ -38,39 +39,35 @@ function normalizeSport(sport: string): string {
 export async function joinActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  // getUser() validates the JWT with the auth server — safer than getSession() which only reads the cookie
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, error: authError } = await requireUser();
+  if (authError) return { error: authError };
 
-  // Block joining cancelled (or otherwise non-open) activities.
-  const { data: activity } = await supabase
-    .from("activities")
-    .select("status")
-    .eq("id", activityId)
-    .single();
-  if (!activity || activity.status !== "open") {
-    return { error: "This activity is no longer open" };
+  // Atomic capacity + status check server-side (see join_activity RPC). The
+  // function locks the activity row so concurrent joins can't exceed the cap.
+  const { data, error } = await supabase.rpc("join_activity", {
+    p_activity_id: activityId,
+  });
+  if (error) return { error: error.message };
+
+  switch (data) {
+    case "ok":
+      return { error: null };
+    case "full":
+      return { error: "This activity is full" };
+    case "closed":
+      return { error: "This activity is no longer open" };
+    case "not_found":
+      return { error: "Activity not found" };
+    default:
+      return { error: "Could not join this activity" };
   }
-
-  const { error } = await supabase
-    .from("participants")
-    .insert({ activity_id: activityId, user_id: user.id, status: "joined" });
-
-  return { error: error?.message ?? null };
 }
 
 export async function leaveActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  // getUser() validates the JWT with the auth server — safer than getSession() which only reads the cookie
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
 
   const { error } = await supabase
     .from("participants")
@@ -95,12 +92,11 @@ export async function createActivity(data: {
   lat: number | null;
   lng: number | null;
 }): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  // getUser() validates the JWT with the auth server — safer than getSession() which only reads the cookie
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
+
+  const validationError = validateActivityInput(data, { requireFuture: true });
+  if (validationError) return { error: validationError };
 
   let externalLink: string | null;
   let sport: string;
@@ -172,11 +168,11 @@ export async function updateActivity(
     lng: number | null;
   },
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
+
+  const validationError = validateActivityInput(data, { requireFuture: false });
+  if (validationError) return { error: validationError };
 
   let externalLink: string | null;
   let sport: string;
@@ -205,11 +201,8 @@ export async function updateActivity(
 export async function cancelActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
 
   // Soft cancel: flip status only. Participants are kept so people who joined
   // still see it as cancelled and the host card can show how many had joined.
@@ -233,11 +226,8 @@ export async function cancelActivity(
 export async function repeatActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
 
   const { data: source } = await supabase
     .from("activities")
