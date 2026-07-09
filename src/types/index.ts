@@ -77,15 +77,6 @@ export type HostProfile = {
 
 // ── Profile page types ───────────────────────────────────────────────────────
 
-export type ProfileActivity = {
-  id: string;
-  title: string;
-  sport: string;
-  location_name: string;
-  skill_level: string | null;
-  starts_at: string;
-};
-
 // Richer participant shape for the host management cards: enough to render the
 // avatar strip and hand off to the Instagram group-chat modal.
 export type HostParticipantProfile = {

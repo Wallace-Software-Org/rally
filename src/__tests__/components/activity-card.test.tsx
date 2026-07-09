@@ -1,9 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import {
-  ActivityCardDesktop,
-  ActivityCardMobile,
-} from "@/components/activities/activity-card";
+import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import type { ActivityWithParticipants } from "@/types";
 
 vi.mock("next/navigation", () => ({
@@ -179,48 +176,5 @@ describe("ActivityCardDesktop", () => {
       <ActivityCardDesktop {...base} activity={{ ...mockActivity, max_participants: null }} />,
     );
     expect(screen.getByText("Open")).toBeInTheDocument();
-  });
-});
-
-describe("ActivityCardMobile", () => {
-  it("shows location text when userId is null", () => {
-    render(<ActivityCardMobile {...base} userId={null} />);
-    expect(screen.getByText("Papago Park")).toBeInTheDocument();
-    expect(screen.queryByText("••••••••••••")).not.toBeInTheDocument();
-  });
-
-  it("keeps host avatar sharp and blurs participant avatars when userId is null", () => {
-    render(
-      <ActivityCardMobile
-        {...base}
-        userId={null}
-        activity={{
-          ...mockActivity,
-          participants: [
-            {
-              id: "other-participant",
-              user_id: "participant-1",
-              profiles: { full_name: "Participant Avery", avatar_url: null },
-            },
-            {
-              id: "host-participant",
-              user_id: "creator-999",
-              profiles: { full_name: "Wrong Host", avatar_url: null },
-            },
-          ],
-        }}
-      />,
-    );
-
-    const hostAvatar = screen.getByText("HP");
-    const participantAvatar = screen.getByText("PA");
-
-    expect(screen.queryByText("WH")).not.toBeInTheDocument();
-    expect(
-      hostAvatar.compareDocumentPosition(participantAvatar) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(hostAvatar).not.toHaveClass("blur-sm");
-    expect(participantAvatar).toHaveClass("blur-sm");
   });
 });
