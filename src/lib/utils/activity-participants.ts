@@ -9,6 +9,19 @@ type ParticipantWithProfile<Profile> = {
 // reflects Full even before realtime catches up.
 export const ACTIVITY_FULL_ERROR = "This activity is full";
 
+// A user can appear at most once per activity (DB unique constraint), so user_id
+// is the identity key. Keeps the first occurrence, preserving order. The realtime
+// hook already dedupes its returned list; this guards the render boundary so a
+// strip can never show the same person twice regardless of how it was assembled.
+export function dedupeByUserId<T extends { user_id: string }>(list: T[]): T[] {
+  const seen = new Set<string>();
+  return list.filter((item) => {
+    if (seen.has(item.user_id)) return false;
+    seen.add(item.user_id);
+    return true;
+  });
+}
+
 // Quick-join login link for logged-out viewers. After Google OAuth the user
 // returns to the activity and auto-joins via the next and join params.
 export function quickJoinLoginHref(activityId: string): string {
@@ -43,12 +56,7 @@ export function getParticipantsWithHostFirst<
   hostProfile?: Profile | null;
   createHostParticipant?: (profile: Profile | null) => Participant;
 }): Participant[] {
-  const seenUserIds = new Set<string>();
-  const uniqueParticipants = participants.filter((participant) => {
-    if (seenUserIds.has(participant.user_id)) return false;
-    seenUserIds.add(participant.user_id);
-    return true;
-  });
+  const uniqueParticipants = dedupeByUserId(participants);
 
   const hostParticipant = uniqueParticipants.find(
     (participant) => participant.user_id === creatorId,

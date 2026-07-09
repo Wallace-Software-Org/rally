@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import type { ActivityWithParticipants, ParticipantProfile } from "@/types";
@@ -30,6 +31,7 @@ export default function MapPreviewCard({
   onLeave,
   onDismiss,
 }: MapPreviewCardProps) {
+  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -70,7 +72,13 @@ export default function MapPreviewCard({
     if (!userId || isJoining || isJoined) return;
     setIsJoining(true);
     const result = await onJoin();
-    if (result.full) setForcedFull(true);
+    if (result.full) {
+      // Show Full at once, then re-seed from the server snapshot (which holds
+      // the winner's row) so the feed card behind this popup heals too — the
+      // popup, unlike the feed card, is where the loser tapped Join.
+      setForcedFull(true);
+      router.refresh();
+    }
     setIsJoining(false);
   }
 

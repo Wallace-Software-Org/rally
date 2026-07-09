@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dedupeByUserId } from "@/lib/utils/activity-participants";
 
 export type RealtimeParticipant<Profile> = {
   id: string;
@@ -14,21 +15,6 @@ type State<Profile> = {
   seedKey: string;
   participants: RealtimeParticipant<Profile>[];
 };
-
-// A user can appear at most once per activity (DB unique constraint), so user_id
-// is the identity key. Dedupe keeps the first occurrence, preserving order.
-function dedupeByUserId<Profile>(
-  list: RealtimeParticipant<Profile>[],
-): RealtimeParticipant<Profile>[] {
-  const seen = new Set<string>();
-  const out: RealtimeParticipant<Profile>[] = [];
-  for (const p of list) {
-    if (seen.has(p.user_id)) continue;
-    seen.add(p.user_id);
-    out.push(p);
-  }
-  return out;
-}
 
 // Membership identity of a seed — the set of user_ids, order-independent. Used
 // to decide when the server seed has meaningfully changed (someone joined/left,

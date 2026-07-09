@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { HostParticipant } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
 import Avatar from "@/components/ui/avatar";
+import { dedupeByUserId } from "@/lib/utils/activity-participants";
 
 // Shared presentation used by the Hosting and Attending management cards.
 
@@ -161,9 +162,13 @@ export function AvatarStrip({
 }: {
   participants: HostParticipant[];
 }) {
-  if (participants.length === 0) return null;
-  const shown = participants.slice(0, 3);
-  const overflow = participants.length - shown.length;
+  // Guard the render boundary: never show the same person twice even if an
+  // upstream list was assembled without deduping (e.g. a host prepended while
+  // also present as a participant row).
+  const unique = dedupeByUserId(participants);
+  if (unique.length === 0) return null;
+  const shown = unique.slice(0, 3);
+  const overflow = unique.length - shown.length;
   return (
     <div className="flex items-center">
       {shown.map((p, i) => (

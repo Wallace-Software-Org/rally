@@ -3,6 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import type { ActivityWithParticipants } from "@/types";
 
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh }),
+}));
+
 const joinOk = () => Promise.resolve({ ok: true, full: false });
 function participant(userId: string) {
   return {
@@ -209,6 +214,20 @@ describe("MapPreviewCard", () => {
     expect(
       screen.queryByRole("button", { name: /join activity/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("refreshes the server snapshot when a join is rejected for capacity", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    renderCard({
+      activity: { ...mockActivity, max_participants: 10, participants: [] },
+      onJoin,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+
+    // The re-seed is what heals the feed card behind the popup, where the loser
+    // tapped Join.
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
   it("hides Register here and Share to Story for logged-out users", () => {
