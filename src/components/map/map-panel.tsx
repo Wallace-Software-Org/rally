@@ -6,6 +6,7 @@ import Map, { type MapRef } from "react-map-gl";
 import type { ActivityWithParticipants } from "@/types";
 import ActivityPin from "@/components/map/activity-pin";
 import { MAP_STYLE, TOKEN, MAP_LOADING_BG } from "@/lib/utils/map-config";
+import { MAP_SPRING, MAP_FLY_MS } from "@/lib/brand";
 
 const DEFAULT_VIEW = {
   longitude: -111.9261,
@@ -59,13 +60,13 @@ export default function MapPanel({
         return;
       map.flyTo({
         center: [activity.lng, activity.lat],
-        duration: 600,
+        duration: MAP_FLY_MS,
         essential: true,
       });
     } else if (prev) {
       map.flyTo({
         center: [DEFAULT_VIEW.longitude, DEFAULT_VIEW.latitude],
-        duration: 600,
+        duration: MAP_FLY_MS,
         essential: true,
       });
     }
@@ -96,7 +97,7 @@ export default function MapPanel({
       <motion.div
         initial={{ height: "10rem" }}
         animate={{ height: expanded ? "50vh" : "10rem" }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={MAP_SPRING}
         className="w-full relative overflow-hidden"
         style={{ backgroundColor: MAP_LOADING_BG }}
       >

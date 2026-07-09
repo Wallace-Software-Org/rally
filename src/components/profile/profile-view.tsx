@@ -2,22 +2,13 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import type { ProfilePage } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
+import AvatarCircle from "@/components/ui/avatar";
 import { InstagramIcon, EditIcon } from "@/components/ui/icons";
 import { upcomingOpenCount } from "@/lib/utils/hosting";
 import HostingManager from "@/components/profile/hosting-manager";
 import AttendingManager from "@/components/profile/attending-manager";
-
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0] ?? "")
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
@@ -61,21 +52,13 @@ function ActionRow({
 
 function Avatar({ profile }: { profile: ProfilePage }) {
   return (
-    <div className="w-36 xl:w-24 h-36 xl:h-24 rounded-full overflow-hidden bg-brand-avatar-bg border-3 border-brand-border flex items-center justify-center flex-none">
-      {profile.avatar_url ? (
-        <Image
-          src={profile.avatar_url}
-          alt=""
-          width={96}
-          height={96}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <span className="text-2xl font-semibold text-brand-avatar-text">
-          {initials(profile.full_name)}
-        </span>
-      )}
-    </div>
+    <AvatarCircle
+      src={profile.avatar_url}
+      name={profile.full_name}
+      dimension={96}
+      className="w-36 xl:w-24 h-36 xl:h-24 border-3 border-brand-border flex-none"
+      initialsClassName="text-2xl"
+    />
   );
 }
 

@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import Image from "next/image";
 import type { HostParticipant } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
-import { getInitials } from "@/lib/utils/avatar";
+import Avatar from "@/components/ui/avatar";
 
 // Shared presentation used by the Hosting and Attending management cards.
 
@@ -168,26 +167,16 @@ export function AvatarStrip({
   return (
     <div className="flex items-center">
       {shown.map((p, i) => (
-        <div
+        <Avatar
           key={p.id}
-          className={`w-7 h-7 rounded-full overflow-hidden bg-brand-avatar-bg border border-brand-surface flex items-center justify-center flex-none ${
+          src={p.profiles?.avatar_url ?? null}
+          name={p.profiles?.full_name}
+          dimension={28}
+          className={`w-7 h-7 border border-brand-surface flex-none ${
             i > 0 ? "-ml-2" : ""
           }`}
-        >
-          {p.profiles?.avatar_url ? (
-            <Image
-              src={p.profiles.avatar_url}
-              alt=""
-              width={28}
-              height={28}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-[10px] font-semibold text-brand-avatar-text">
-              {getInitials(p.profiles?.full_name)}
-            </span>
-          )}
-        </div>
+          initialsClassName="text-[10px]"
+        />
       ))}
       {overflow > 0 && (
         <div className="-ml-2 w-7 h-7 rounded-full bg-brand-avatar-bg border border-brand-surface flex items-center justify-center text-[10px] font-semibold text-brand-avatar-text flex-none">

@@ -3,6 +3,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { createClient } from "@/lib/supabase/server";
 import { getInvitePhrase } from "@/lib/utils/invite-phrase";
+import { SHARE_CARD } from "@/lib/brand";
 
 async function loadFonts() {
   const [bold, medium] = await Promise.all([
@@ -15,12 +16,12 @@ async function loadFonts() {
   ];
 }
 
-const WIDTH = 1080;
-const HEIGHT = 1920;
+const WIDTH = SHARE_CARD.width;
+const HEIGHT = SHARE_CARD.height;
 const CACHE_CONTROL = "public, max-age=3600";
 const APP_TIME_ZONE = "America/Phoenix";
-const BG = "#4A9B8E";
-const CREAM = "#E8DCC8";
+const BG = SHARE_CARD.bg;
+const CREAM = SHARE_CARD.cream;
 const CONTENT_WIDTH = WIDTH - 160; // 80px padding each side
 
 // Derive the largest font size where the longest word in the phrase still fits
