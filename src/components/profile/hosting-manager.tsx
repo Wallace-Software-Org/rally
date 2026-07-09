@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/icons";
 import {
   AvatarStrip,
+  CardShell,
+  CancelledCard,
+  ActivitySection,
   formatCardMeta,
   metaLine,
 } from "@/components/profile/activity-card-parts";
@@ -69,34 +72,6 @@ function ActionButton({
     <button onClick={onClick} aria-label={label} className={cls} style={style}>
       {inner}
     </button>
-  );
-}
-
-// ── Cancelled card ────────────────────────────────────────────────────────────
-
-function CancelledCard({
-  activity,
-  others,
-}: {
-  activity: HostedActivity;
-  others: number;
-}) {
-  return (
-    <div className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col gap-2 opacity-70">
-      <div className="flex items-center gap-2 flex-wrap">
-        <ActivityPill sport={activity.sport} />
-        <span className="tag-private text-[11px] font-semibold px-2 py-0.5 rounded-full">
-          Cancelled
-        </span>
-      </div>
-      <p className="text-base font-semibold text-brand-muted line-through leading-snug">
-        {activity.title}
-      </p>
-      <p className="text-xs text-brand-muted">{metaLine(activity, true)}</p>
-      <p className="text-xs text-brand-muted">
-        {cancelledParticipantLine(others)}
-      </p>
-    </div>
   );
 }
 
@@ -215,7 +190,7 @@ function UpcomingCard({
   );
 
   return (
-    <div className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col gap-3">
+    <CardShell className="gap-3">
       {/* Row 1: identity + capacity */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1.5 min-w-0">
@@ -271,7 +246,7 @@ function UpcomingCard({
           <ShareStoryModal onClose={() => setShowShareModal(false)} />
         )}
       </AnimatePresence>
-    </div>
+    </CardShell>
   );
 }
 
@@ -370,10 +345,7 @@ export default function HostingManager({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-brand-muted">
-          Upcoming ({upcoming.length})
-        </h3>
+      <ActivitySection title="Upcoming" count={upcoming.length}>
         {upcoming.length === 0 ? (
           <p className="text-sm text-brand-muted">Nothing coming up.</p>
         ) : (
@@ -383,7 +355,13 @@ export default function HostingManager({
                 <CancelledCard
                   key={a.id}
                   activity={a}
-                  others={joinedCount(a.participants, hostId)}
+                  footer={
+                    <p className="text-xs text-brand-muted">
+                      {cancelledParticipantLine(
+                        joinedCount(a.participants, hostId),
+                      )}
+                    </p>
+                  }
                 />
               ) : (
                 <UpcomingCard
@@ -396,48 +374,27 @@ export default function HostingManager({
             )}
           </div>
         )}
-      </section>
+      </ActivitySection>
 
       {past.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <button
-            onClick={() => setPastOpen((p) => !p)}
-            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-muted hover:text-brand-text transition-colors w-fit"
-          >
-            Past ({past.length})
-            <svg
-              width="10"
-              height="6"
-              viewBox="0 0 10 6"
-              fill="none"
-              aria-hidden="true"
-              style={{
-                transform: pastOpen ? "rotate(180deg)" : undefined,
-                transition: "transform 0.15s",
-              }}
-            >
-              <path
-                d="M1 1L5 5L9 1"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        <ActivitySection
+          title="Past"
+          count={past.length}
+          collapsible
+          open={pastOpen}
+          onToggle={() => setPastOpen((p) => !p)}
+        >
+          <div className="flex flex-col gap-2">
+            {past.map((a) => (
+              <PastCard
+                key={a.id}
+                activity={a}
+                hostId={hostId}
+                isOwner={isOwner}
               />
-            </svg>
-          </button>
-          {pastOpen && (
-            <div className="flex flex-col gap-2">
-              {past.map((a) => (
-                <PastCard
-                  key={a.id}
-                  activity={a}
-                  hostId={hostId}
-                  isOwner={isOwner}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+            ))}
+          </div>
+        </ActivitySection>
       )}
     </div>
   );

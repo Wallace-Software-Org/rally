@@ -9,6 +9,8 @@ import { getSportLabel, SPORTS_LIST } from "@/lib/utils/sport-config";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
 import Select from "@/components/ui/select";
+import Toggle from "@/components/ui/toggle";
+import Stepper from "@/components/ui/stepper";
 
 const SearchBox = dynamic(
   () => import("@mapbox/search-js-react").then((m) => m.SearchBox),
@@ -633,19 +635,10 @@ export default function ActivityForm({
                     : "Off, open to all"}
                 </span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={limitSpots}
-                onClick={() => setLimitSpots((p) => !p)}
-                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-                  limitSpots
-                    ? "bg-brand-teal justify-end"
-                    : "bg-brand-border justify-start"
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
-              </button>
+              <Toggle
+                checked={limitSpots}
+                onChange={() => setLimitSpots((p) => !p)}
+              />
             </div>
 
             {limitSpots && (
@@ -655,27 +648,12 @@ export default function ActivityForm({
                   <span className="text-sm text-brand-text">
                     Number of spots
                   </span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setStepperValue((v) => Math.max(2, v - 1))}
-                      className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
-                    >
-                      -
-                    </button>
-                    <span className="w-6 text-center text-base font-semibold text-brand-text">
-                      {stepperValue}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setStepperValue((v) => Math.min(20, v + 1))
-                      }
-                      className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
-                    >
-                      +
-                    </button>
-                  </div>
+                  <Stepper
+                    value={stepperValue}
+                    onChange={setStepperValue}
+                    min={2}
+                    max={20}
+                  />
                 </div>
               </>
             )}
@@ -693,21 +671,12 @@ export default function ActivityForm({
                     : "Only joinable via link"}
                 </span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={visibility === "private"}
-                onClick={() =>
+              <Toggle
+                checked={visibility === "private"}
+                onChange={() =>
                   setVisibility((v) => (v === "public" ? "private" : "public"))
                 }
-                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-                  visibility === "private"
-                    ? "bg-brand-teal justify-end"
-                    : "bg-brand-border justify-start"
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
-              </button>
+              />
             </div>
           </div>
 
@@ -721,19 +690,10 @@ export default function ActivityForm({
                   Redirect joiners to register elsewhere
                 </span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={externalLinkOpen}
-                onClick={() => setExternalLinkOpen((p) => !p)}
-                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-                  externalLinkOpen
-                    ? "bg-brand-teal justify-end"
-                    : "bg-brand-border justify-start"
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
-              </button>
+              <Toggle
+                checked={externalLinkOpen}
+                onChange={() => setExternalLinkOpen((p) => !p)}
+              />
             </div>
             {externalLinkOpen && (
               <>
