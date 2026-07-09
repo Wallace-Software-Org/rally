@@ -24,6 +24,7 @@ import {
 } from "@/components/profile/activity-card-parts";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import { isIOSDevice } from "@/lib/utils/platform";
+import { COPY_FEEDBACK_MS } from "@/lib/brand";
 import { repeatActivity } from "@/lib/actions/activities";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import {
@@ -134,7 +135,7 @@ function UpcomingCard({
       .writeText(`${getSiteUrl()}/activity/${activity.id}`)
       .catch(() => {});
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
   }
 
   // Mirrors the share flow elsewhere: generate the card image and copy the
@@ -302,8 +303,7 @@ function PastCard({
 
   return (
     <div
-      className="flex items-center justify-between gap-3 bg-brand-surface/70 rounded-xl border border-brand-border/80 px-4 py-3"
-      style={{ opacity: 0.85 }}
+      className="flex items-center justify-between gap-3 bg-brand-surface/70 rounded-xl border border-brand-border/80 px-4 py-3 opacity-[0.85]"
     >
       <div className="flex flex-col gap-0.5 min-w-0">
         <p

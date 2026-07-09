@@ -140,13 +140,7 @@ function TabBar({
 
 function NudgeCard() {
   return (
-    <div
-      className="w-full rounded-xl p-4 flex flex-col gap-3"
-      style={{
-        backgroundColor: "#DFD3C0",
-        border: "0.5px solid rgba(90,74,58,0.25)",
-      }}
-    >
+    <div className="w-full rounded-xl p-4 flex flex-col gap-3 bg-brand-surface border-[0.5px] border-brand-border">
       <div className="flex flex-col gap-1">
         <p className="text-sm font-semibold text-brand-text">
           Finish your profile

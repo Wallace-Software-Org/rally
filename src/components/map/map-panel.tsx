@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Map, { type MapRef } from "react-map-gl";
 import type { ActivityWithParticipants } from "@/types";
 import ActivityPin from "@/components/map/activity-pin";
-import { MAP_STYLE, TOKEN } from "@/lib/utils/map-config";
+import { MAP_STYLE, TOKEN, MAP_LOADING_BG } from "@/lib/utils/map-config";
 
 const DEFAULT_VIEW = {
   longitude: -111.9261,
@@ -97,7 +97,8 @@ export default function MapPanel({
         initial={{ height: "10rem" }}
         animate={{ height: expanded ? "50vh" : "10rem" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="w-full relative overflow-hidden bg-[#0d1b2a]"
+        className="w-full relative overflow-hidden"
+        style={{ backgroundColor: MAP_LOADING_BG }}
       >
         <div style={{ height: "50vh", width: "100%" }}>
           <Map

@@ -35,42 +35,26 @@ export default function ShareStoryModal({ onClose }: Props) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8, transition: { duration: 0.15, ease: "easeIn" } }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        style={{
-          backgroundColor: "#E8DFD1",
-          border: "1px solid rgba(90,74,58,0.25)",
-        }}
-        className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-5"
+        className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-5 bg-brand-bg border border-brand-border"
       >
-        <h2
-          style={{ color: "#5A4A3A" }}
-          className="text-base font-semibold leading-tight"
-        >
+        <h2 className="text-base font-semibold leading-tight text-brand-text">
           Share to your Story
         </h2>
 
         <ol className="flex flex-col gap-3">
           {steps.map((step, i) => (
             <li key={i} className="flex items-start gap-3">
-              <div
-                style={{ backgroundColor: "#4A9B8E", flexShrink: 0 }}
-                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold mt-0.5"
-              >
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold mt-0.5 bg-brand-teal flex-none">
                 {i + 1}
               </div>
-              <p
-                style={{ color: "#5A4A3A" }}
-                className="text-sm leading-relaxed"
-              >
-                {step}
-              </p>
+              <p className="text-sm leading-relaxed text-brand-text">{step}</p>
             </li>
           ))}
         </ol>
 
         <button
           onClick={onClose}
-          style={{ backgroundColor: "#4A9B8E" }}
-          className="w-full rounded-xl text-white text-sm font-semibold py-3 hover:opacity-90 active:opacity-80 transition-opacity"
+          className="w-full rounded-xl text-white text-sm font-semibold py-3 bg-brand-teal hover:opacity-90 active:opacity-80 transition-opacity"
         >
           Got it
         </button>

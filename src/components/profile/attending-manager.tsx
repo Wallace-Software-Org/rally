@@ -217,8 +217,7 @@ function PastCard({ activity }: { activity: AttendedActivity }) {
 
   return (
     <div
-      className="flex items-center justify-between gap-3 bg-brand-surface/70 rounded-xl border border-brand-border/80 px-4 py-3"
-      style={{ opacity: 0.85 }}
+      className="flex items-center justify-between gap-3 bg-brand-surface/70 rounded-xl border border-brand-border/80 px-4 py-3 opacity-[0.85]"
     >
       <div className="flex flex-col gap-0.5 min-w-0">
         <p

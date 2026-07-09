@@ -25,6 +25,7 @@ import {
 } from "@/lib/utils/activity-participants";
 import { getInitials, shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import { isIOSDevice } from "@/lib/utils/platform";
+import { COPY_FEEDBACK_MS } from "@/lib/brand";
 
 function formatDetailDate(startsAt: string): string {
   const d = new Date(startsAt);
@@ -130,7 +131,7 @@ function LocationButton({
   async function copyAddress() {
     await navigator.clipboard.writeText(locationName);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
   }
 
   const appleUrl =
@@ -432,7 +433,7 @@ export default function ActivityDetailView({
   async function handleCopyLink() {
     await navigator.clipboard.writeText(window.location.href);
     setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
+    setTimeout(() => setLinkCopied(false), COPY_FEEDBACK_MS);
   }
 
   async function handleShare() {

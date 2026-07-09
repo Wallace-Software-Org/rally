@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { getInitials } from "@/lib/utils/avatar";
+import { COPY_FEEDBACK_MS } from "@/lib/brand";
 
 export type GroupChatParticipant = {
   id: string;
@@ -53,7 +54,7 @@ export default function GroupChatModal({
     await navigator.clipboard.writeText(text);
     setCopiedKey(key);
     if (revertTimer.current) clearTimeout(revertTimer.current);
-    revertTimer.current = setTimeout(() => setCopiedKey(null), 1500);
+    revertTimer.current = setTimeout(() => setCopiedKey(null), COPY_FEEDBACK_MS);
   }
 
   // Handle-havers first, no-handle rows last; stable within each group.
