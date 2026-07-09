@@ -69,6 +69,58 @@ describe("ActivityCardDesktop", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
+  it("clears the Full override once live data catches up, so a later leave reopens the spot", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    const other = (id: string) => ({
+      id: `p-${id}`,
+      user_id: id,
+      profiles: { full_name: id, avatar_url: null },
+    });
+    const activity: ActivityWithParticipants = {
+      ...mockActivity,
+      max_participants: 2,
+      participants: [other("other-a")],
+    };
+    const { rerender } = render(
+      <ActivityCardDesktop {...base} activity={activity} onJoin={onJoin} />,
+    );
+
+    // One spot left → Join is available.
+    expect(screen.getByRole("button", { name: "Join" })).toBeInTheDocument();
+
+    // A full-rejected join flips to Full via the override, before live catches up.
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Join" }),
+      ).not.toBeInTheDocument(),
+    );
+
+    // Live count reaches max (the re-seed): the override clears, but the real
+    // count keeps the card Full.
+    rerender(
+      <ActivityCardDesktop
+        {...base}
+        activity={{ ...activity, participants: [other("other-a"), other("other-b")] }}
+        onJoin={onJoin}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Join" }),
+    ).not.toBeInTheDocument();
+
+    // Someone leaves (realtime DELETE lowers the count): with the override gone,
+    // the live count reopens the spot instead of staying stuck on Full.
+    rerender(
+      <ActivityCardDesktop
+        {...base}
+        activity={{ ...activity, participants: [other("other-a")] }}
+        onJoin={onJoin}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Join" })).toBeInTheDocument();
+  });
+
   it("renders title, sport tag, and location", () => {
     render(<ActivityCardDesktop {...base} />);
     expect(screen.getByText("Morning Run at Papago Park")).toBeInTheDocument();
