@@ -11,7 +11,7 @@ import type { UsernameStatus } from "@/types";
 const ACTIVITY_ITEMS = SPORTS_LIST.filter((s) => s !== "All" && s !== "Other");
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-brand-input px-3.5 py-2.5 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-teal/40 transition";
+  "field-base px-3.5 py-2.5 text-base xl:text-sm text-brand-text transition";
 
 export default function OnboardingFlow({
   defaultName,

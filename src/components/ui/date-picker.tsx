@@ -87,7 +87,7 @@ export default function DatePicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`w-full rounded-xl border border-brand-border bg-brand-input px-4 py-3 text-sm text-left focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal ${value ? "text-brand-text" : "text-brand-muted"}`}
+        className={`field-base px-4 py-3 text-sm text-left ${value ? "text-brand-text" : "text-brand-muted"}`}
       >
         {value ? formatDisplay(value) : placeholder}
       </button>

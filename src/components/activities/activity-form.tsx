@@ -50,7 +50,7 @@ const SKILL_LEVELS = [
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-brand-input px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
+  "field-base px-4 py-3 text-base xl:text-sm text-brand-text";
 
 const primaryBtn =
   "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:enabled:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";

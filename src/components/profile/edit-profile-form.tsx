@@ -38,7 +38,7 @@ function initials(name: string | null): string {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-brand-input px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
+  "field-base px-4 py-3 text-base xl:text-sm text-brand-text";
 
 export default function EditProfileForm({ profile }: { profile: ProfileData }) {
   const router = useRouter();
