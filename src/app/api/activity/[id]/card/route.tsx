@@ -19,6 +19,9 @@ async function loadFonts() {
 const WIDTH = SHARE_CARD.width;
 const HEIGHT = SHARE_CARD.height;
 const CACHE_CONTROL = "public, max-age=3600";
+// The share card intentionally renders activity-local time (Phoenix) so the
+// invite shows the same time to everyone, whereas the in-app UI renders in the
+// viewer's local timezone. See the code-audit date-handling notes.
 const APP_TIME_ZONE = "America/Phoenix";
 const BG = SHARE_CARD.bg;
 const CREAM = SHARE_CARD.cream;
