@@ -90,6 +90,17 @@ export default function ActivityFeed({
 
       if (hasUserParticipant === shouldBeJoined) return activity;
 
+      // TEMP phantom-avatar probe: strip before merge. Logs the optimistic
+      // user_id so it can be compared byte-for-byte with the realtime echo.
+      if (process.env.NODE_ENV !== "production" && shouldBeJoined) {
+        console.log("[phantom] optimistic-add user_id", {
+          activityId: activity.id,
+          value: JSON.stringify(userId),
+          length: userId.length,
+          type: typeof userId,
+        });
+      }
+
       return {
         ...activity,
         participants: shouldBeJoined

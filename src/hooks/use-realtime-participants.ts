@@ -136,6 +136,16 @@ export function useRealtimeParticipants<Profile>({
         (payload) => {
           if (payload.eventType === "INSERT") {
             const row = payload.new as { id: string; user_id: string };
+            // TEMP phantom-avatar probe: strip before merge. Exposes any
+            // whitespace/case/type mismatch vs the optimistic user_id.
+            if (process.env.NODE_ENV !== "production") {
+              console.log("[phantom] realtime INSERT user_id", {
+                activityId,
+                value: JSON.stringify(row.user_id),
+                length: row.user_id?.length,
+                type: typeof row.user_id,
+              });
+            }
             void supabase
               .from("profiles")
               .select(profileColumns)
