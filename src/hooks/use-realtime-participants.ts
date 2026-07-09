@@ -11,41 +11,70 @@ export type RealtimeParticipant<Profile> = {
 
 type State<Profile> = {
   activityId: string;
-  seedLength: number;
+  seedKey: string;
   participants: RealtimeParticipant<Profile>[];
 };
 
+// A user can appear at most once per activity (DB unique constraint), so user_id
+// is the identity key. Dedupe keeps the first occurrence, preserving order.
+function dedupeByUserId<Profile>(
+  list: RealtimeParticipant<Profile>[],
+): RealtimeParticipant<Profile>[] {
+  const seen = new Set<string>();
+  const out: RealtimeParticipant<Profile>[] = [];
+  for (const p of list) {
+    if (seen.has(p.user_id)) continue;
+    seen.add(p.user_id);
+    out.push(p);
+  }
+  return out;
+}
+
+// Membership identity of a seed — the set of user_ids, order-independent. Used
+// to decide when the server seed has meaningfully changed (someone joined/left,
+// including the viewer's optimistic entry) versus just a new array reference for
+// the same members.
+function seedKeyOf<Profile>(list: RealtimeParticipant<Profile>[]): string {
+  return list
+    .map((p) => p.user_id)
+    .sort()
+    .join(",");
+}
+
 // Produce the next state from a transform applied to the in-sync base list. If
-// the server seed changed (activity navigation or refetch) the prev state is
-// stale, so fall back to the fresh seed before transforming.
+// the seed's membership changed (navigation, refetch, or an optimistic add/
+// remove) the prev state is stale, so fall back to the fresh seed before
+// transforming.
 function applyUpdate<Profile>(
   activityId: string,
-  seedLength: number,
+  seedKey: string,
   seed: RealtimeParticipant<Profile>[],
   prev: State<Profile>,
   transform: (
     base: RealtimeParticipant<Profile>[],
   ) => RealtimeParticipant<Profile>[],
 ): State<Profile> {
-  const inSync = prev.activityId === activityId && prev.seedLength === seedLength;
+  const inSync = prev.activityId === activityId && prev.seedKey === seedKey;
   const base = inSync ? prev.participants : seed;
-  return { activityId, seedLength, participants: transform(base) };
+  return { activityId, seedKey, participants: dedupeByUserId(transform(base)) };
 }
 
 /**
  * Maintains a live participant list for one activity via Supabase realtime.
  * INSERT fetches the new user's profile and appends; DELETE removes by row id.
- * Both dedupe by user_id so an acting user's optimistic entry is not doubled
- * when its own realtime echo arrives (the echo replaces the optimistic row and
- * upgrades it to the canonical row id).
+ * Everything dedupes by user_id so an acting user's optimistic entry is never
+ * doubled when its own realtime echo arrives (the echo replaces the optimistic
+ * row and upgrades it to the canonical row id), and the returned list is always
+ * one entry per user.
  *
  * Profile columns are caller-supplied so each surface fetches only what it
- * renders. Count derives from the list length.
+ * renders. Count derives from the deduped list length.
  *
  * DELETE delivery note: the subscription filters on activity_id, which is not
  * the primary key, so the participants table must have REPLICA IDENTITY FULL
  * for DELETE old-records to carry activity_id (and the row id). Without it,
- * joins still appear but leaves will not until reload.
+ * joins still appear but leaves will not until reload — the seed-membership sync
+ * still drops the viewer's own optimistic leave regardless.
  */
 export function useRealtimeParticipants<Profile>({
   activityId,
@@ -61,23 +90,25 @@ export function useRealtimeParticipants<Profile>({
   addParticipant: (participant: RealtimeParticipant<Profile>) => void;
   removeParticipantByUserId: (userId: string) => void;
 } {
-  const seedLength = initialParticipants.length;
+  const seedKey = seedKeyOf(initialParticipants);
 
   const [state, setState] = useState<State<Profile>>(() => ({
     activityId,
-    seedLength,
+    seedKey,
     participants: initialParticipants,
   }));
 
-  // When the server prop changes (navigation or refetch), fall back to the new
-  // seed until the next update commits fresh state under the new key.
-  const isSync =
-    state.activityId === activityId && state.seedLength === seedLength;
-  const participants = isSync ? state.participants : initialParticipants;
+  // When the seed's membership changes (navigation, refetch, or an optimistic
+  // add/remove), fall back to the new seed until the next update commits fresh
+  // state under the new key. Always deduped by user_id.
+  const isSync = state.activityId === activityId && state.seedKey === seedKey;
+  const participants = dedupeByUserId(
+    isSync ? state.participants : initialParticipants,
+  );
 
   function addParticipant(participant: RealtimeParticipant<Profile>) {
     setState((prev) =>
-      applyUpdate(activityId, seedLength, initialParticipants, prev, (base) => [
+      applyUpdate(activityId, seedKey, initialParticipants, prev, (base) => [
         ...base.filter((p) => p.user_id !== participant.user_id),
         participant,
       ]),
@@ -86,7 +117,7 @@ export function useRealtimeParticipants<Profile>({
 
   function removeParticipantByUserId(userId: string) {
     setState((prev) =>
-      applyUpdate(activityId, seedLength, initialParticipants, prev, (base) =>
+      applyUpdate(activityId, seedKey, initialParticipants, prev, (base) =>
         base.filter((p) => p.user_id !== userId),
       ),
     );
@@ -128,15 +159,13 @@ export function useRealtimeParticipants<Profile>({
                 setState((prev) =>
                   applyUpdate(
                     activityId,
-                    seedLength,
+                    seedKey,
                     initialParticipants,
                     prev,
                     (base) => [
-                      // Idempotent on the canonical row id and dedupe any
-                      // optimistic/self entry sharing this user_id.
-                      ...base.filter(
-                        (p) => p.id !== row.id && p.user_id !== row.user_id,
-                      ),
+                      // Replace any existing entry for this user (an optimistic
+                      // or self entry) with the canonical row, keyed on user_id.
+                      ...base.filter((p) => p.user_id !== row.user_id),
                       {
                         id: row.id,
                         user_id: row.user_id,
@@ -153,7 +182,7 @@ export function useRealtimeParticipants<Profile>({
             setState((prev) =>
               applyUpdate(
                 activityId,
-                seedLength,
+                seedKey,
                 initialParticipants,
                 prev,
                 (base) =>
@@ -172,11 +201,11 @@ export function useRealtimeParticipants<Profile>({
     return () => {
       void supabase.removeChannel(channel);
     };
-    // Re-subscribe only when the activity or its server seed changes, not on
+    // Re-subscribe only when the activity or its seed membership changes, not on
     // every parent render that hands us a new array reference. initialParticipants
     // and profileColumns are captured intentionally; they are stable per seed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId, seedLength]);
+  }, [activityId, seedKey]);
 
   return {
     participants,
