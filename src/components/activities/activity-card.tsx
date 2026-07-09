@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActivityWithParticipants, Participant } from "@/types";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
@@ -22,7 +23,9 @@ type CardProps = {
   userId: string | null;
   isJoined: boolean;
   isJoining: boolean;
-  onJoin: () => void;
+  // Returns the join outcome so the card can flip to Full on a capacity
+  // rejection, mirroring the map popup.
+  onJoin: () => Promise<{ ok: boolean; full: boolean }>;
 };
 
 function initialParticipants(
@@ -74,7 +77,8 @@ function CardAction({
   spotsLeft,
   router,
   showJoinAction = true,
-}: CardProps & {
+}: Omit<CardProps, "onJoin"> & {
+  onJoin: () => void;
   spotsLeft: number | null;
   router: ReturnType<typeof useRouter>;
   showJoinAction?: boolean;
@@ -199,10 +203,25 @@ export function ActivityCardDesktop({
       profileColumns: "full_name, avatar_url",
     });
   const isJoinedLive = hasUserJoined(liveParticipants, userId);
-  const spotsLeft =
-    activity.max_participants === null
-      ? null
-      : Math.max(0, activity.max_participants - participantCount);
+
+  // Sticky Full after a capacity rejection, so a simultaneous-join loser flips
+  // to Full immediately even before the router.refresh re-seed lands.
+  const [forcedFull, setForcedFull] = useState(false);
+  const max = activity.max_participants;
+  const isFull = max !== null && (forcedFull || participantCount >= max);
+  const spotsLeft = max === null ? null : isFull ? 0 : max - participantCount;
+  const displayCount = isFull && max !== null ? max : participantCount;
+
+  async function handleJoin() {
+    const result = await onJoin();
+    if (result.full) {
+      setForcedFull(true);
+      // Re-seed from the server snapshot (which includes the winner's row) so
+      // the count self-corrects everywhere, not just this card.
+      router.refresh();
+    }
+  }
+
   const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
   const { time, date } = formatActivityDate(activity.starts_at);
 
@@ -292,14 +311,14 @@ export function ActivityCardDesktop({
           </div>
         )}
         <span className="text-xs text-brand-muted flex-1">
-          {spotsLeftText(activity.max_participants, participantCount)}
+          {spotsLeftText(activity.max_participants, displayCount)}
         </span>
         <CardAction
           activity={activity}
           userId={userId}
           isJoined={isJoinedLive}
           isJoining={isJoining}
-          onJoin={onJoin}
+          onJoin={handleJoin}
           spotsLeft={spotsLeft}
           router={router}
           showJoinAction={showDetails}

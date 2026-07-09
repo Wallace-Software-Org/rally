@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const ActivityMiniMap = dynamic(
   () => import("@/components/map/activity-mini-map"),
@@ -19,6 +20,7 @@ import ShareStoryModal from "@/components/ui/share-story-modal";
 import GroupChatModal from "@/components/activities/group-chat-modal";
 import BackButton from "@/components/ui/back-button";
 import {
+  ACTIVITY_FULL_ERROR,
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
   spotsLeftText,
@@ -285,6 +287,7 @@ export default function ActivityDetailView({
   const initiallyJoined = activity.participants.some(
     (p) => p.user_id === userId,
   );
+  const router = useRouter();
   const [isJoined, setIsJoined] = useState(initiallyJoined);
   // Live participant list drives both the "Who's going" avatars and the count.
   // Remote joins/leaves stream in via realtime; the acting user's own join or
@@ -306,6 +309,8 @@ export default function ActivityDetailView({
   const [showShareModal, setShowShareModal] = useState(false);
   const [showGroupChatModal, setShowGroupChatModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  // Sticky Full after a capacity rejection; the router.refresh re-seed follows.
+  const [forcedFull, setForcedFull] = useState(false);
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
   );
@@ -384,7 +389,11 @@ export default function ActivityDetailView({
       avatar_url: p.profiles?.avatar_url ?? null,
       instagram_handle: p.profiles?.instagram_handle ?? null,
     }));
-  const isFull = spotsLeft !== null && spotsLeft <= 0;
+  const isFull = forcedFull || (spotsLeft !== null && spotsLeft <= 0);
+  const displayCount =
+    isFull && activity.max_participants !== null
+      ? activity.max_participants
+      : participantCount;
   const skillDisplay = activity.skill_level
     ? activity.skill_level.charAt(0).toUpperCase() +
       activity.skill_level.slice(1)
@@ -393,6 +402,12 @@ export default function ActivityDetailView({
     if (!userId || joining || isJoined) return;
     setJoining(true);
     const { error } = await joinActivity(activity.id);
+    if (error === ACTIVITY_FULL_ERROR) {
+      // Lost a simultaneous join: reflect Full at once, then re-seed from the
+      // server snapshot (which includes the winner's row).
+      setForcedFull(true);
+      router.refresh();
+    }
     if (!error) {
       setIsJoined(true);
       // Optimistically add the viewer to "Who's going" so their avatar appears
@@ -778,7 +793,7 @@ export default function ActivityDetailView({
               <div className="flex flex-wrap gap-2 mt-3">
                 <MetaPill>{skillDisplay}</MetaPill>
                 <MetaPill>
-                  {spotsLeftText(activity.max_participants, participantCount)}
+                  {spotsLeftText(activity.max_participants, displayCount)}
                 </MetaPill>
                 {activity.visibility === "private" && (
                   <MetaPill>Private</MetaPill>

@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import type { ActivityWithParticipants } from "@/types";
 
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), refresh }),
   usePathname: () => "/",
 }));
 
@@ -37,11 +39,36 @@ const base = {
   isJoining: false,
   isLeaving: false,
   onSelect: vi.fn(),
-  onJoin: vi.fn(),
+  onJoin: vi.fn(() => Promise.resolve({ ok: true, full: false })),
   onLeave: vi.fn(),
 };
 
 describe("ActivityCardDesktop", () => {
+  beforeEach(() => refresh.mockClear());
+
+  it("flips to Full when a join is rejected for capacity", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    render(<ActivityCardDesktop {...base} onJoin={onJoin} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    await waitFor(() =>
+      expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(1),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Join" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("calls router.refresh on a full-rejected join", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    render(<ActivityCardDesktop {...base} onJoin={onJoin} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
   it("renders title, sport tag, and location", () => {
     render(<ActivityCardDesktop {...base} />);
     expect(screen.getByText("Morning Run at Papago Park")).toBeInTheDocument();
