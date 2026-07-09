@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
+import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 import { updateUserLocation } from "@/lib/actions/profiles";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import {
@@ -150,9 +151,11 @@ export default function ActivityFeed({
 
   // Optimistic updates: local state is mutated immediately so the UI responds instantly.
   // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
-  async function handleJoin(activityId: string): Promise<boolean> {
+  async function handleJoin(
+    activityId: string,
+  ): Promise<{ ok: boolean; full: boolean }> {
     if (!userId || joined.has(activityId) || joining.has(activityId)) {
-      return false;
+      return { ok: false, full: false };
     }
 
     setJoining((prev) => new Set(prev).add(activityId));
@@ -174,7 +177,7 @@ export default function ActivityFeed({
       return next;
     });
 
-    return !error;
+    return { ok: !error, full: error === ACTIVITY_FULL_ERROR };
   }
 
   async function handleLeave(activityId: string): Promise<boolean> {

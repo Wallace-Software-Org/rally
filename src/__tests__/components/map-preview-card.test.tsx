@@ -1,7 +1,16 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import type { ActivityWithParticipants } from "@/types";
+
+const joinOk = () => Promise.resolve({ ok: true, full: false });
+function participant(userId: string) {
+  return {
+    id: `p-${userId}`,
+    user_id: userId,
+    profiles: { full_name: userId, avatar_url: null },
+  };
+}
 
 const mockActivity: ActivityWithParticipants = {
   id: "act-1",
@@ -36,13 +45,13 @@ const viewerParticipant = {
 function renderCard({
   activity = mockActivity,
   userId = "viewer-1",
-  onJoin = vi.fn().mockResolvedValue(true),
+  onJoin = vi.fn(joinOk),
   onLeave = vi.fn().mockResolvedValue(true),
   onDismiss = vi.fn(),
 }: {
   activity?: ActivityWithParticipants;
   userId?: string | null;
-  onJoin?: () => Promise<boolean>;
+  onJoin?: () => Promise<{ ok: boolean; full: boolean }>;
   onLeave?: () => Promise<boolean>;
   onDismiss?: () => void;
 } = {}) {
@@ -97,7 +106,7 @@ describe("MapPreviewCard", () => {
           participants: [viewerParticipant],
         }}
         userId="viewer-1"
-        onJoin={vi.fn().mockResolvedValue(true)}
+        onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
       />,
@@ -123,7 +132,7 @@ describe("MapPreviewCard", () => {
       <MapPreviewCard
         activity={mockActivity}
         userId="viewer-1"
-        onJoin={vi.fn().mockResolvedValue(true)}
+        onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
       />,
@@ -141,7 +150,7 @@ describe("MapPreviewCard", () => {
           participants: [viewerParticipant],
         }}
         userId="viewer-1"
-        onJoin={vi.fn().mockResolvedValue(true)}
+        onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
       />,
@@ -164,6 +173,42 @@ describe("MapPreviewCard", () => {
     expect(shareToStory).toHaveClass("btn-tier-2");
     expectBefore(primaryAction, viewDetails);
     expectBefore(viewDetails, shareToStory);
+  });
+
+  it("shows Full (button + spots line) from the live count at capacity", () => {
+    renderCard({
+      activity: {
+        ...mockActivity,
+        max_participants: 2,
+        participants: [participant("other-1"), participant("other-2")],
+      },
+    });
+
+    expect(screen.getByRole("button", { name: /^full$/i })).toBeInTheDocument();
+    // Both the spots line and the button read "Full".
+    expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.queryByRole("button", { name: /join activity/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("flips to Full immediately when a join is rejected for capacity", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    renderCard({
+      activity: { ...mockActivity, max_participants: 10, participants: [] },
+      onJoin,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^full$/i })).toBeInTheDocument(),
+    );
+    // Both the spots line and the button read "Full".
+    expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.queryByRole("button", { name: /join activity/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides Register here and Share to Story for logged-out users", () => {

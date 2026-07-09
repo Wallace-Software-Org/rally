@@ -6,6 +6,7 @@ import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { nextWeeklyOccurrence } from "@/lib/utils/next-occurrence";
 import { validateActivityInput } from "@/lib/utils/activity-validation";
 import { requireUser } from "@/lib/actions/require-user";
+import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 
 const PREDEFINED_SPORTS = new Set(
   SPORTS_LIST.filter((sport) => sport !== "All").map((sport) =>
@@ -53,7 +54,7 @@ export async function joinActivity(
     case "ok":
       return { error: null };
     case "full":
-      return { error: "This activity is full" };
+      return { error: ACTIVITY_FULL_ERROR };
     case "closed":
       return { error: "This activity is no longer open" };
     case "not_found":

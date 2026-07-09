@@ -4,6 +4,11 @@ type ParticipantWithProfile<Profile> = {
   profiles: Profile | null;
 };
 
+// The exact error joinActivity returns when the atomic capacity check rejects a
+// join. The UI keys its immediate "Full" state off this so a rejected join
+// reflects Full even before realtime catches up.
+export const ACTIVITY_FULL_ERROR = "This activity is full";
+
 // Quick-join login link for logged-out viewers. After Google OAuth the user
 // returns to the activity and auto-joins via the next and join params.
 export function quickJoinLoginHref(activityId: string): string {
