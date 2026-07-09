@@ -225,22 +225,6 @@ export function ActivityCardDesktop({
   }
 
   const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
-
-  // TEMP phantom-avatar probe: strip before merge. If the live list ever exceeds
-  // capacity, dump every user_id so the phantom entry's identity is captured.
-  if (
-    process.env.NODE_ENV !== "production" &&
-    max !== null &&
-    liveParticipants.length > max
-  ) {
-    console.log("[phantom] strip over capacity", {
-      activityId: activity.id,
-      max,
-      count: liveParticipants.length,
-      userIds: liveParticipants.map((p) => JSON.stringify(p.user_id)),
-    });
-  }
-
   const { time, date } = formatActivityDate(activity.starts_at);
 
   const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-1 transition-all border ${
