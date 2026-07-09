@@ -15,6 +15,7 @@ import {
 } from "@/lib/utils/activity-participants";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
+import { useForcedFull } from "@/hooks/use-forced-full";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
@@ -36,10 +37,6 @@ export default function MapPreviewCard({
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  // Set when a join is rejected for capacity, so the popup shows Full at once
-  // even if realtime hasn't delivered the filling insert to this late-mounted
-  // subscription yet. Stays set for this popup (it remounts per activity).
-  const [forcedFull, setForcedFull] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
   // Live participant data, same as the feed cards, so the count and join state
@@ -57,6 +54,12 @@ export default function MapPreviewCard({
     participants.some((participant) => participant.user_id === userId);
 
   const max = activity.max_participants;
+  // Full override after a capacity rejection, so the popup shows Full at once
+  // even before its late-mounted subscription (or the router.refresh re-seed)
+  // delivers the filling insert. Bridge, not a latch (see useForcedFull): a
+  // popup held open across the sequence must self-heal once the live count
+  // confirms fullness, so a later leave reopens the spot without a reselect.
+  const [forcedFull, setForcedFull] = useForcedFull(participantCount, max);
   const isFull = max !== null && (forcedFull || participantCount >= max);
 
   useEffect(() => {

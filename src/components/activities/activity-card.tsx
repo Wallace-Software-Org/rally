@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActivityWithParticipants, Participant } from "@/types";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
+import { useForcedFull } from "@/hooks/use-forced-full";
 import {
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
@@ -204,21 +204,12 @@ export function ActivityCardDesktop({
     });
   const isJoinedLive = hasUserJoined(liveParticipants, userId);
 
-  // Full override after a capacity rejection, so a simultaneous-join loser flips
-  // to Full immediately even before the router.refresh re-seed lands. It is a
-  // bridge, not a latch: once the live count catches up to max, real data has
-  // confirmed fullness and the override clears, so a later leave (realtime
-  // DELETE) reopens the card naturally. Feed cards live for the session, so a
-  // sticky flag would wrongly keep them Full after someone leaves.
-  const [forcedFull, setForcedFull] = useState(false);
   const max = activity.max_participants;
-  // Clear the bridge as soon as the live count confirms fullness, so a later
-  // leave reopens the card. Adjusting state during render (React's endorsed
-  // pattern for reconciling to changed data) re-renders in place with no extra
-  // effect pass and no cascading render.
-  if (forcedFull && max !== null && participantCount >= max) {
-    setForcedFull(false);
-  }
+  // Full override after a capacity rejection, so a simultaneous-join loser flips
+  // to Full immediately even before the router.refresh re-seed lands. Bridge,
+  // not a latch (see useForcedFull): it releases once the live count confirms
+  // fullness, so a later leave reopens the card.
+  const [forcedFull, setForcedFull] = useForcedFull(participantCount, max);
   const isFull = max !== null && (forcedFull || participantCount >= max);
   const spotsLeft = max === null ? null : isFull ? 0 : max - participantCount;
   const displayCount = isFull && max !== null ? max : participantCount;

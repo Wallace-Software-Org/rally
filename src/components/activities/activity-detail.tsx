@@ -13,6 +13,7 @@ import Image from "next/image";
 import type { ActivityDetail } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
+import { useForcedFull } from "@/hooks/use-forced-full";
 import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
@@ -310,10 +311,12 @@ export default function ActivityDetailView({
   const [showGroupChatModal, setShowGroupChatModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   // Full override after a capacity rejection; the router.refresh re-seed
-  // follows. A bridge, not a latch: once the live count reaches max, real data
-  // has confirmed fullness and the override clears, so a later leave (realtime
-  // DELETE) reopens the spot instead of staying Full for the session.
-  const [forcedFull, setForcedFull] = useState(false);
+  // follows. Bridge, not a latch (see useForcedFull): it releases once the live
+  // count confirms fullness, so a later leave reopens the spot.
+  const [forcedFull, setForcedFull] = useForcedFull(
+    participantCount,
+    activity.max_participants,
+  );
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
   );
@@ -392,17 +395,6 @@ export default function ActivityDetailView({
       avatar_url: p.profiles?.avatar_url ?? null,
       instagram_handle: p.profiles?.instagram_handle ?? null,
     }));
-  // Clear the bridge as soon as the live count confirms fullness, so a later
-  // leave reopens the spot. Adjusting state during render (React's endorsed
-  // pattern for reconciling to changed data) re-renders in place with no extra
-  // effect pass and no cascading render.
-  if (
-    forcedFull &&
-    activity.max_participants !== null &&
-    participantCount >= activity.max_participants
-  ) {
-    setForcedFull(false);
-  }
   const isFull = forcedFull || (spotsLeft !== null && spotsLeft <= 0);
   const displayCount =
     isFull && activity.max_participants !== null

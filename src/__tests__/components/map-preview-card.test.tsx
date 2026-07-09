@@ -230,6 +230,59 @@ describe("MapPreviewCard", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
+  it("clears the Full override once the live count catches up, so a held-open popup reopens on a leave", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    const full1 = { ...mockActivity, max_participants: 2 };
+    const rest = {
+      userId: "viewer-1" as const,
+      onJoin,
+      onLeave: vi.fn().mockResolvedValue(true),
+      onDismiss: vi.fn(),
+    };
+    const { rerender } = renderCard({
+      activity: { ...full1, participants: [participant("other-a")] },
+      onJoin,
+    });
+
+    // One spot left → Join is available.
+    expect(
+      screen.getByRole("button", { name: /join activity/i }),
+    ).toBeInTheDocument();
+
+    // A full-rejected join flips to Full via the override.
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /^full$/i }),
+      ).toBeInTheDocument(),
+    );
+
+    // Live count reaches max (the re-seed): the override clears, but the real
+    // count keeps the popup Full. The popup is never remounted here.
+    rerender(
+      <MapPreviewCard
+        activity={{
+          ...full1,
+          participants: [participant("other-a"), participant("other-b")],
+        }}
+        {...rest}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /^full$/i })).toBeInTheDocument();
+
+    // Someone leaves (realtime DELETE lowers the count): with the override gone,
+    // the held-open popup reopens the spot instead of staying stuck on Full.
+    rerender(
+      <MapPreviewCard
+        activity={{ ...full1, participants: [participant("other-a")] }}
+        {...rest}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: /join activity/i }),
+    ).toBeInTheDocument();
+  });
+
   it("hides Register here and Share to Story for logged-out users", () => {
     renderCard({
       activity: {
