@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import Map, { type MapRef } from "react-map-gl";
 import type { ActivityWithParticipants } from "@/types";
 import ActivityPin from "@/components/map/activity-pin";
-import { MAP_STYLE, TOKEN } from "@/lib/utils/map-config";
+import { MAP_STYLE, TOKEN, MAP_LOADING_BG } from "@/lib/utils/map-config";
+import { MAP_SPRING, MAP_FLY_MS } from "@/lib/brand";
 
 const DEFAULT_VIEW = {
   longitude: -111.9261,
@@ -59,13 +60,13 @@ export default function MapPanel({
         return;
       map.flyTo({
         center: [activity.lng, activity.lat],
-        duration: 600,
+        duration: MAP_FLY_MS,
         essential: true,
       });
     } else if (prev) {
       map.flyTo({
         center: [DEFAULT_VIEW.longitude, DEFAULT_VIEW.latitude],
-        duration: 600,
+        duration: MAP_FLY_MS,
         essential: true,
       });
     }
@@ -96,8 +97,9 @@ export default function MapPanel({
       <motion.div
         initial={{ height: "10rem" }}
         animate={{ height: expanded ? "50vh" : "10rem" }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="w-full relative overflow-hidden bg-[#0d1b2a]"
+        transition={MAP_SPRING}
+        className="w-full relative overflow-hidden"
+        style={{ backgroundColor: MAP_LOADING_BG }}
       >
         <div style={{ height: "50vh", width: "100%" }}>
           <Map
@@ -114,7 +116,7 @@ export default function MapPanel({
         </div>
         <button
           onClick={() => setExpanded((prev) => !prev)}
-          className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-white/90 border border-brand-border px-3 py-1 text-xs font-medium text-brand-text"
+          className="absolute z-10 flex items-center gap-1 rounded-full bg-brand-input/75 border-[0.5px] border-brand-border px-3 py-1 text-xs font-medium text-brand-text bottom-2 left-1/2 -translate-x-1/2 xl:bottom-auto xl:left-auto xl:translate-x-0 xl:top-2 xl:right-2"
         >
           <svg
             width="10"
@@ -139,7 +141,7 @@ export default function MapPanel({
               />
             )}
           </svg>
-          {expanded ? "Collapse map" : "Expand map"}
+          {expanded ? "" : "Expand"}
         </button>
       </motion.div>
     );

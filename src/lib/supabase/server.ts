@@ -19,9 +19,15 @@ export async function createClient() {
         // sameSite: 'lax' is required — 'strict' blocks Safari from receiving cookies on cross-site
         // OAuth redirects (Google → your domain), which silently breaks the PKCE code exchange.
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, { ...options, sameSite: "lax" }),
-          );
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, { ...options, sameSite: "lax" }),
+            );
+          } catch {
+            // Called from a Server Component render, where cookies cannot be written.
+            // Safe to ignore: proxy.ts refreshes the session and writes cookies on every
+            // request, so the refreshed token is already persisted there.
+          }
         },
       },
     },

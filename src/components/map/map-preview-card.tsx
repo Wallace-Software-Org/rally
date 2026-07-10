@@ -1,19 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import type { ActivityWithParticipants } from "@/types";
+import type { ActivityWithParticipants, ParticipantProfile } from "@/types";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import { isIOSDevice } from "@/lib/utils/platform";
-import { quickJoinLoginHref } from "@/lib/utils/activity-participants";
+import {
+  quickJoinLoginHref,
+  spotsLeftText,
+} from "@/lib/utils/activity-participants";
+import { getSiteUrl } from "@/lib/utils/site-url";
+import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
+import { useForcedFull } from "@/hooks/use-forced-full";
 
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
   userId: string | null;
-  onJoin: () => Promise<boolean>;
+  onJoin: () => Promise<{ ok: boolean; full: boolean }>;
   onLeave: () => Promise<boolean>;
   onDismiss: () => void;
 };
@@ -25,15 +32,35 @@ export default function MapPreviewCard({
   onLeave,
   onDismiss,
 }: MapPreviewCardProps) {
+  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
+
+  // Live participant data, same as the feed cards, so the count and join state
+  // stay current instead of reading the page-load snapshot.
+  const { participants, participantCount } =
+    useRealtimeParticipants<ParticipantProfile>({
+      activityId: activity.id,
+      initialParticipants: activity.participants,
+      profileColumns: "full_name, avatar_url",
+    });
+
   const isHost = userId === activity.creator_id;
   const isJoined =
     userId !== null &&
-    activity.participants.some((participant) => participant.user_id === userId);
+    participants.some((participant) => participant.user_id === userId);
+
+  const max = activity.max_participants;
+  // Full override after a capacity rejection, so the popup shows Full at once
+  // even before its late-mounted subscription (or the router.refresh re-seed)
+  // delivers the filling insert. Bridge, not a latch (see useForcedFull): a
+  // popup held open across the sequence must self-heal once the live count
+  // confirms fullness, so a later leave reopens the spot without a reselect.
+  const [forcedFull, setForcedFull] = useForcedFull(participantCount, max);
+  const isFull = max !== null && (forcedFull || participantCount >= max);
 
   useEffect(() => {
     if (!confirming) return;
@@ -47,7 +74,14 @@ export default function MapPreviewCard({
   async function handleJoin() {
     if (!userId || isJoining || isJoined) return;
     setIsJoining(true);
-    await onJoin();
+    const result = await onJoin();
+    if (result.full) {
+      // Show Full at once, then re-seed from the server snapshot (which holds
+      // the winner's row) so the feed card behind this popup heals too — the
+      // popup, unlike the feed card, is where the loser tapped Join.
+      setForcedFull(true);
+      router.refresh();
+    }
     setIsJoining(false);
   }
 
@@ -62,7 +96,7 @@ export default function MapPreviewCard({
   }
 
   async function handleShare() {
-    const activityUrl = `${window.location.origin}/activity/${activity.id}`;
+    const activityUrl = `${getSiteUrl()}/activity/${activity.id}`;
     const cardUrl = `/api/activity/${activity.id}/card`;
 
     if (isIOSDevice()) {
@@ -88,17 +122,13 @@ export default function MapPreviewCard({
     setShowShareModal(true);
   }
 
-  const participantCount = Array.isArray(activity.participants)
-    ? activity.participants.length
-    : 0;
-  const spotsLeft =
-    activity.max_participants === null
-      ? Infinity
-      : activity.max_participants - participantCount;
+  // Show "Full" in the spots line when full, even if the live count is a hair
+  // behind a rejected join (forcedFull), by feeding the helper a maxed count.
+  const displayCount = isFull && max !== null ? max : participantCount;
 
   const primaryAction = isHost ? (
     <Link
-      href={`/activity/${activity.id}/edit`}
+      href={`/activity/${activity.id}`}
       className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active transition-colors"
     >
       Manage
@@ -142,7 +172,7 @@ export default function MapPreviewCard({
     >
       {isLeaving ? "Leaving…" : confirming ? "Leave activity?" : "Going ✓"}
     </button>
-  ) : spotsLeft > 0 ? (
+  ) : !isFull ? (
     <button
       onClick={handleJoin}
       disabled={isJoining}
@@ -219,22 +249,20 @@ export default function MapPreviewCard({
             </span>
           </p>
           <p className="text-xs text-brand-muted">
-            {activity.max_participants === null
-              ? "Open"
-              : spotsLeft <= 0
-                ? "Full"
-                : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left`}
+            {spotsLeftText(activity.max_participants, displayCount)}
           </p>
         </div>
 
         <div className="flex flex-col gap-2">
           {primaryAction}
-          <Link
-            href={`/activity/${activity.id}`}
-            className="btn-tier-2 w-full flex items-center justify-center transition-colors"
-          >
-            View details
-          </Link>
+          {!isHost && (
+            <Link
+              href={`/activity/${activity.id}`}
+              className="btn-tier-2 w-full flex items-center justify-center transition-colors"
+            >
+              View details
+            </Link>
+          )}
           {userId !== null && (
             <button
               onClick={handleShare}

@@ -2,8 +2,9 @@
 @import "mapbox-gl/dist/mapbox-gl.css";
 
 @theme {
-  /* ── Brand colors ─────────────────────────────────────────────────────────── */
+  /* ── Brand colors ────────────────────────────────────────────────────────── */
   --color-brand-bg: #E8DFD1;
+  --color-brand-input: #ece5da;
   --color-brand-card: #D4C5B3;
   --color-brand-border: rgba(90, 74, 58, 0.25);
   --color-brand-border-hover: rgba(90, 74, 58, 0.4);
@@ -103,6 +104,53 @@ body {
   border: 1px solid color-mix(in srgb, var(--color-brand-private-border) var(--tag-private-border-opacity), transparent);
 }
 
+/* Shared input/select shell. Callers add padding, text size, and text color
+   (some fields set it dynamically). Standard focus ring: 1.5px teal, no outline. */
+@utility field-base {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-brand-border);
+  background-color: var(--color-brand-input);
+  &::placeholder {
+    color: var(--color-brand-muted);
+  }
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 1.5px var(--color-brand-teal);
+  }
+}
+
+@utility field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-brand-text);
+}
+
+@utility field-error {
+  font-size: 14px;
+  color: var(--color-brand-danger);
+}
+
+@utility scrollbar-brand {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-map-bg) transparent;
+  /* Webkit (Chrome/Safari/Edge) */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-brand-muted);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-brand-warm);
+  }
+}
+
 @utility btn-tier-1 {
   background-color: var(--color-brand-teal);
   color: white;
@@ -112,12 +160,15 @@ body {
   border-radius: 10px;
   border: none;
   outline: none;
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-teal) 90%, black);
   }
   &:focus-visible {
     outline: 2px solid var(--color-brand-teal);
     outline-offset: 2px;
+  }
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
@@ -130,13 +181,16 @@ body {
   padding: 12px;
   border-radius: 10px;
   outline: none;
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-warm) 20%, transparent);
     border-color: color-mix(in srgb, var(--color-brand-warm) 50%, transparent);
   }
   &:focus-visible {
     outline: 2px solid var(--color-brand-teal);
     outline-offset: 2px;
+  }
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
@@ -153,13 +207,16 @@ body {
   justify-content: center;
   gap: 6px;
   outline: none;
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-warm) 5%, transparent);
     border-color: color-mix(in srgb, var(--color-brand-warm) 25%, transparent);
   }
   &:focus-visible {
     outline: 2px solid var(--color-brand-teal);
     outline-offset: 2px;
+  }
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
@@ -172,13 +229,16 @@ body {
   padding: 12px;
   border-radius: 10px;
   outline: none;
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: rgba(204, 51, 51, 0.14);
     border-color: rgba(204, 51, 51, 0.55);
   }
   &:focus-visible {
     outline: 2px solid var(--color-brand-danger);
     outline-offset: 2px;
+  }
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
@@ -191,11 +251,14 @@ body {
   padding: 12px;
   border-radius: 10px;
   outline: none;
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-warm-muted) 85%, var(--color-brand-warm));
   }
   &:focus-visible {
     outline: 2px solid var(--color-brand-warm);
     outline-offset: 2px;
+  }
+  &:disabled {
+    cursor: not-allowed;
   }
 }

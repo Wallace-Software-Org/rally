@@ -9,6 +9,8 @@ import { getSportLabel, SPORTS_LIST } from "@/lib/utils/sport-config";
 import DatePicker from "@/components/ui/date-picker";
 import TimePicker from "@/components/ui/time-picker";
 import Select from "@/components/ui/select";
+import Toggle from "@/components/ui/toggle";
+import Stepper from "@/components/ui/stepper";
 
 const SearchBox = dynamic(
   () => import("@mapbox/search-js-react").then((m) => m.SearchBox),
@@ -21,7 +23,11 @@ const SEARCH_BOX_THEME = {
     unit: "14px",
     borderRadius: "0.75rem",
     border: "1px solid rgba(90, 74, 58, 0.25)",
-    colorBackground: "#E8DFD1",
+    colorBackground: "#ece5da",
+    // Highlighted suggestion row. Matches bg-brand-muted/15 (#7A6854 at 15%) so the
+    // location dropdown's hover state matches the time/sport dropdowns instead of the
+    // default near-white.
+    colorBackgroundHover: "rgba(122, 104, 84, 0.15)",
     colorText: "#5A4A3A",
     colorPrimary: "#4A9B8E",
     colorSecondary: "#7A6854",
@@ -44,10 +50,10 @@ const SKILL_LEVELS = [
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
+  "field-base px-4 py-3 text-base xl:text-sm text-brand-text";
 
 const primaryBtn =
-  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:enabled:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
 export type ActivityFormMode = "edit" | "duplicate" | "new";
 
@@ -415,7 +421,7 @@ export default function ActivityForm({
       <div className="px-4 py-2 pb-12 xl:py-8 flex flex-col xl:flex-row xl:items-stretch gap-8 xl:gap-0 max-w-lg xl:max-w-5xl mx-auto w-full">
         <div className="flex flex-col gap-5 xl:flex-1 xl:pr-10 min-w-0">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Activity title
             </label>
             <input
@@ -427,12 +433,12 @@ export default function ActivityForm({
               className={inputCls}
             />
             {showTitleError && (
-              <p className="text-red-500 text-sm">Activity title is required</p>
+              <p className="field-error">Activity title is required</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">Sport</label>
+            <label className="field-label">Sport</label>
             <Select
               value={selectedSport ? getSportLabel(selectedSport) : ""}
               onChange={(label) => {
@@ -444,12 +450,12 @@ export default function ActivityForm({
               listClassName="max-h-[240px] overflow-y-auto"
             />
             {showSportError && (
-              <p className="text-red-500 text-sm">Select a sport to continue</p>
+              <p className="field-error">Select a sport to continue</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Location
             </label>
             <div className="w-full">
@@ -481,14 +487,14 @@ export default function ActivityForm({
               />
             </div>
             {showLocationError && (
-              <p className="text-red-500 text-sm">
+              <p className="field-error">
                 Select a location from the suggestions
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">Date</label>
+            <label className="field-label">Date</label>
             <div className={highlightedDateCls}>
               <div
                 onBlur={(e) => {
@@ -510,13 +516,13 @@ export default function ActivityForm({
               </div>
             </div>
             {showDateError && (
-              <p className="text-red-500 text-sm">Select a date</p>
+              <p className="field-error">Select a date</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center">
-              <label className="text-sm font-medium text-brand-text flex-1">
+              <label className="field-label flex-1">
                 Start time
               </label>
               <button
@@ -574,17 +580,17 @@ export default function ActivityForm({
               )}
             </div>
             {showTimeRequiredError && (
-              <p className="text-red-500 text-sm">Select a time</p>
+              <p className="field-error">Select a time</p>
             )}
             {showTimeLeadTimeError && (
-              <p className="text-red-500 text-sm">
+              <p className="field-error">
                 Choose a time at least 30 minutes from now
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Description
             </label>
             <textarea
@@ -596,7 +602,7 @@ export default function ActivityForm({
               className={`${inputCls} resize-none`}
             />
             {showDescriptionError && (
-              <p className="text-red-500 text-sm">
+              <p className="field-error">
                 Tell people what to expect (20 characters minimum)
               </p>
             )}
@@ -609,7 +615,7 @@ export default function ActivityForm({
           </p>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Skill level
             </label>
             <Select
@@ -619,7 +625,7 @@ export default function ActivityForm({
             />
           </div>
 
-          <div className="border border-brand-border bg-brand-bg rounded-xl">
+          <div className="border border-brand-border bg-brand-input rounded-xl">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm text-brand-text">Limit spots</span>
@@ -629,19 +635,10 @@ export default function ActivityForm({
                     : "Off, open to all"}
                 </span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={limitSpots}
-                onClick={() => setLimitSpots((p) => !p)}
-                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-                  limitSpots
-                    ? "bg-brand-teal justify-end"
-                    : "bg-brand-border justify-start"
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
-              </button>
+              <Toggle
+                checked={limitSpots}
+                onChange={() => setLimitSpots((p) => !p)}
+              />
             </div>
 
             {limitSpots && (
@@ -651,33 +648,18 @@ export default function ActivityForm({
                   <span className="text-sm text-brand-text">
                     Number of spots
                   </span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setStepperValue((v) => Math.max(2, v - 1))}
-                      className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
-                    >
-                      -
-                    </button>
-                    <span className="w-6 text-center text-base font-semibold text-brand-text">
-                      {stepperValue}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setStepperValue((v) => Math.min(20, v + 1))
-                      }
-                      className="w-8 h-8 rounded-lg border border-brand-border bg-brand-bg flex items-center justify-center text-brand-text flex-none"
-                    >
-                      +
-                    </button>
-                  </div>
+                  <Stepper
+                    value={stepperValue}
+                    onChange={setStepperValue}
+                    min={2}
+                    max={20}
+                  />
                 </div>
               </>
             )}
           </div>
 
-          <div className="border border-brand-border bg-brand-bg rounded-xl">
+          <div className="border border-brand-border bg-brand-input rounded-xl">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm text-brand-text">
@@ -689,25 +671,16 @@ export default function ActivityForm({
                     : "Only joinable via link"}
                 </span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={visibility === "private"}
-                onClick={() =>
+              <Toggle
+                checked={visibility === "private"}
+                onChange={() =>
                   setVisibility((v) => (v === "public" ? "private" : "public"))
                 }
-                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-                  visibility === "private"
-                    ? "bg-brand-teal justify-end"
-                    : "bg-brand-border justify-start"
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
-              </button>
+              />
             </div>
           </div>
 
-          <div className="border border-brand-border bg-brand-bg rounded-xl">
+          <div className="border border-brand-border bg-brand-input rounded-xl">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm text-brand-text">
@@ -717,19 +690,10 @@ export default function ActivityForm({
                   Redirect joiners to register elsewhere
                 </span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={externalLinkOpen}
-                onClick={() => setExternalLinkOpen((p) => !p)}
-                className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
-                  externalLinkOpen
-                    ? "bg-brand-teal justify-end"
-                    : "bg-brand-border justify-start"
-                }`}
-              >
-                <span className="w-5 h-5 rounded-full bg-white shadow-sm" />
-              </button>
+              <Toggle
+                checked={externalLinkOpen}
+                onChange={() => setExternalLinkOpen((p) => !p)}
+              />
             </div>
             {externalLinkOpen && (
               <>
@@ -744,7 +708,7 @@ export default function ActivityForm({
                     className={inputCls}
                   />
                   {showExternalLinkError && (
-                    <p className="text-red-500 text-sm">
+                    <p className="field-error">
                       Enter a valid http or https URL.
                     </p>
                   )}
@@ -777,8 +741,8 @@ export default function ActivityForm({
 
               {cancelConfirm && (
                 <p className="text-sm text-brand-muted text-center leading-relaxed">
-                  This will remove all participants and cancel the activity.
-                  This can&apos;t be undone.
+                  People who joined will see it as cancelled. This can&apos;t be
+                  undone.
                 </p>
               )}
 

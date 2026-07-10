@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const ActivityMiniMap = dynamic(
   () => import("@/components/map/activity-mini-map"),
@@ -11,18 +12,23 @@ const ActivityMiniMap = dynamic(
 import Image from "next/image";
 import type { ActivityDetail } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
-import { createClient } from "@/lib/supabase/client";
+import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
+import { useForcedFull } from "@/hooks/use-forced-full";
 import { AnimatePresence, motion } from "framer-motion";
 import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
+import GroupChatModal from "@/components/activities/group-chat-modal";
 import BackButton from "@/components/ui/back-button";
 import {
+  ACTIVITY_FULL_ERROR,
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
+  spotsLeftText,
 } from "@/lib/utils/activity-participants";
 import { getInitials, shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import { isIOSDevice } from "@/lib/utils/platform";
+import { COPY_FEEDBACK_MS } from "@/lib/brand";
 
 function formatDetailDate(startsAt: string): string {
   const d = new Date(startsAt);
@@ -68,89 +74,6 @@ function Divider() {
   return <div className="h-px bg-brand-border" />;
 }
 
-function useRealtimeParticipantCount(activity: ActivityDetail) {
-  const initialCount = activity.participants.length;
-  const [participantState, setParticipantState] = useState(() => ({
-    activityId: activity.id,
-    initialCount,
-    count: initialCount,
-  }));
-  const participantCount =
-    participantState.activityId === activity.id &&
-    participantState.initialCount === initialCount
-      ? participantState.count
-      : initialCount;
-
-  useEffect(() => {
-    if (
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ) {
-      return;
-    }
-
-    function updateParticipantCount(update: (count: number) => number) {
-      setParticipantState((state) => {
-        const currentCount =
-          state.activityId === activity.id &&
-          state.initialCount === initialCount
-            ? state.count
-            : initialCount;
-
-        return {
-          activityId: activity.id,
-          initialCount,
-          count: update(currentCount),
-        };
-      });
-    }
-
-    const supabase = createClient();
-    const channelId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-    const channel = supabase
-      .channel(`participants:${activity.id}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "participants",
-          filter: `activity_id=eq.${activity.id}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            updateParticipantCount((count) => count + 1);
-          }
-
-          if (payload.eventType === "DELETE") {
-            updateParticipantCount((count) => Math.max(0, count - 1));
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [activity.id, initialCount]);
-
-  return participantCount;
-}
-
-function spotsLeftText(
-  maxParticipants: number | null,
-  participantCount: number,
-) {
-  if (maxParticipants === null) return "Open";
-
-  const spotsLeft = Math.max(0, maxParticipants - participantCount);
-  if (spotsLeft === 0) return "Full";
-
-  return `${spotsLeft} spots left`;
-}
 
 function ExternalLinkIcon() {
   return (
@@ -211,7 +134,7 @@ function LocationButton({
   async function copyAddress() {
     await navigator.clipboard.writeText(locationName);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
   }
 
   const appleUrl =
@@ -359,21 +282,41 @@ export default function ActivityDetailView({
     full_name: string | null;
     username: string | null;
     avatar_url: string | null;
+    instagram_handle: string | null;
   } | null;
 }) {
   const initiallyJoined = activity.participants.some(
     (p) => p.user_id === userId,
   );
+  const router = useRouter();
   const [isJoined, setIsJoined] = useState(initiallyJoined);
-  // Participants are held in state (not read straight from the prop) so the
-  // "Who's going" stack can re-render when the viewer joins or leaves. The
-  // realtime count hook only tracks a number and can't drive the avatar list.
-  const [participants, setParticipants] = useState(activity.participants);
+  // Live participant list drives both the "Who's going" avatars and the count.
+  // Remote joins/leaves stream in via realtime; the acting user's own join or
+  // leave is applied optimistically through the returned mutators (deduped by
+  // user_id so the realtime echo of their own change does not double-add).
+  const {
+    participants,
+    participantCount,
+    addParticipant,
+    removeParticipantByUserId,
+  } = useRealtimeParticipants({
+    activityId: activity.id,
+    initialParticipants: activity.participants,
+    profileColumns: "full_name, avatar_url, instagram_handle, username",
+  });
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showGroupChatModal, setShowGroupChatModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  // Full override after a capacity rejection; the router.refresh re-seed
+  // follows. Bridge, not a latch (see useForcedFull): it releases once the live
+  // count confirms fullness, so a later leave reopens the spot.
+  const [forcedFull, setForcedFull] = useForcedFull(
+    participantCount,
+    activity.max_participants,
+  );
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
   );
@@ -422,7 +365,6 @@ export default function ActivityDetailView({
 
   const isHost = userId === activity.creator_id;
   const viewerCanSeeProfiles = isHost || isJoined;
-  const participantCount = useRealtimeParticipantCount(activity);
   const spotsLeft =
     activity.max_participants === null
       ? null
@@ -443,7 +385,21 @@ export default function ActivityDetailView({
       profiles: profile,
     }),
   });
-  const isFull = spotsLeft !== null && spotsLeft <= 0;
+  // Group-chat roster: confirmed participants only, host excluded.
+  const groupChatRoster = participants
+    .filter((p) => p.user_id !== activity.creator_id)
+    .map((p) => ({
+      id: p.id,
+      full_name: p.profiles?.full_name ?? "",
+      username: p.profiles?.username ?? null,
+      avatar_url: p.profiles?.avatar_url ?? null,
+      instagram_handle: p.profiles?.instagram_handle ?? null,
+    }));
+  const isFull = forcedFull || (spotsLeft !== null && spotsLeft <= 0);
+  const displayCount =
+    isFull && activity.max_participants !== null
+      ? activity.max_participants
+      : participantCount;
   const skillDisplay = activity.skill_level
     ? activity.skill_level.charAt(0).toUpperCase() +
       activity.skill_level.slice(1)
@@ -452,34 +408,33 @@ export default function ActivityDetailView({
     if (!userId || joining || isJoined) return;
     setJoining(true);
     const { error } = await joinActivity(activity.id);
+    if (error === ACTIVITY_FULL_ERROR) {
+      // Lost a simultaneous join: reflect Full at once, then re-seed from the
+      // server snapshot (which includes the winner's row).
+      setForcedFull(true);
+      router.refresh();
+    }
     if (!error) {
       setIsJoined(true);
       // Optimistically add the viewer to "Who's going" so their avatar appears
       // immediately. Prefer their original participant entry if they left this
-      // session; otherwise build one from viewerProfile.
-      setParticipants((prev) => {
-        if (prev.some((p) => p.user_id === userId)) return prev;
-        const original = activity.participants.find(
-          (p) => p.user_id === userId,
-        );
-        if (original) return [...prev, original];
-        if (viewerProfile) {
-          return [
-            ...prev,
-            {
-              id: `viewer-${userId}`,
-              user_id: userId,
-              profiles: {
-                full_name: viewerProfile.full_name ?? "",
-                avatar_url: viewerProfile.avatar_url,
-                instagram_handle: null,
-                username: viewerProfile.username,
-              },
-            },
-          ];
-        }
-        return prev;
-      });
+      // session; otherwise build one from viewerProfile. addParticipant dedupes
+      // by user_id, so the realtime echo of this insert will not double-add.
+      const original = activity.participants.find((p) => p.user_id === userId);
+      if (original) {
+        addParticipant(original);
+      } else if (viewerProfile) {
+        addParticipant({
+          id: `viewer-${userId}`,
+          user_id: userId,
+          profiles: {
+            full_name: viewerProfile.full_name ?? "",
+            avatar_url: viewerProfile.avatar_url,
+            instagram_handle: null,
+            username: viewerProfile.username,
+          },
+        });
+      }
     }
     setJoining(false);
   }
@@ -490,7 +445,7 @@ export default function ActivityDetailView({
     const { error } = await leaveActivity(activity.id);
     if (!error) {
       setIsJoined(false);
-      setParticipants((prev) => prev.filter((p) => p.user_id !== userId));
+      removeParticipantByUserId(userId);
     }
     setLeaving(false);
     setLeaveConfirm(false);
@@ -499,7 +454,7 @@ export default function ActivityDetailView({
   async function handleCopyLink() {
     await navigator.clipboard.writeText(window.location.href);
     setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
+    setTimeout(() => setLinkCopied(false), COPY_FEEDBACK_MS);
   }
 
   async function handleShare() {
@@ -532,7 +487,7 @@ export default function ActivityDetailView({
       href={`/activity/${activity.id}/edit`}
       className="btn-tier-1 w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active transition-colors"
     >
-      Manage
+      Edit
     </Link>
   ) : isJoined ? (
     <button
@@ -600,6 +555,85 @@ export default function ActivityDetailView({
       </button>
     ) : null;
 
+  const groupChatBtn = (tier: string) =>
+    isHost ? (
+      <button
+        onClick={() => setShowGroupChatModal(true)}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 19v-1a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v1M16.5 9.5a2.5 2.5 0 1 0 0-5M17 14h.5a4 4 0 0 1 4 4v.5"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Invite to group chat
+      </button>
+    ) : null;
+
+  // Host-only, shown on all activities (public and private) so any host can
+  // grab a shareable link. Uses a neutral tier to match the sibling actions.
+  const copyLinkBtn = (tier: string) =>
+    isHost ? (
+      <button
+        onClick={handleCopyLink}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-2 transition-colors`}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <rect
+            x="9"
+            y="9"
+            width="11"
+            height="11"
+            rx="2"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          />
+          <path
+            d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        {linkCopied ? "Copied!" : "Copy invite link"}
+      </button>
+    ) : null;
+
+  // Nudge joined participants who have no Instagram handle to add one, so hosts
+  // can pull them into a group chat. Hidden once a handle exists.
+  const viewerHasInstagram = Boolean(viewerProfile?.instagram_handle?.trim());
+  const showInstagramNudge = isJoined && !!viewerProfile && !viewerHasInstagram;
+  const instagramNudge = showInstagramNudge ? (
+    <div className="w-full max-w-156 rounded-xl border-[0.5px] border-brand-teal bg-brand-teal/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-sm text-brand-teal">
+      <span className="font-medium">
+        Add your Instagram so hosts can invite you to a group chat.
+      </span>
+      <Link
+        href="/profile/edit"
+        className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
+      >
+        Add Instagram
+      </Link>
+    </div>
+  ) : null;
+
   const registerBtn = (tier: string) =>
     userId && activity.external_link ? (
       <a
@@ -618,13 +652,20 @@ export default function ActivityDetailView({
       {/* Fixed floating back button (mobile) — overlays content, arrives via feed */}
       <BackButton />
       {/* ── Scrollable content ───────────────────────────────────────────────── */}
-      <div className="page-with-back flex-1 overflow-y-auto">
+      <div className="page-with-back flex-1 overflow-y-auto px-3">
         {showPostedBanner && (
-          <div className="px-4 pt-4 xl:px-8 xl:max-w-5xl xl:mx-auto w-full">
-            <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <span>Your activity is live.</span>
+          <div className="px-4 pt-4 max-w-2xl mx-auto w-full">
+            <div className="relative rounded-xl border border-brand-teal bg-brand-teal/10 px-4 py-3 pr-12 text-sm font-medium text-brand-teal flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-col gap-0.5">
+                <span>Your activity is live.</span>
+                {activity.visibility === "private" && (
+                  <span className="text-xs font-normal">
+                    This activity is private. Use copy invite link to share it.
+                  </span>
+                )}
+              </div>
               {userId && (
-                <div className="w-full sm:w-auto flex items-center sm:justify-end gap-2 flex-none">
+                <div className="flex items-center justify-end gap-2 flex-none">
                   <button
                     onClick={handleShare}
                     className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
@@ -758,7 +799,7 @@ export default function ActivityDetailView({
               <div className="flex flex-wrap gap-2 mt-3">
                 <MetaPill>{skillDisplay}</MetaPill>
                 <MetaPill>
-                  {spotsLeftText(activity.max_participants, participantCount)}
+                  {spotsLeftText(activity.max_participants, displayCount)}
                 </MetaPill>
                 {activity.visibility === "private" && (
                   <MetaPill>Private</MetaPill>
@@ -926,16 +967,13 @@ export default function ActivityDetailView({
             {/* 6. Secondary actions — mobile/tablet only; xl keeps them in the right panel */}
             {userId && (
               <div className="xl:hidden flex flex-col items-center gap-3">
+                {instagramNudge}
+                {copyLinkBtn("btn-tier-2")}
                 {registerBtn("btn-tier-2")}
                 {shareBtn("btn-tier-2")}
+                {groupChatBtn("btn-tier-2")}
               </div>
             )}
-
-            {/* 6. CTAs — md/lg inline (hidden on mobile and xl) */}
-            {/* <div className="hidden md:flex xl:hidden flex-col gap-3 pt-2 pb-4">
-              {ctaButton}
-              {shareBtn}
-            </div> */}
           </div>
 
           {/* ── Right sticky panel — xl only ────────────────────────────────── */}
@@ -954,40 +992,11 @@ export default function ActivityDetailView({
             )}
             <div className="flex flex-col gap-3">
               {ctaButton}
-              {isHost && activity.visibility === "private" && (
-                <button
-                  onClick={handleCopyLink}
-                  className="btn-tier-private cursor-pointer w-full flex items-center justify-center gap-2 transition-colors"
-                >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <rect
-                      x="9"
-                      y="9"
-                      width="11"
-                      height="11"
-                      rx="2"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    />
-                    <path
-                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  {linkCopied ? "Copied!" : "Copy invite link"}
-                </button>
-              )}
+              {copyLinkBtn("btn-tier-2")}
               {registerBtn("btn-tier-2")}
               {shareBtn("btn-tier-2")}
+              {groupChatBtn("btn-tier-2")}
+              {instagramNudge}
             </div>
           </div>
         </div>
@@ -1003,6 +1012,14 @@ export default function ActivityDetailView({
           <ShareStoryModal onClose={() => setShowShareModal(false)} />
         )}
       </AnimatePresence>
+
+      {isHost && (
+        <GroupChatModal
+          participants={groupChatRoster}
+          isOpen={showGroupChatModal}
+          onClose={() => setShowGroupChatModal(false)}
+        />
+      )}
     </div>
   );
 }

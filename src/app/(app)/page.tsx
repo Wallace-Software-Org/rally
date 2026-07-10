@@ -12,7 +12,11 @@ export default async function HomePage() {
   const [activities, profileResult] = await Promise.all([
     getActivities(),
     user
-      ? supabase.from('profiles').select('sports').eq('id', user.id).single()
+      ? supabase
+          .from('profiles')
+          .select('sports, lat, lng')
+          .eq('id', user.id)
+          .single()
       : Promise.resolve({ data: null }),
   ])
 
@@ -21,6 +25,8 @@ export default async function HomePage() {
       activities={activities}
       userId={user?.id ?? null}
       userActivities={(profileResult.data?.sports as string[]) ?? []}
+      profileLat={(profileResult.data?.lat as number | null) ?? null}
+      profileLng={(profileResult.data?.lng as number | null) ?? null}
     />
   )
 }

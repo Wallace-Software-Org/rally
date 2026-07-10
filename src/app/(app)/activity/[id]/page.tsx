@@ -34,6 +34,9 @@ export default async function ActivityPage({
   if (activity === null) notFound();
 
   if (activity === "private") {
+    // Private is unlisted, not invite-only: any authenticated user with the link
+    // can view. getActivityById only returns this sentinel for logged-out
+    // visitors, so the gate is purely a prompt to log in and then view.
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center gap-3">
         <p className="text-base font-medium text-brand-text">
@@ -99,6 +102,7 @@ export default async function ActivityPage({
               full_name: viewerProfile.full_name,
               username: viewerProfile.username,
               avatar_url: viewerProfile.avatar_url,
+              instagram_handle: viewerProfile.instagram_handle,
             }
           : null
       }

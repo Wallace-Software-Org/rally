@@ -1,13 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import {
-  ActivityCardDesktop,
-  ActivityCardMobile,
-} from "@/components/activities/activity-card";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import type { ActivityWithParticipants } from "@/types";
 
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), refresh }),
   usePathname: () => "/",
 }));
 
@@ -40,11 +39,88 @@ const base = {
   isJoining: false,
   isLeaving: false,
   onSelect: vi.fn(),
-  onJoin: vi.fn(),
+  onJoin: vi.fn(() => Promise.resolve({ ok: true, full: false })),
   onLeave: vi.fn(),
 };
 
 describe("ActivityCardDesktop", () => {
+  beforeEach(() => refresh.mockClear());
+
+  it("flips to Full when a join is rejected for capacity", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    render(<ActivityCardDesktop {...base} onJoin={onJoin} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    await waitFor(() =>
+      expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(1),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Join" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("calls router.refresh on a full-rejected join", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    render(<ActivityCardDesktop {...base} onJoin={onJoin} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it("clears the Full override once live data catches up, so a later leave reopens the spot", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    const other = (id: string) => ({
+      id: `p-${id}`,
+      user_id: id,
+      profiles: { full_name: id, avatar_url: null },
+    });
+    const activity: ActivityWithParticipants = {
+      ...mockActivity,
+      max_participants: 2,
+      participants: [other("other-a")],
+    };
+    const { rerender } = render(
+      <ActivityCardDesktop {...base} activity={activity} onJoin={onJoin} />,
+    );
+
+    // One spot left → Join is available.
+    expect(screen.getByRole("button", { name: "Join" })).toBeInTheDocument();
+
+    // A full-rejected join flips to Full via the override, before live catches up.
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Join" }),
+      ).not.toBeInTheDocument(),
+    );
+
+    // Live count reaches max (the re-seed): the override clears, but the real
+    // count keeps the card Full.
+    rerender(
+      <ActivityCardDesktop
+        {...base}
+        activity={{ ...activity, participants: [other("other-a"), other("other-b")] }}
+        onJoin={onJoin}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Join" }),
+    ).not.toBeInTheDocument();
+
+    // Someone leaves (realtime DELETE lowers the count): with the override gone,
+    // the live count reopens the spot instead of staying stuck on Full.
+    rerender(
+      <ActivityCardDesktop
+        {...base}
+        activity={{ ...activity, participants: [other("other-a")] }}
+        onJoin={onJoin}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Join" })).toBeInTheDocument();
+  });
+
   it("renders title, sport tag, and location", () => {
     render(<ActivityCardDesktop {...base} />);
     expect(screen.getByText("Morning Run at Papago Park")).toBeInTheDocument();
@@ -179,48 +255,5 @@ describe("ActivityCardDesktop", () => {
       <ActivityCardDesktop {...base} activity={{ ...mockActivity, max_participants: null }} />,
     );
     expect(screen.getByText("Open")).toBeInTheDocument();
-  });
-});
-
-describe("ActivityCardMobile", () => {
-  it("shows location text when userId is null", () => {
-    render(<ActivityCardMobile {...base} userId={null} />);
-    expect(screen.getByText("Papago Park")).toBeInTheDocument();
-    expect(screen.queryByText("••••••••••••")).not.toBeInTheDocument();
-  });
-
-  it("keeps host avatar sharp and blurs participant avatars when userId is null", () => {
-    render(
-      <ActivityCardMobile
-        {...base}
-        userId={null}
-        activity={{
-          ...mockActivity,
-          participants: [
-            {
-              id: "other-participant",
-              user_id: "participant-1",
-              profiles: { full_name: "Participant Avery", avatar_url: null },
-            },
-            {
-              id: "host-participant",
-              user_id: "creator-999",
-              profiles: { full_name: "Wrong Host", avatar_url: null },
-            },
-          ],
-        }}
-      />,
-    );
-
-    const hostAvatar = screen.getByText("HP");
-    const participantAvatar = screen.getByText("PA");
-
-    expect(screen.queryByText("WH")).not.toBeInTheDocument();
-    expect(
-      hostAvatar.compareDocumentPosition(participantAvatar) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(hostAvatar).not.toHaveClass("blur-sm");
-    expect(participantAvatar).toHaveClass("blur-sm");
   });
 });

@@ -1,7 +1,21 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import type { ActivityWithParticipants } from "@/types";
+
+const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh }),
+}));
+
+const joinOk = () => Promise.resolve({ ok: true, full: false });
+function participant(userId: string) {
+  return {
+    id: `p-${userId}`,
+    user_id: userId,
+    profiles: { full_name: userId, avatar_url: null },
+  };
+}
 
 const mockActivity: ActivityWithParticipants = {
   id: "act-1",
@@ -36,13 +50,13 @@ const viewerParticipant = {
 function renderCard({
   activity = mockActivity,
   userId = "viewer-1",
-  onJoin = vi.fn().mockResolvedValue(true),
+  onJoin = vi.fn(joinOk),
   onLeave = vi.fn().mockResolvedValue(true),
   onDismiss = vi.fn(),
 }: {
   activity?: ActivityWithParticipants;
   userId?: string | null;
-  onJoin?: () => Promise<boolean>;
+  onJoin?: () => Promise<{ ok: boolean; full: boolean }>;
   onLeave?: () => Promise<boolean>;
   onDismiss?: () => void;
 } = {}) {
@@ -97,7 +111,7 @@ describe("MapPreviewCard", () => {
           participants: [viewerParticipant],
         }}
         userId="viewer-1"
-        onJoin={vi.fn().mockResolvedValue(true)}
+        onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
       />,
@@ -123,7 +137,7 @@ describe("MapPreviewCard", () => {
       <MapPreviewCard
         activity={mockActivity}
         userId="viewer-1"
-        onJoin={vi.fn().mockResolvedValue(true)}
+        onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
       />,
@@ -141,7 +155,7 @@ describe("MapPreviewCard", () => {
           participants: [viewerParticipant],
         }}
         userId="viewer-1"
-        onJoin={vi.fn().mockResolvedValue(true)}
+        onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
       />,
@@ -164,6 +178,109 @@ describe("MapPreviewCard", () => {
     expect(shareToStory).toHaveClass("btn-tier-2");
     expectBefore(primaryAction, viewDetails);
     expectBefore(viewDetails, shareToStory);
+  });
+
+  it("shows Full (button + spots line) from the live count at capacity", () => {
+    renderCard({
+      activity: {
+        ...mockActivity,
+        max_participants: 2,
+        participants: [participant("other-1"), participant("other-2")],
+      },
+    });
+
+    expect(screen.getByRole("button", { name: /^full$/i })).toBeInTheDocument();
+    // Both the spots line and the button read "Full".
+    expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.queryByRole("button", { name: /join activity/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("flips to Full immediately when a join is rejected for capacity", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    renderCard({
+      activity: { ...mockActivity, max_participants: 10, participants: [] },
+      onJoin,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^full$/i })).toBeInTheDocument(),
+    );
+    // Both the spots line and the button read "Full".
+    expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.queryByRole("button", { name: /join activity/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("refreshes the server snapshot when a join is rejected for capacity", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    renderCard({
+      activity: { ...mockActivity, max_participants: 10, participants: [] },
+      onJoin,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+
+    // The re-seed is what heals the feed card behind the popup, where the loser
+    // tapped Join.
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it("clears the Full override once the live count catches up, so a held-open popup reopens on a leave", async () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
+    const full1 = { ...mockActivity, max_participants: 2 };
+    const rest = {
+      userId: "viewer-1" as const,
+      onJoin,
+      onLeave: vi.fn().mockResolvedValue(true),
+      onDismiss: vi.fn(),
+    };
+    const { rerender } = renderCard({
+      activity: { ...full1, participants: [participant("other-a")] },
+      onJoin,
+    });
+
+    // One spot left → Join is available.
+    expect(
+      screen.getByRole("button", { name: /join activity/i }),
+    ).toBeInTheDocument();
+
+    // A full-rejected join flips to Full via the override.
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /^full$/i }),
+      ).toBeInTheDocument(),
+    );
+
+    // Live count reaches max (the re-seed): the override clears, but the real
+    // count keeps the popup Full. The popup is never remounted here.
+    rerender(
+      <MapPreviewCard
+        activity={{
+          ...full1,
+          participants: [participant("other-a"), participant("other-b")],
+        }}
+        {...rest}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /^full$/i })).toBeInTheDocument();
+
+    // Someone leaves (realtime DELETE lowers the count): with the override gone,
+    // the held-open popup reopens the spot instead of staying stuck on Full.
+    rerender(
+      <MapPreviewCard
+        activity={{ ...full1, participants: [participant("other-a")] }}
+        {...rest}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: /join activity/i }),
+    ).toBeInTheDocument();
   });
 
   it("hides Register here and Share to Story for logged-out users", () => {

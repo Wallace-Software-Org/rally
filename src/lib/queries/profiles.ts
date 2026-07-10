@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import type { ProfilePage } from "@/types";
+import type {
+  AttendedActivity,
+  AttendedHost,
+  HostedActivity,
+  HostParticipantProfile,
+  ProfilePage,
+} from "@/types";
 
 export async function getProfileById(userId: string) {
   const supabase = await createClient();
@@ -15,7 +21,6 @@ export async function getProfileByUsername(
   username: string,
 ): Promise<ProfilePage | null> {
   const supabase = await createClient();
-  const now = new Date().toISOString();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -39,12 +44,21 @@ export async function getProfileByUsername(
       .from("participants")
       .select("id", { count: "exact", head: true })
       .eq("user_id", profile.id),
+    // Hosting is a management surface: include past and cancelled activities,
+    // plus the participant data the management cards render.
     supabase
       .from("activities")
-      .select("id, title, sport, location_name, skill_level, starts_at")
+      .select(
+        `
+        id, title, sport, description, location_name, skill_level, starts_at,
+        max_participants, visibility, status,
+        participants (
+          id, user_id,
+          profiles ( full_name, avatar_url, username, instagram_handle )
+        )
+      `,
+      )
       .eq("creator_id", profile.id)
-      .eq("status", "open")
-      .gt("starts_at", now)
       .order("starts_at", { ascending: true }),
     supabase
       .from("participants")
@@ -52,19 +66,28 @@ export async function getProfileByUsername(
       .eq("user_id", profile.id),
   ]);
 
-  // Fetch upcoming activities the user is attending (but not hosting)
+  // Attending is a read-only hub mirroring Hosting: include past and cancelled
+  // activities the user joined (but does not host), with host + participant data.
   const activityIds = (participantRows ?? []).map((p) => p.activity_id);
-  let going: ProfilePage["going"] = [];
+  let going: AttendedActivity[] = [];
   if (activityIds.length > 0) {
     const { data: goingData } = await supabase
       .from("activities")
-      .select("id, title, sport, location_name, skill_level, starts_at")
+      .select(
+        `
+        id, title, sport, description, location_name, skill_level, starts_at,
+        max_participants, visibility, status,
+        host:profiles!activities_creator_id_fkey ( full_name, avatar_url, username ),
+        participants (
+          id, user_id,
+          profiles ( full_name, avatar_url, username, instagram_handle )
+        )
+      `,
+      )
       .in("id", activityIds)
       .neq("creator_id", profile.id)
-      .eq("status", "open")
-      .gt("starts_at", now)
       .order("starts_at", { ascending: true });
-    going = goingData ?? [];
+    going = normalizeAttending(goingData);
   }
 
   return {
@@ -73,6 +96,54 @@ export async function getProfileByUsername(
     hosted_count: hostedCount ?? 0,
     attended_count: attendedCount ?? 0,
     going,
-    hosting: hosting ?? [],
+    hosting: normalizeHosting(hosting),
   };
+}
+
+function normalizeRelation<T>(value: unknown): T | null {
+  return (Array.isArray(value) ? (value[0] ?? null) : (value ?? null)) as
+    | T
+    | null;
+}
+
+function normalizeParticipants(
+  participants: { id: string; user_id: string; profiles: unknown }[] | null,
+) {
+  return (participants ?? []).map((p) => ({
+    id: p.id,
+    user_id: p.user_id,
+    profiles: normalizeRelation<HostParticipantProfile>(p.profiles),
+  }));
+}
+
+function normalizeAttending(
+  data:
+    | {
+        host: unknown;
+        participants: { id: string; user_id: string; profiles: unknown }[];
+        [key: string]: unknown;
+      }[]
+    | null,
+): AttendedActivity[] {
+  return (data ?? []).map((a) => ({
+    ...(a as unknown as AttendedActivity),
+    host: normalizeRelation<AttendedHost>(a.host),
+    participants: normalizeParticipants(a.participants),
+  }));
+}
+
+// Supabase infers the participant->profiles join as an array at the type level
+// but it is an object at runtime; normalize so HostParticipant matches.
+function normalizeHosting(
+  data:
+    | {
+        participants: { id: string; user_id: string; profiles: unknown }[];
+        [key: string]: unknown;
+      }[]
+    | null,
+): HostedActivity[] {
+  return (data ?? []).map((a) => ({
+    ...(a as unknown as HostedActivity),
+    participants: normalizeParticipants(a.participants),
+  }));
 }

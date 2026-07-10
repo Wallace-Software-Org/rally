@@ -308,12 +308,12 @@ describe("ActivityDetailView — join flow", () => {
 // ── Share flow + CTA tiers ───────────────────────────────────────────────────
 
 describe("ActivityDetailView — share flow and CTA tiers", () => {
-  it("Manage button has btn-tier-1 class", () => {
+  it("Edit button has btn-tier-1 class", () => {
     renderAsHost();
-    const manageLinks = screen.getAllByRole("link", { name: /manage/i });
+    const editLinks = screen.getAllByRole("link", { name: /edit/i });
 
-    expect(manageLinks.length).toBeGreaterThan(0);
-    manageLinks.forEach((link) => {
+    expect(editLinks.length).toBeGreaterThan(0);
+    editLinks.forEach((link) => {
       expect(link).toHaveClass("btn-tier-1");
     });
   });
@@ -389,20 +389,20 @@ describe("ActivityDetailView — leave flow", () => {
 // ── Host actions ─────────────────────────────────────────────────────────────
 
 describe("ActivityDetailView — host actions", () => {
-  it("shows Manage link when the current user is the host", () => {
+  it("shows Edit link when the current user is the host", () => {
     renderAsHost();
-    expect(screen.getAllByRole("link", { name: /manage/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /edit/i }).length).toBeGreaterThan(0);
   });
 
-  it("hides Manage link for non-host viewers", () => {
+  it("hides Edit link for non-host viewers", () => {
     renderAsViewer();
-    expect(screen.queryByRole("link", { name: /manage/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /edit/i })).not.toBeInTheDocument();
   });
 
-  it("Manage link points to the edit page", () => {
+  it("Edit link points to the edit page", () => {
     renderAsHost();
-    const manageLink = screen.getAllByRole("link", { name: /manage/i })[0];
-    expect(manageLink).toHaveAttribute("href", "/activity/act-1/edit");
+    const editLink = screen.getAllByRole("link", { name: /edit/i })[0];
+    expect(editLink).toHaveAttribute("href", "/activity/act-1/edit");
   });
 
   it("shows Private pill when visibility is private", () => {
@@ -412,7 +412,10 @@ describe("ActivityDetailView — host actions", () => {
 
   it("shows Copy invite link button for host on private activity", () => {
     renderAsHost({ visibility: "private" });
-    expect(screen.getByRole("button", { name: /copy invite link/i })).toBeInTheDocument();
+    // Renders in both the mobile and desktop host action stacks.
+    expect(
+      screen.getAllByRole("button", { name: /copy invite link/i }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("does not show Copy invite link button for non-host on private activity", () => {
@@ -420,8 +423,11 @@ describe("ActivityDetailView — host actions", () => {
     expect(screen.queryByRole("button", { name: /copy invite link/i })).not.toBeInTheDocument();
   });
 
-  it("does not show Copy invite link button for host on public activity", () => {
+  it("shows Copy invite link button for host on public activity", () => {
     renderAsHost({ visibility: "public" });
-    expect(screen.queryByRole("button", { name: /copy invite link/i })).not.toBeInTheDocument();
+    // Copy invite link is now host-only on all activities, not private-only.
+    expect(
+      screen.getAllByRole("button", { name: /copy invite link/i }).length,
+    ).toBeGreaterThan(0);
   });
 });

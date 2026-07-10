@@ -38,7 +38,7 @@ function initials(name: string | null): string {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-transparent px-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal";
+  "field-base px-4 py-3 text-base xl:text-sm text-brand-text";
 
 export default function EditProfileForm({ profile }: { profile: ProfileData }) {
   const router = useRouter();
@@ -126,7 +126,10 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
     setSigningOut(true);
     const { error } = await signOut();
     if (!error) {
-      router.push("/login");
+      // Land on the feed in its logged-out state. refresh() clears the cached
+      // server components so no stale signed-in UI carries over.
+      router.push("/");
+      router.refresh();
     } else {
       setSigningOut(false);
     }
@@ -238,7 +241,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
 
           {/* Display name */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Display name
             </label>
             <input
@@ -252,7 +255,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
 
           {/* Username */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">
+            <label className="field-label">
               Username
             </label>
             <div className="relative">
@@ -337,7 +340,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
 
           {/* Bio */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-brand-text">Bio</label>
+            <label className="field-label">Bio</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -351,7 +354,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
           <div className="flex flex-col gap-1.5">
             <label
               className="text-sm font-medium flex items-center gap-1.5"
-              style={{ color: "#1D9E75" }}
+              style={{ color: "var(--color-brand-teal)" }}
             >
               <InstagramIcon size={15} />
               Instagram handle
@@ -367,7 +370,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                   setInstagramHandle(e.target.value.replace(/[@\s]/g, ""))
                 }
                 placeholder="yourhandle"
-                className="w-full rounded-xl border border-brand-teal bg-transparent pl-7 pr-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal"
+                className="w-full rounded-xl border border-brand-teal bg-brand-input pl-7 pr-4 py-3 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-[1.5px] focus:ring-brand-teal"
               />
             </div>
             <p className="text-xs text-brand-muted">
@@ -382,7 +385,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
               onClick={() => setTagsOpen((o) => !o)}
               className="flex items-center gap-2 py-1"
             >
-              <span className="text-sm font-medium text-brand-text flex-none">
+              <span className="field-label flex-none">
                 Activities
               </span>
               <div className="hidden xl:flex flex-1 flex-wrap gap-1.5 min-w-0 justify-start">

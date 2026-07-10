@@ -3,12 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import type { ActivityWithParticipants, Participant } from "@/types";
-import { createClient } from "@/lib/supabase/client";
+import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
+import { useForcedFull } from "@/hooks/use-forced-full";
 import {
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
+  spotsLeftText,
 } from "@/lib/utils/activity-participants";
 import { formatActivityDate } from "@/lib/utils/format-time";
 import {
@@ -22,12 +23,10 @@ type CardProps = {
   userId: string | null;
   isJoined: boolean;
   isJoining: boolean;
-  onJoin: () => void;
+  // Returns the join outcome so the card can flip to Full on a capacity
+  // rejection, mirroring the map popup.
+  onJoin: () => Promise<{ ok: boolean; full: boolean }>;
 };
-
-function initialParticipantCount(activity: ActivityWithParticipants): number {
-  return initialParticipants(activity).length;
-}
 
 function initialParticipants(
   activity: ActivityWithParticipants,
@@ -41,16 +40,6 @@ function initialParticipants(
   });
 }
 
-type RealtimeState = {
-  activityId: string;
-  initialCount: number;
-  currentUserId: string | null;
-  count: number;
-  participants: Participant[];
-  hasJoined: boolean;
-  deleteLogKey: number;
-};
-
 function hasUserJoined(
   participants: Participant[],
   currentUserId: string | null,
@@ -59,140 +48,6 @@ function hasUserJoined(
     currentUserId !== null &&
     participants.some((participant) => participant.user_id === currentUserId)
   );
-}
-
-function useRealtimeParticipants(
-  activity: ActivityWithParticipants,
-  currentUserId: string | null,
-): {
-  participantCount: number;
-  liveParticipants: Participant[];
-  hasJoined: boolean;
-} {
-  const initialParticipantList = initialParticipants(activity);
-  const initialCount = initialParticipantCount(activity);
-  const [state, setState] = useState<RealtimeState>(() => ({
-    activityId: activity.id,
-    initialCount,
-    currentUserId,
-    count: initialCount,
-    participants: initialParticipantList,
-    hasJoined: hasUserJoined(initialParticipantList, currentUserId),
-    deleteLogKey: 0,
-  }));
-
-  const isSync =
-    state.activityId === activity.id &&
-    state.initialCount === initialCount &&
-    state.currentUserId === currentUserId;
-  const participantCount = isSync ? state.count : initialCount;
-  const liveParticipants = isSync ? state.participants : initialParticipantList;
-  const hasJoined = isSync
-    ? state.hasJoined
-    : hasUserJoined(initialParticipantList, currentUserId);
-
-  useEffect(() => {
-    if (state.deleteLogKey === 0) return;
-  }, [state.deleteLogKey, state.participants.length]);
-
-  useEffect(() => {
-    if (
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ) {
-      return;
-    }
-
-    const supabase = createClient();
-    const channelId =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-
-    const channel = supabase
-      .channel(`participants:${activity.id}:${channelId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "participants",
-          filter: `activity_id=eq.${activity.id}`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            const row = payload.new as { id: string; user_id: string };
-            void supabase
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("id", row.user_id)
-              .single()
-              .then(({ data: profile }) => {
-                setState((prev) => {
-                  const isCurrent =
-                    prev.activityId === activity.id &&
-                    prev.initialCount === initialCount &&
-                    prev.currentUserId === currentUserId;
-                  const nextParticipants = [
-                    ...(isCurrent ? prev.participants : initialParticipantList),
-                    {
-                      id: row.id,
-                      user_id: row.user_id,
-                      profiles: profile ?? null,
-                    },
-                  ];
-
-                  return {
-                    activityId: activity.id,
-                    initialCount,
-                    currentUserId,
-                    count: nextParticipants.length,
-                    participants: nextParticipants,
-                    hasJoined: hasUserJoined(nextParticipants, currentUserId),
-                    deleteLogKey: prev.deleteLogKey,
-                  };
-                });
-              });
-          }
-
-          if (payload.eventType === "DELETE") {
-            const row = payload.old as { id: string };
-            setState((prev) => {
-              const isCurrent =
-                prev.activityId === activity.id &&
-                prev.initialCount === initialCount &&
-                prev.currentUserId === currentUserId;
-              const base = isCurrent
-                ? prev.participants
-                : initialParticipantList;
-              const nextParticipants = base.filter(
-                (participant) => participant.id !== row.id,
-              );
-
-              return {
-                activityId: activity.id,
-                initialCount,
-                currentUserId,
-                count: nextParticipants.length,
-                participants: nextParticipants,
-                hasJoined: hasUserJoined(nextParticipants, currentUserId),
-                deleteLogKey: prev.deleteLogKey + 1,
-              };
-            });
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-    // activity.participants intentionally omitted: re-sync only on id/count
-    // changes, not on every parent render with a new array reference.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity.id, initialCount, currentUserId]);
-
-  return { participantCount, liveParticipants, hasJoined };
 }
 
 function getAvatarParticipants(
@@ -208,17 +63,6 @@ function getAvatarParticipants(
     .slice(0, 5);
 }
 
-function spotsLeftText(
-  maxParticipants: number | null,
-  participantCount: number,
-) {
-  if (maxParticipants === null) return "Open";
-
-  const spotsLeft = Math.max(0, maxParticipants - participantCount);
-  if (spotsLeft === 0) return "Full";
-
-  return `${spotsLeft} spots left`;
-}
 
 // ── CardAction ────────────────────────────────────────────────────────────────
 // Shared CTA pill used by both card variants. Priority order:
@@ -233,7 +77,8 @@ function CardAction({
   spotsLeft,
   router,
   showJoinAction = true,
-}: CardProps & {
+}: Omit<CardProps, "onJoin"> & {
+  onJoin: () => void;
   spotsLeft: number | null;
   router: ReturnType<typeof useRouter>;
   showJoinAction?: boolean;
@@ -330,136 +175,6 @@ function CardTags({
   );
 }
 
-// ── ActivityCardMobile ────────────────────────────────────────────────────────
-// Full-width Link card used on xs screens. Tapping navigates directly to the
-// detail page — no map popup interaction.
-
-type MobileCardProps = CardProps & {
-  isActive: boolean;
-  onSelect: () => void;
-};
-
-export function ActivityCardMobile({
-  activity,
-  userId,
-  isActive,
-  isJoining,
-  onJoin,
-}: MobileCardProps) {
-  const router = useRouter();
-  const {
-    participantCount,
-    liveParticipants,
-    hasJoined: isJoinedLive,
-  } = useRealtimeParticipants(activity, userId);
-  const spotsLeft =
-    activity.max_participants === null
-      ? null
-      : Math.max(0, activity.max_participants - participantCount);
-  const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
-  const { time, date } = formatActivityDate(activity.starts_at);
-
-  return (
-    <Link
-      href={`/activity/${activity.id}`}
-      className={`rounded-xl p-[13px_14px] flex flex-col gap-2 transition-all ${
-        isActive
-          ? "border-[1.5px] border-brand-teal bg-brand-teal/10"
-          : "border border-brand-border bg-brand-bg"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-1">
-        <CardTags
-          activity={activity}
-          userId={userId}
-          isParticipant={isJoinedLive}
-        />
-        <div className="flex flex-col items-end shrink-0">
-          <span className="text-sm xl:text-xs font-medium text-brand-text leading-tight">
-            {time}
-          </span>
-          <span className="text-sm xl:text-xs text-brand-muted leading-tight">{date}</span>
-        </div>
-      </div>
-      <p className="text-base font-medium text-brand-text leading-snug">
-        {activity.title}
-      </p>
-      <div className="flex flex-col gap-0.5">
-        <p className="text-sm xl:text-xs text-brand-muted flex items-center gap-1 min-w-0">
-          <svg
-            width="8"
-            height="10"
-            viewBox="0 0 8 10"
-            fill="currentColor"
-            className="flex-none"
-            aria-hidden="true"
-          >
-            <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
-          </svg>
-          <span className="truncate">{activity.location_name}</span>
-        </p>
-        <p className="text-sm xl:text-xs text-brand-muted">
-          {"— mi" /* distance placeholder */}
-          {activity.skill_level ? ` · ${activity.skill_level}` : ""}
-        </p>
-      </div>
-      {/* mt-auto pushes this row to the bottom when the grid stretches cards to equal height */}
-      <div className="flex items-center gap-2 mt-auto pt-0.5">
-        {avatarParticipants.length > 0 && (
-          <div className="flex -space-x-1.5 flex-none">
-            {avatarParticipants.map((participant) => {
-              const profile = participant.profiles!;
-              const shouldBlurAvatar = shouldBlurAvatarForViewer(
-                userId,
-                participant.user_id === activity.creator_id,
-              );
-
-              return (
-                <div
-                  key={participant.id}
-                  className="relative w-5.5 h-5.5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
-                >
-                  {profile.avatar_url ? (
-                    <Image
-                      src={profile.avatar_url}
-                      alt=""
-                      fill
-                      className={`object-cover${
-                        shouldBlurAvatar ? " blur-sm" : ""
-                      }`}
-                    />
-                  ) : (
-                    <span
-                      className={`text-[8px] font-semibold text-brand-avatar-text${
-                        shouldBlurAvatar ? " blur-sm" : ""
-                      }`}
-                    >
-                      {getInitials(profile.full_name)}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <span className="text-xs text-brand-muted flex-1">
-          {spotsLeftText(activity.max_participants, participantCount)}
-        </span>
-        <CardAction
-          activity={activity}
-          userId={userId}
-          isJoined={isJoinedLive}
-          isJoining={isJoining}
-          onJoin={onJoin}
-          spotsLeft={spotsLeft}
-          router={router}
-          showJoinAction={false}
-        />
-      </div>
-    </Link>
-  );
-}
-
 // ── ActivityCardDesktop ───────────────────────────────────────────────────────
 // Used at all breakpoints in the feed grid.
 // showDetails=true  (xl left panel): clicking fires onSelect → opens map popup
@@ -481,15 +196,34 @@ export function ActivityCardDesktop({
   onJoin,
 }: DesktopCardProps) {
   const router = useRouter();
-  const {
-    participantCount,
-    liveParticipants,
-    hasJoined: isJoinedLive,
-  } = useRealtimeParticipants(activity, userId);
-  const spotsLeft =
-    activity.max_participants === null
-      ? null
-      : Math.max(0, activity.max_participants - participantCount);
+  const { participants: liveParticipants, participantCount } =
+    useRealtimeParticipants({
+      activityId: activity.id,
+      initialParticipants: initialParticipants(activity),
+      profileColumns: "full_name, avatar_url",
+    });
+  const isJoinedLive = hasUserJoined(liveParticipants, userId);
+
+  const max = activity.max_participants;
+  // Full override after a capacity rejection, so a simultaneous-join loser flips
+  // to Full immediately even before the router.refresh re-seed lands. Bridge,
+  // not a latch (see useForcedFull): it releases once the live count confirms
+  // fullness, so a later leave reopens the card.
+  const [forcedFull, setForcedFull] = useForcedFull(participantCount, max);
+  const isFull = max !== null && (forcedFull || participantCount >= max);
+  const spotsLeft = max === null ? null : isFull ? 0 : max - participantCount;
+  const displayCount = isFull && max !== null ? max : participantCount;
+
+  async function handleJoin() {
+    const result = await onJoin();
+    if (result.full) {
+      setForcedFull(true);
+      // Re-seed from the server snapshot (which includes the winner's row) so
+      // the count self-corrects everywhere, not just this card.
+      router.refresh();
+    }
+  }
+
   const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
   const { time, date } = formatActivityDate(activity.starts_at);
 
@@ -579,14 +313,14 @@ export function ActivityCardDesktop({
           </div>
         )}
         <span className="text-xs text-brand-muted flex-1">
-          {spotsLeftText(activity.max_participants, participantCount)}
+          {spotsLeftText(activity.max_participants, displayCount)}
         </span>
         <CardAction
           activity={activity}
           userId={userId}
           isJoined={isJoinedLive}
           isJoining={isJoining}
-          onJoin={onJoin}
+          onJoin={handleJoin}
           spotsLeft={spotsLeft}
           router={router}
           showJoinAction={showDetails}

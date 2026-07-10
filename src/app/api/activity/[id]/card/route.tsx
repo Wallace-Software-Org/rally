@@ -3,6 +3,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { createClient } from "@/lib/supabase/server";
 import { getInvitePhrase } from "@/lib/utils/invite-phrase";
+import { SHARE_CARD } from "@/lib/brand";
 
 async function loadFonts() {
   const [bold, medium] = await Promise.all([
@@ -15,12 +16,15 @@ async function loadFonts() {
   ];
 }
 
-const WIDTH = 1080;
-const HEIGHT = 1920;
+const WIDTH = SHARE_CARD.width;
+const HEIGHT = SHARE_CARD.height;
 const CACHE_CONTROL = "public, max-age=3600";
+// The share card intentionally renders activity-local time (Phoenix) so the
+// invite shows the same time to everyone, whereas the in-app UI renders in the
+// viewer's local timezone. See the code-audit date-handling notes.
 const APP_TIME_ZONE = "America/Phoenix";
-const BG = "#4A9B8E";
-const CREAM = "#E8DCC8";
+const BG = SHARE_CARD.bg;
+const CREAM = SHARE_CARD.cream;
 const CONTENT_WIDTH = WIDTH - 160; // 80px padding each side
 
 // Derive the largest font size where the longest word in the phrase still fits
@@ -37,19 +41,30 @@ type ActivityCardData = {
   starts_at: string;
 };
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 function formatInviteDate(startsAt: string): string {
   const date = new Date(startsAt);
-  const day = date.toLocaleDateString("en-US", {
-    weekday: "long",
-    timeZone: APP_TIME_ZONE,
-  });
   const time = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
     timeZone: APP_TIME_ZONE,
   });
-  return `${day}, ${time}`;
+  // Within the current week (7 days or fewer out): weekday name, for example
+  // "Saturday". Further out: full month and day, for example "July 18".
+  const withinWeek = date.getTime() - Date.now() <= WEEK_MS;
+  const datePart = withinWeek
+    ? date.toLocaleDateString("en-US", {
+        weekday: "long",
+        timeZone: APP_TIME_ZONE,
+      })
+    : date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        timeZone: APP_TIME_ZONE,
+      });
+  return `${datePart}, ${time}`;
 }
 
 async function getActivityCardData(id: string) {

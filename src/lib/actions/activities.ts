@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { redirect, RedirectType } from "next/navigation";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
+import { nextWeeklyOccurrence } from "@/lib/utils/next-occurrence";
+import { validateActivityInput } from "@/lib/utils/activity-validation";
+import { requireUser } from "@/lib/actions/require-user";
+import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 
 const PREDEFINED_SPORTS = new Set(
   SPORTS_LIST.filter((sport) => sport !== "All").map((sport) =>
@@ -37,29 +40,35 @@ function normalizeSport(sport: string): string {
 export async function joinActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  // getUser() validates the JWT with the auth server — safer than getSession() which only reads the cookie
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, error: authError } = await requireUser();
+  if (authError) return { error: authError };
 
-  const { error } = await supabase
-    .from("participants")
-    .insert({ activity_id: activityId, user_id: user.id, status: "joined" });
+  // Atomic capacity + status check server-side (see join_activity RPC). The
+  // function locks the activity row so concurrent joins can't exceed the cap.
+  const { data, error } = await supabase.rpc("join_activity", {
+    p_activity_id: activityId,
+  });
+  if (error) return { error: error.message };
 
-  return { error: error?.message ?? null };
+  switch (data) {
+    case "ok":
+      return { error: null };
+    case "full":
+      return { error: ACTIVITY_FULL_ERROR };
+    case "closed":
+      return { error: "This activity is no longer open" };
+    case "not_found":
+      return { error: "Activity not found" };
+    default:
+      return { error: "Could not join this activity" };
+  }
 }
 
 export async function leaveActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  // getUser() validates the JWT with the auth server — safer than getSession() which only reads the cookie
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
 
   const { error } = await supabase
     .from("participants")
@@ -84,12 +93,11 @@ export async function createActivity(data: {
   lat: number | null;
   lng: number | null;
 }): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  // getUser() validates the JWT with the auth server — safer than getSession() which only reads the cookie
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Unauthenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
+
+  const validationError = validateActivityInput(data, { requireFuture: true });
+  if (validationError) return { error: validationError };
 
   let externalLink: string | null;
   let sport: string;
@@ -141,7 +149,7 @@ export async function createActivity(data: {
 
   revalidatePath("/");
   revalidatePath(`/activity/${activity.id}`);
-  redirect(`/activity/${activity.id}?posted=true`);
+  redirect(`/activity/${activity.id}?posted=true`, RedirectType.replace);
 }
 
 export async function updateActivity(
@@ -161,11 +169,11 @@ export async function updateActivity(
     lng: number | null;
   },
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
+
+  const validationError = validateActivityInput(data, { requireFuture: false });
+  if (validationError) return { error: validationError };
 
   let externalLink: string | null;
   let sport: string;
@@ -194,12 +202,11 @@ export async function updateActivity(
 export async function cancelActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
 
+  // Soft cancel: flip status only. Participants are kept so people who joined
+  // still see it as cancelled and the host card can show how many had joined.
   const { error } = await supabase
     .from("activities")
     .update({ status: "cancelled" })
@@ -208,9 +215,51 @@ export async function cancelActivity(
 
   if (error) return { error: error.message };
 
-  await supabase.from("participants").delete().eq("activity_id", activityId);
-
   revalidatePath("/");
   revalidatePath(`/activity/${activityId}`);
+  revalidatePath("/profile/[username]", "page");
   return { error: null };
+}
+
+// Repeat: open the create form pre-filled from an owned activity, with the date
+// advanced 7 days. It inserts nothing; the host reviews and posts through the
+// normal create flow.
+export async function repeatActivity(
+  activityId: string,
+): Promise<{ error: string | null }> {
+  const { supabase, user, error: authError } = await requireUser();
+  if (authError) return { error: authError };
+
+  const { data: source } = await supabase
+    .from("activities")
+    .select(
+      `
+      title, sport, description, external_link, location_name, starts_at,
+      visibility, max_participants, skill_level, lat, lng
+    `,
+    )
+    .eq("id", activityId)
+    .eq("creator_id", user.id)
+    .single();
+
+  if (!source) return { error: "Activity not found" };
+
+  const params = new URLSearchParams();
+  params.set("title", source.title ?? "");
+  params.set("sport", source.sport ?? "");
+  params.set("location", source.location_name ?? "");
+  params.set("description", source.description ?? "");
+  params.set("skill_level", source.skill_level ?? "");
+  params.set("visibility", source.visibility ?? "public");
+  if (source.starts_at) {
+    params.set("starts_at", nextWeeklyOccurrence(source.starts_at));
+  }
+  if (typeof source.lat === "number") params.set("lat", String(source.lat));
+  if (typeof source.lng === "number") params.set("lng", String(source.lng));
+  if (source.max_participants != null) {
+    params.set("max_participants", String(source.max_participants));
+  }
+  if (source.external_link) params.set("external_link", source.external_link);
+
+  redirect(`/activity/new?${params.toString()}`, RedirectType.replace);
 }

@@ -5,13 +5,24 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
+import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
+import { updateUserLocation } from "@/lib/actions/profiles";
 import MapPreviewCard from "@/components/map/map-preview-card";
-import ActivityFilters, {
+import {
   DatePickerPill,
+  DistancePickerPill,
+  ActivitiesPicker,
+  ShowPicker,
+  type ShowFilter,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
+import {
+  type DistanceFilter,
+  DEFAULT_DISTANCE_FILTER,
+  calculateDistance,
+} from "@/lib/utils/distance";
 
 const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
   ssr: false,
@@ -21,14 +32,30 @@ export default function ActivityFeed({
   activities,
   userId,
   userActivities = [],
+  profileLat = null,
+  profileLng = null,
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
   userActivities?: string[];
+  profileLat?: number | null;
+  profileLng?: number | null;
 }) {
-  const { lat: userLat, lng: userLng } = useLocation();
+  const initialCoords =
+    profileLat != null && profileLng != null
+      ? { lat: profileLat, lng: profileLng }
+      : null;
+  const {
+    coords,
+    status: locationStatus,
+    request: requestLocation,
+  } = useLocation(initialCoords);
   const [sports, setSports] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [distance, setDistance] = useState<DistanceFilter>(
+    DEFAULT_DISTANCE_FILTER,
+  );
+  const [show, setShow] = useState<ShowFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
@@ -41,6 +68,16 @@ export default function ActivityFeed({
   const [joining, setJoining] = useState<Set<string>>(new Set());
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // Persist browser-granted coords to the profile (logged-in only). status is
+  // "granted" only after an explicit request(), never for the initial profile
+  // coords, so this never echoes profile coords back. Fire and forget.
+  useEffect(() => {
+    if (!userId || locationStatus !== "granted" || !coords) return;
+    void updateUserLocation(coords.lat, coords.lng);
+  }, [userId, locationStatus, coords]);
+
+  const hasCoords = coords != null;
 
   const activitiesWithLocalParticipation = useMemo(() => {
     if (!userId) return activities;
@@ -71,12 +108,38 @@ export default function ActivityFeed({
     });
   }, [activities, joined, userId]);
 
+  // Client-side distance filtering for now. Move server-side (bounding box /
+  // PostGIS) once data scales beyond a single region.
+  function withinDistance(a: ActivityWithParticipants): boolean {
+    if (!coords || distance === "any") return true;
+    // Never hide activities that are missing coordinates.
+    if (a.lat == null || a.lng == null) return true;
+    return calculateDistance(coords.lat, coords.lng, a.lat, a.lng) <= distance;
+  }
+
+  // Show scope (logged-in only). Hosting and Attending are mutually exclusive:
+  // Attending explicitly excludes activities the user created.
+  function matchesShow(a: ActivityWithParticipants): boolean {
+    if (!userId || show === "all") return true;
+    if (show === "hosting") return a.creator_id === userId;
+    return joined.has(a.id) && a.creator_id !== userId;
+  }
+
   const visible = activitiesWithLocalParticipation.filter(
     (a) =>
       (sports.length === 0 ||
         sports.some((s) => s.toLowerCase() === a.sport.toLowerCase())) &&
-      matchesDateFilter(a.starts_at, dateFilter),
+      matchesDateFilter(a.starts_at, dateFilter) &&
+      withinDistance(a) &&
+      matchesShow(a),
   );
+
+  const emptyMessage =
+    show === "hosting"
+      ? "You are not hosting any activities."
+      : show === "attending"
+        ? "You are not attending any activities."
+        : "No open activities";
 
   const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
 
@@ -88,9 +151,11 @@ export default function ActivityFeed({
 
   // Optimistic updates: local state is mutated immediately so the UI responds instantly.
   // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
-  async function handleJoin(activityId: string): Promise<boolean> {
+  async function handleJoin(
+    activityId: string,
+  ): Promise<{ ok: boolean; full: boolean }> {
     if (!userId || joined.has(activityId) || joining.has(activityId)) {
-      return false;
+      return { ok: false, full: false };
     }
 
     setJoining((prev) => new Set(prev).add(activityId));
@@ -112,7 +177,7 @@ export default function ActivityFeed({
       return next;
     });
 
-    return !error;
+    return { ok: !error, full: error === ACTIVITY_FULL_ERROR };
   }
 
   async function handleLeave(activityId: string): Promise<boolean> {
@@ -148,25 +213,25 @@ export default function ActivityFeed({
         />
       </div>
 
-      {/* ── Filter bar — mobile + md (< lg): date pill left, sport pills scroll right ── */}
-      <div className="xl:hidden flex-none relative z-10 flex items-center border-b border-brand-border">
-        <div className="pl-4 pr-2 py-3 flex-none">
+      {/* ── Filter bar — mobile + md (< xl): one row of pills, horizontal scroll
+          (hidden scrollbar) if they overflow, never wraps ── */}
+      <div className="xl:hidden flex-none relative z-10 border-b border-brand-border">
+        <div className="flex flex-nowrap items-center gap-2.5 px-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ActivitiesPicker
+            selected={sports}
+            onChange={setSports}
+            userActivities={userActivities}
+          />
           <DatePickerPill value={dateFilter} onChange={setDateFilter} />
-        </div>
-        <div className="w-px self-stretch bg-brand-border flex-none" />
-        <div className="relative flex-1 overflow-hidden">
-          <div
-            className="flex gap-2 px-3 py-3 overflow-x-scroll"
-            style={
-              {
-                scrollbarWidth: "none",
-                WebkitOverflowScrolling: "touch",
-              } as React.CSSProperties
-            }
-          >
-            <ActivityFilters sports={sports} onChange={setSports} userActivities={userActivities} />
-          </div>
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-brand-bg to-transparent" />
+          <DistancePickerPill
+            value={distance}
+            onChange={setDistance}
+            hasCoords={hasCoords}
+            status={locationStatus}
+            isLoggedIn={userId != null}
+            onRequestLocation={requestLocation}
+          />
+          {userId && <ShowPicker value={show} onChange={setShow} />}
         </div>
       </div>
 
@@ -183,7 +248,7 @@ export default function ActivityFeed({
 
             {visible.length === 0 ? (
               <p className="py-20 text-center text-sm text-brand-muted">
-                No open activities
+                {emptyMessage}
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
@@ -219,11 +284,23 @@ export default function ActivityFeed({
         <div className="hidden xl:flex flex-1 overflow-hidden">
           {/* Left panel — 720px fixed, scrolls independently */}
           <div className="w-180 flex-none flex flex-col border-r border-brand-border">
-            {/* Filter bar — full width of left panel, date first */}
-            <div className="flex-none relative z-10 border-b border-brand-border px-6 flex items-center gap-2 py-3">
+            {/* Filter bar — full width of left panel */}
+            <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
+              <ActivitiesPicker
+                selected={sports}
+                onChange={setSports}
+                userActivities={userActivities}
+              />
               <DatePickerPill value={dateFilter} onChange={setDateFilter} />
-              <div className="w-px h-4 bg-brand-border flex-none mx-1" />
-              <ActivityFilters sports={sports} onChange={setSports} toolbar userActivities={userActivities} />
+              <DistancePickerPill
+                value={distance}
+                onChange={setDistance}
+                hasCoords={hasCoords}
+                status={locationStatus}
+                isLoggedIn={userId != null}
+                onRequestLocation={requestLocation}
+              />
+              {userId && <ShowPicker value={show} onChange={setShow} />}
             </div>
 
             {/* Scrollable card area */}
@@ -272,8 +349,8 @@ export default function ActivityFeed({
               onDotClick={(id) =>
                 setSelectedId((prev) => (prev === id ? null : id))
               }
-              userLat={userLat}
-              userLng={userLng}
+              userLat={coords?.lat ?? null}
+              userLng={coords?.lng ?? null}
             >
               {selectedActivity && (
                 <MapPreviewCard

@@ -11,7 +11,7 @@ import type { UsernameStatus } from "@/types";
 const ACTIVITY_ITEMS = SPORTS_LIST.filter((s) => s !== "All" && s !== "Other");
 
 const inputCls =
-  "w-full rounded-xl border border-brand-border bg-transparent px-3.5 py-2.5 text-base xl:text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-teal/40 transition";
+  "field-base px-3.5 py-2.5 text-base xl:text-sm text-brand-text transition";
 
 export default function OnboardingFlow({
   defaultName,
@@ -176,7 +176,7 @@ export default function OnboardingFlow({
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-brand-text">
+                  <label className="field-label">
                     Full name
                   </label>
                   <input
@@ -188,7 +188,7 @@ export default function OnboardingFlow({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-brand-text">
+                  <label className="field-label">
                     Username
                   </label>
                   <div className="relative">
@@ -341,7 +341,7 @@ export default function OnboardingFlow({
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-brand-text">
+                  <label className="field-label">
                     Bio{" "}
                     <span className="text-brand-muted font-normal">
                       (optional)
@@ -357,7 +357,7 @@ export default function OnboardingFlow({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-brand-text">
+                  <label className="field-label">
                     Instagram{" "}
                     <span className="text-brand-muted font-normal">
                       (optional)
@@ -378,7 +378,7 @@ export default function OnboardingFlow({
               </div>
 
               {submitError && (
-                <p className="text-sm text-brand-danger">{submitError}</p>
+                <p className="field-error">{submitError}</p>
               )}
 
               <button

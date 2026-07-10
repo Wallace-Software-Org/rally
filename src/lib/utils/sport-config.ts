@@ -1,4 +1,7 @@
-// Single tag palette across all sports — brand uses one unified sport tag color
+// Single tag palette across all sports — brand uses one unified sport tag color.
+// These hex values are intentionally local rather than @theme brand tokens:
+// this is a standalone sport-tag palette, and the whole sport list is slated to
+// move to a Supabase lookup table, at which point the colors move with it.
 const TAG = { bg: "#C8E6DC", text: "#1A6B52" };
 const OTHER_TAG = { bg: "#E2DBD3", text: "#7A6A5A" };
 

@@ -2,209 +2,63 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { AnimatePresence } from "framer-motion";
-import type { ProfilePage, ProfileActivity } from "@/types";
+import type { ProfilePage } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
-import ShareStoryModal from "@/components/ui/share-story-modal";
-import { InstagramIcon, SettingsIcon } from "@/components/ui/icons";
-import { isIOSDevice } from "@/lib/utils/platform";
+import AvatarCircle from "@/components/ui/avatar";
+import { InstagramIcon, EditIcon } from "@/components/ui/icons";
+import { upcomingOpenCount } from "@/lib/utils/hosting";
+import HostingManager from "@/components/profile/hosting-manager";
+import AttendingManager from "@/components/profile/attending-manager";
 
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0] ?? "")
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+// ── Shared sub-components ─────────────────────────────────────────────────────
 
-function formatCardDate(startsAt: string): { date: string; time: string } {
-  const d = new Date(startsAt);
-  const date = d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const time = d.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  return { date, time };
-}
-
-// ── Activity card ─────────────────────────────────────────────────────────────
-
-function ActivityCard({
-  activity,
-  showShare,
+// Profile header action row: Instagram (when set, all viewers) and Edit profile
+// (owner only), stacked full width. Renders nothing when neither applies.
+function ActionRow({
+  profile,
+  isOwner,
 }: {
-  activity: ProfileActivity;
-  showShare?: boolean;
+  profile: ProfilePage;
+  isOwner: boolean;
 }) {
-  const { date, time } = formatCardDate(activity.starts_at);
-  const [showShareModal, setShowShareModal] = useState(false);
-
-  // Mirrors the activity detail page share flow: generate the card image and
-  // copy the link, then show the shared ShareStoryModal.
-  async function handleShare() {
-    const activityUrl = `${window.location.origin}/activity/${activity.id}`;
-    const cardUrl = `/api/activity/${activity.id}/card`;
-    if (isIOSDevice()) {
-      window.open(cardUrl, "_blank");
-    } else {
-      try {
-        const res = await fetch(cardUrl);
-        if (res.ok) {
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `rally-${activity.id}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-      } catch {
-        // best-effort; still show modal
-      }
-    }
-    await navigator.clipboard.writeText(activityUrl).catch(() => {});
-    setShowShareModal(true);
-  }
+  const hasInstagram = !!profile.instagram_handle;
+  if (!hasInstagram && !isOwner) return null;
 
   return (
-    <div className="xl:min-h-32 flex flex-col">
-      <Link
-        href={`/activity/${activity.id}`}
-        className="bg-brand-surface/70 rounded-xl border border-brand-border/80 p-4 flex flex-col justify-between h-full transition-all hover:border-brand-border-hover"
-      >
-        <div className="flex flex-col gap-2">
-          <ActivityPill sport={activity.sport} />
-          <p className="text-lg xl:text-base font-semibold text-brand-text leading-snug line-clamp-2">
-            {activity.title}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1.5 text-sm xl:text-xs text-brand-muted">
-          {activity.location_name && (
-            <span className="flex items-center gap-1">
-              <svg
-                width="10"
-                height="12"
-                viewBox="0 0 8 10"
-                fill="currentColor"
-                className="flex-none"
-                aria-hidden="true"
-              >
-                <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
-              </svg>
-              <span className="truncate text-sm xl:text-xs">
-                {activity.location_name}
-              </span>
-            </span>
-          )}
-          <div className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className="flex items-center gap-1">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="flex-none"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="1.5"
-                    y="3"
-                    width="13"
-                    height="11.5"
-                    rx="1.5"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                  />
-                  <path
-                    d="M5 1.5V4M11 1.5V4M1.5 7h13"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                {date}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="flex-none"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="8"
-                    cy="8"
-                    r="6.5"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                  />
-                  <path
-                    d="M8 4.5V8.5l2.5 1.5"
-                    stroke="currentColor"
-                    strokeWidth="1.3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {time}
-              </span>
-            </span>
-            {showShare && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleShare();
-                }}
-                className="flex-none flex items-center gap-1.5 bg-brand-teal text-white text-xs font-semibold px-2.5 py-1.5 rounded-full hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
-              >
-                <InstagramIcon size={11} />
-                Share
-              </button>
-            )}
-          </div>
-        </div>
-      </Link>
-
-      <AnimatePresence>
-        {showShareModal && (
-          <ShareStoryModal onClose={() => setShowShareModal(false)} />
-        )}
-      </AnimatePresence>
+    <div className="w-full flex flex-col gap-2">
+      {hasInstagram && (
+        <a
+          href={`https://instagram.com/${profile.instagram_handle}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center justify-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold py-3 hover:bg-brand-teal/5 transition-colors"
+        >
+          <InstagramIcon size={14} />
+          Instagram
+        </a>
+      )}
+      {isOwner && (
+        <Link
+          href="/profile/edit"
+          className="btn-tier-2 text-sm w-full flex items-center justify-center gap-1.5"
+        >
+          <EditIcon size={14} />
+          Edit profile
+        </Link>
+      )}
     </div>
   );
 }
 
-// ── Shared sub-components ─────────────────────────────────────────────────────
-
 function Avatar({ profile }: { profile: ProfilePage }) {
   return (
-    <div className="w-24 h-24 rounded-full overflow-hidden bg-brand-avatar-bg flex items-center justify-center flex-none">
-      {profile.avatar_url ? (
-        <Image
-          src={profile.avatar_url}
-          alt=""
-          width={96}
-          height={96}
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <span className="text-2xl font-semibold text-brand-avatar-text">
-          {initials(profile.full_name)}
-        </span>
-      )}
-    </div>
+    <AvatarCircle
+      src={profile.avatar_url}
+      name={profile.full_name}
+      dimension={96}
+      className="w-36 xl:w-24 h-36 xl:h-24 border-3 border-brand-border flex-none"
+      initialsClassName="text-2xl"
+    />
   );
 }
 
@@ -217,18 +71,6 @@ function Identity({ profile }: { profile: ProfilePage }) {
       <p className="text-sm text-brand-muted font-medium">
         @{profile.username}
       </p>
-      {profile.instagram_handle && (
-        <a
-          href={`https://instagram.com/${profile.instagram_handle}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-0.5 flex items-center gap-1.5 bg-brand-teal/10 text-brand-teal text-xs font-semibold px-3 py-1 rounded-full hover:opacity-80 transition-opacity"
-        >
-          <InstagramIcon size={12} />
-          {profile.instagram_handle}
-        </a>
-      )}
-
       {profile.bio && (
         <p className="text-sm text-brand-text leading-relaxed mt-3">
           {profile.bio}
@@ -250,8 +92,11 @@ function TabBar({
   const TAB_LABELS = { going: "Attending", hosting: "Hosting" } as const;
   return (
     <>
-      {(["going", "hosting"] as const).map((t) => {
-        const count = profile[t].length;
+      {(["hosting", "going"] as const).map((t) => {
+        const count =
+          t === "hosting"
+            ? upcomingOpenCount(profile.hosting)
+            : upcomingOpenCount(profile.going);
         const isActive = tab === t;
         return (
           <button
@@ -274,63 +119,11 @@ function TabBar({
   );
 }
 
-function ActivityList({
-  tab,
-  profile,
-  showShare,
-  gridCols2,
-}: {
-  tab: "going" | "hosting";
-  profile: ProfilePage;
-  showShare?: boolean;
-  gridCols2?: boolean;
-}) {
-  if (profile[tab].length === 0) {
-    return (
-      <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
-        {tab === "going" ? (
-          <>
-            Nothing coming up.{" "}
-            <Link href="/" className="text-brand-teal hover:underline">
-              Find something on the feed.
-            </Link>
-          </>
-        ) : (
-          <>
-            You haven&apos;t hosted anything yet.{" "}
-            <Link
-              href="/activity/new"
-              className="text-brand-teal hover:underline"
-            >
-              Post an activity.
-            </Link>
-          </>
-        )}
-      </p>
-    );
-  }
-  return (
-    <div
-      className={gridCols2 ? "grid grid-cols-2 gap-4" : "flex flex-col gap-3"}
-    >
-      {profile[tab].map((a) => (
-        <ActivityCard key={a.id} activity={a} showShare={showShare} />
-      ))}
-    </div>
-  );
-}
-
 // ── Completeness nudge ────────────────────────────────────────────────────────
 
 function NudgeCard() {
   return (
-    <div
-      className="w-full rounded-xl p-4 flex flex-col gap-3"
-      style={{
-        backgroundColor: "#DFD3C0",
-        border: "0.5px solid rgba(90,74,58,0.25)",
-      }}
-    >
+    <div className="w-full rounded-xl p-4 flex flex-col gap-3 bg-brand-surface border-[0.5px] border-brand-border">
       <div className="flex flex-col gap-1">
         <p className="text-sm font-semibold text-brand-text">
           Finish your profile
@@ -372,7 +165,8 @@ function SportTagsScroller({ sports }: { sports: string[] }) {
     const el = scrollRef.current;
     if (!drag.current.down || !el) return;
     e.preventDefault();
-    el.scrollLeft = drag.current.startScrollLeft - (e.pageX - drag.current.startX);
+    el.scrollLeft =
+      drag.current.startScrollLeft - (e.pageX - drag.current.startX);
   }
 
   function endDrag() {
@@ -419,12 +213,13 @@ export default function ProfileView({
       {/* ── MOBILE LAYOUT (< lg) ────────────────────────────────────── */}
       <div className="xl:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-120 mx-auto">
+          <div className="max-w-140 mx-auto">
             {/* Hero */}
             <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
               <div className="flex flex-col items-center gap-4">
                 <Avatar profile={profile} />
                 <Identity profile={profile} />
+                <ActionRow profile={profile} isOwner={isOwner} />
               </div>
 
               {showNudge && <NudgeCard />}
@@ -460,11 +255,18 @@ export default function ProfileView({
 
             {/* Activity cards */}
             <div className="bg-brand-bg px-4 py-4">
-              <ActivityList
-                tab={tab}
-                profile={profile}
-                showShare={isOwner && tab === "hosting"}
-              />
+              {tab === "hosting" ? (
+                <HostingManager
+                  activities={profile.hosting}
+                  isOwner={isOwner}
+                  hostId={profile.id}
+                />
+              ) : (
+                <AttendingManager
+                  activities={profile.going}
+                  isOwner={isOwner}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -476,18 +278,10 @@ export default function ProfileView({
           {/* Sidebar */}
           <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4 xl:w-96">
             {/* Identity card */}
-            <div className="relative w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
-              {isOwner && (
-                <Link
-                  href="/profile/edit"
-                  aria-label="Settings"
-                  className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-transparent text-brand-muted hover:text-brand-text hover:border-brand-border-hover transition-colors"
-                >
-                  <SettingsIcon size={16} />
-                </Link>
-              )}
+            <div className="w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
               <Avatar profile={profile} />
               <Identity profile={profile} />
+              <ActionRow profile={profile} isOwner={isOwner} />
               {profile.sports.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center">
                   {profile.sports.map((sport) => (
@@ -526,13 +320,19 @@ export default function ProfileView({
             </div>
 
             {/* Activity cards */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <ActivityList
-                tab={tab}
-                profile={profile}
-                showShare={isOwner && tab === "hosting"}
-                gridCols2
-              />
+            <div className="flex-1 overflow-y-auto scrollbar-brand px-6 py-4">
+              {tab === "hosting" ? (
+                <HostingManager
+                  activities={profile.hosting}
+                  isOwner={isOwner}
+                  hostId={profile.id}
+                />
+              ) : (
+                <AttendingManager
+                  activities={profile.going}
+                  isOwner={isOwner}
+                />
+              )}
             </div>
           </div>
         </div>
