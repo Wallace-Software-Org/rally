@@ -20,6 +20,9 @@ export type Participant = {
 export type ActivityHostSummary = {
   full_name: string;
   avatar_url: string | null;
+  // Present on the personal feed (getActivitiesByUser) so an attending card can
+  // link its "Hosted by" line to the creator's profile; omitted by the main feed.
+  username?: string | null;
 };
 
 export type Activity = {

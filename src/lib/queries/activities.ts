@@ -55,31 +55,58 @@ export async function getActivities(): Promise<ActivityWithParticipants[]> {
   return normalize(data);
 }
 
-// Upcoming public activities hosted by one profile, for the personal feed at
-// /feed/[username]. Same select shape as getActivities so the feed cards render
-// identically; no visibility folding (private activities are unlisted), no
+// Upcoming public activities a profile is hosting OR attending, for the personal
+// feed at /feed/[username]. Same select shape as getActivities so the feed cards
+// render identically (host select adds username so attending cards can link the
+// "Hosted by" line); no visibility folding (private activities are unlisted), no
 // filters, no radius logic.
-export async function getActivitiesByHost(
-  hostId: string,
+//
+// Implemented as two queries — hosted (creator_id) and joined (a participant
+// row) — merged and deduped by activity id, since a host also has a participant
+// row on their own activities. Sorted by starts_at asc.
+export async function getActivitiesByUser(
+  userId: string,
 ): Promise<ActivityWithParticipants[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("activities")
-    .select(
-      `
-      id, creator_id, title, sport, external_link, location_name, starts_at,
-      ends_at, visibility, max_participants, skill_level, lat, lng,
-      host:profiles!activities_creator_id_fkey ( full_name, avatar_url ),
-      participants ( id, user_id, profiles ( full_name, avatar_url ) )
-    `,
-    )
-    .eq("creator_id", hostId)
-    .eq("status", "open")
-    .eq("visibility", "public")
-    .gte("starts_at", new Date().toISOString())
-    .order("starts_at", { ascending: true });
+  const nowIso = new Date().toISOString();
+  const select = `
+    id, creator_id, title, sport, external_link, location_name, starts_at,
+    ends_at, visibility, max_participants, skill_level, lat, lng,
+    host:profiles!activities_creator_id_fkey ( full_name, avatar_url, username ),
+    participants ( id, user_id, profiles ( full_name, avatar_url ) )
+  `;
 
-  return normalize(data);
+  const [{ data: joinedRows }, { data: hosted }] = await Promise.all([
+    supabase.from("participants").select("activity_id").eq("user_id", userId),
+    supabase
+      .from("activities")
+      .select(select)
+      .eq("creator_id", userId)
+      .eq("status", "open")
+      .eq("visibility", "public")
+      .gte("starts_at", nowIso),
+  ]);
+
+  const joinedIds = (joinedRows ?? []).map((r) => r.activity_id);
+  const { data: joined } =
+    joinedIds.length > 0
+      ? await supabase
+          .from("activities")
+          .select(select)
+          .in("id", joinedIds)
+          .eq("status", "open")
+          .eq("visibility", "public")
+          .gte("starts_at", nowIso)
+      : { data: [] };
+
+  // Merge, dedupe by id (a hosted activity is also a joined row), sort asc.
+  const byId = new Map<string, ActivityWithParticipants>();
+  for (const a of normalize(hosted)) byId.set(a.id, a);
+  for (const a of normalize(joined)) byId.set(a.id, a);
+
+  return [...byId.values()].sort((a, b) =>
+    a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0,
+  );
 }
 
 // Supabase without generated types infers many-to-one joins as arrays at the

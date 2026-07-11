@@ -18,10 +18,12 @@ const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
 export default function PersonalFeed({
   activities,
   userId,
+  hostId,
   host,
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
+  hostId: string;
   host: HostSummary;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -183,6 +185,7 @@ export default function PersonalFeed({
                         setSelectedId((prev) => (prev === a.id ? null : a.id))
                       }
                       onJoin={() => handleJoin(a.id)}
+                      showHostedBy={a.creator_id !== hostId}
                     />
                   </div>
                 ))}
@@ -220,6 +223,7 @@ export default function PersonalFeed({
                           setSelectedId((prev) => (prev === a.id ? null : a.id))
                         }
                         onJoin={() => handleJoin(a.id)}
+                        showHostedBy={a.creator_id !== hostId}
                       />
                     ))}
                   </div>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getHostByUsername } from "@/lib/queries/profiles";
-import { getActivitiesByHost } from "@/lib/queries/activities";
+import { getActivitiesByUser } from "@/lib/queries/activities";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import AppNav from "@/components/nav/app-nav";
 import PersonalFeed from "@/components/activities/personal-feed";
@@ -60,7 +60,7 @@ export default async function PersonalFeedPage({
   // The page is a public read; only fetch the viewer's own profile (for the
   // normal header) when signed in.
   const [activities, viewerProfile] = await Promise.all([
-    getActivitiesByHost(host.id),
+    getActivitiesByUser(host.id),
     user
       ? supabase
           .from("profiles")
@@ -81,6 +81,7 @@ export default async function PersonalFeedPage({
       <PersonalFeed
         activities={activities}
         userId={user?.id ?? null}
+        hostId={host.id}
         host={{
           username: host.username,
           full_name: host.full_name,

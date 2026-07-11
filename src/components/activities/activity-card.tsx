@@ -3,7 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { ActivityWithParticipants, Participant } from "@/types";
+import type {
+  ActivityHostSummary,
+  ActivityWithParticipants,
+  Participant,
+} from "@/types";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import { useForcedFull } from "@/hooks/use-forced-full";
 import {
@@ -12,6 +16,7 @@ import {
   spotsLeftText,
 } from "@/lib/utils/activity-participants";
 import { formatActivityDate } from "@/lib/utils/format-time";
+import Avatar from "@/components/ui/avatar";
 import {
   getInitials,
   shouldBlurAvatarForViewer,
@@ -175,6 +180,46 @@ function CardTags({
   );
 }
 
+// "Hosted by [creator]" meta line for personal-feed cards the profile is
+// attending rather than hosting, mirroring the profile Attending card. Links to
+// the creator's profile only on the div-rooted card (showDetails); the grid card
+// is itself an anchor, so a nested link there would be invalid markup.
+function HostedByLine({
+  host,
+  linkable,
+}: {
+  host: ActivityHostSummary | null;
+  linkable: boolean;
+}) {
+  if (!host) return null;
+  const inner = (
+    <>
+      <Avatar
+        src={host.avatar_url}
+        name={host.full_name}
+        dimension={20}
+        className="w-5 h-5 flex-none"
+        initialsClassName="text-[9px]"
+      />
+      <span className="truncate">Hosted by {host.full_name}</span>
+    </>
+  );
+
+  return linkable && host.username ? (
+    <Link
+      href={`/profile/${host.username}`}
+      onClick={(e) => e.stopPropagation()}
+      className="mt-0.5 flex items-center gap-1.5 text-xs text-brand-muted hover:text-brand-text transition-colors w-fit"
+    >
+      {inner}
+    </Link>
+  ) : (
+    <span className="mt-0.5 flex items-center gap-1.5 text-xs text-brand-muted w-fit">
+      {inner}
+    </span>
+  );
+}
+
 // ── ActivityCardDesktop ───────────────────────────────────────────────────────
 // Used at all breakpoints in the feed grid.
 // showDetails=true  (xl left panel): clicking fires onSelect → opens map popup
@@ -184,6 +229,9 @@ type DesktopCardProps = CardProps & {
   isActive: boolean;
   showDetails: boolean;
   onSelect: () => void;
+  // Personal feed: show a "Hosted by [creator]" line for activities the page's
+  // profile is attending rather than hosting.
+  showHostedBy?: boolean;
 };
 
 export function ActivityCardDesktop({
@@ -194,6 +242,7 @@ export function ActivityCardDesktop({
   isJoining,
   onSelect,
   onJoin,
+  showHostedBy = false,
 }: DesktopCardProps) {
   const router = useRouter();
   const { participants: liveParticipants, participantCount } =
@@ -272,6 +321,10 @@ export function ActivityCardDesktop({
             </span>
           )}
         </p>
+
+        {showHostedBy && (
+          <HostedByLine host={activity.host} linkable={showDetails} />
+        )}
       </div>
       {/* mt-auto pushes this row to the bottom when the grid stretches cards to equal height */}
       <div className="flex items-center gap-2 mt-auto pt-1">
