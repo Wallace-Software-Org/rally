@@ -5,7 +5,15 @@ import Link from "next/link";
 import type { ProfilePage } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
 import AvatarCircle from "@/components/ui/avatar";
-import { InstagramIcon, EditIcon } from "@/components/ui/icons";
+import {
+  InstagramIcon,
+  EditIcon,
+  LinkIcon,
+  ExternalLinkIcon,
+  CheckIcon,
+} from "@/components/ui/icons";
+import { getSiteUrl } from "@/lib/utils/site-url";
+import { COPY_FEEDBACK_MS } from "@/lib/brand";
 import { upcomingOpenCount } from "@/lib/utils/hosting";
 import HostingManager from "@/components/profile/hosting-manager";
 import AttendingManager from "@/components/profile/attending-manager";
@@ -22,7 +30,17 @@ function ActionRow({
   isOwner: boolean;
 }) {
   const hasInstagram = !!profile.instagram_handle;
+  const [copied, setCopied] = useState(false);
   if (!hasInstagram && !isOwner) return null;
+
+  // Reuses the copy-feedback pattern: flip to "Copied" for COPY_FEEDBACK_MS.
+  async function handleShareFeed() {
+    await navigator.clipboard
+      .writeText(`${getSiteUrl()}/feed/${profile.username}`)
+      .catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
+  }
 
   return (
     <div className="w-full flex flex-col gap-2">
@@ -38,13 +56,34 @@ function ActionRow({
         </a>
       )}
       {isOwner && (
-        <Link
-          href="/profile/edit"
-          className="btn-tier-2 text-sm w-full flex items-center justify-center gap-1.5"
-        >
-          <EditIcon size={14} />
-          Edit profile
-        </Link>
+        <>
+          <Link
+            href="/profile/edit"
+            className="btn-tier-2 text-sm w-full flex items-center justify-center gap-1.5"
+          >
+            <EditIcon size={14} />
+            Edit profile
+          </Link>
+          <div className="w-full flex gap-2">
+            <button
+              type="button"
+              onClick={handleShareFeed}
+              className={`btn-tier-3 flex-1${
+                copied ? " border-brand-teal! text-brand-teal!" : ""
+              }`}
+            >
+              {copied ? <CheckIcon size={14} /> : <LinkIcon size={14} />}
+              {copied ? "Copied" : "Share feed"}
+            </button>
+            <Link
+              href={`/feed/${profile.username}`}
+              className="btn-tier-3 flex-1"
+            >
+              <ExternalLinkIcon size={14} />
+              View feed
+            </Link>
+          </div>
+        </>
       )}
     </div>
   );
