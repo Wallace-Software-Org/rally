@@ -17,6 +17,20 @@ export async function getProfileById(userId: string) {
   return data;
 }
 
+// Lean username lookup for the personal feed at /feed/[username]. Same
+// convention as getProfileByUsername (resolve by username, null when missing)
+// but without the hosting/attending payload, so it can run in both
+// generateMetadata and the page without the heavier joins.
+export async function getHostByUsername(username: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, full_name, avatar_url, instagram_handle")
+    .eq("username", username)
+    .single();
+  return data;
+}
+
 export async function getProfileByUsername(
   username: string,
 ): Promise<ProfilePage | null> {

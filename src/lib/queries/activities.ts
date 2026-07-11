@@ -55,6 +55,33 @@ export async function getActivities(): Promise<ActivityWithParticipants[]> {
   return normalize(data);
 }
 
+// Upcoming public activities hosted by one profile, for the personal feed at
+// /feed/[username]. Same select shape as getActivities so the feed cards render
+// identically; no visibility folding (private activities are unlisted), no
+// filters, no radius logic.
+export async function getActivitiesByHost(
+  hostId: string,
+): Promise<ActivityWithParticipants[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("activities")
+    .select(
+      `
+      id, creator_id, title, sport, external_link, location_name, starts_at,
+      ends_at, visibility, max_participants, skill_level, lat, lng,
+      host:profiles!activities_creator_id_fkey ( full_name, avatar_url ),
+      participants ( id, user_id, profiles ( full_name, avatar_url ) )
+    `,
+    )
+    .eq("creator_id", hostId)
+    .eq("status", "open")
+    .eq("visibility", "public")
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true });
+
+  return normalize(data);
+}
+
 // Supabase without generated types infers many-to-one joins as arrays at the
 // type level but they are objects at runtime. Normalize so Participant matches.
 function normalize(
