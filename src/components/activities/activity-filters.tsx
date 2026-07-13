@@ -15,8 +15,68 @@ import {
   DISTANCE_FILTER_OPTIONS,
 } from "@/lib/utils/distance";
 import type { GeoStatus } from "@/hooks/use-location";
+import { MapIcon, CalendarIcon } from "@/components/ui/icons";
 
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
+
+export type FeedView = "map" | "calendar";
+
+// Icon-only segmented control for the right end of the filter pill row: map
+// (default) and calendar. The active segment is a solid teal circle.
+export function ViewToggle({
+  value,
+  onChange,
+}: {
+  value: FeedView;
+  onChange: (view: FeedView) => void;
+}) {
+  return (
+    <div className="flex-none flex items-center gap-0.5 rounded-full border border-brand-border p-0.5">
+      <ViewToggleButton
+        label="Map view"
+        active={value === "map"}
+        onClick={() => onChange("map")}
+      >
+        <MapIcon size={15} />
+      </ViewToggleButton>
+      <ViewToggleButton
+        label="Calendar view"
+        active={value === "calendar"}
+        onClick={() => onChange("calendar")}
+      >
+        <CalendarIcon size={15} />
+      </ViewToggleButton>
+    </div>
+  );
+}
+
+function ViewToggleButton({
+  label,
+  active,
+  onClick,
+  children,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+      className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors duration-200 ${
+        active
+          ? "bg-brand-teal text-white"
+          : "text-brand-muted hover:text-brand-text"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 const checkIcon = (
   <svg

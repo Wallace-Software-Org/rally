@@ -13,11 +13,15 @@ import {
   DistancePickerPill,
   ActivitiesPicker,
   ShowPicker,
+  ViewToggle,
   type ShowFilter,
+  type FeedView,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
+import CalendarView from "@/components/activities/calendar-view";
 import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
+import { type YearMonth, currentYearMonth } from "@/lib/utils/calendar";
 import {
   type DistanceFilter,
   DEFAULT_DISTANCE_FILTER,
@@ -56,6 +60,14 @@ export default function ActivityFeed({
     DEFAULT_DISTANCE_FILTER,
   );
   const [show, setShow] = useState<ShowFilter>("all");
+  // Map (default) vs calendar. Client-only, not persisted. Shared here so the
+  // mobile and desktop trees never diverge.
+  const [now] = useState(() => new Date());
+  const [view, setView] = useState<FeedView>("map");
+  const [calendarMonth, setCalendarMonth] = useState<YearMonth>(() =>
+    currentYearMonth(now),
+  );
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
@@ -125,13 +137,18 @@ export default function ActivityFeed({
     return joined.has(a.id) && a.creator_id !== userId;
   }
 
-  const visible = activitiesWithLocalParticipation.filter(
+  // Activities and Distance and Show apply to both views. The Time pill (date
+  // filter) applies to map/list only; the calendar grid is its own time filter,
+  // so the calendar reads baseFiltered (no date filter).
+  const baseFiltered = activitiesWithLocalParticipation.filter(
     (a) =>
       (sports.length === 0 ||
         sports.some((s) => s.toLowerCase() === a.sport.toLowerCase())) &&
-      matchesDateFilter(a.starts_at, dateFilter) &&
       withinDistance(a) &&
       matchesShow(a),
+  );
+  const visible = baseFiltered.filter((a) =>
+    matchesDateFilter(a.starts_at, dateFilter),
   );
 
   const emptyMessage =
@@ -198,133 +215,107 @@ export default function ActivityFeed({
     return !error;
   }
 
+  // Shared across the mobile and desktop filter bars. The Time pill drops out in
+  // calendar view (the grid is the time filter).
+  const filterPills = (
+    <>
+      <ActivitiesPicker
+        selected={sports}
+        onChange={setSports}
+        userActivities={userActivities}
+      />
+      {view === "map" && (
+        <DatePickerPill value={dateFilter} onChange={setDateFilter} />
+      )}
+      <DistancePickerPill
+        value={distance}
+        onChange={setDistance}
+        hasCoords={hasCoords}
+        status={locationStatus}
+        isLoggedIn={userId != null}
+        onRequestLocation={requestLocation}
+      />
+      {userId && <ShowPicker value={show} onChange={setShow} />}
+    </>
+  );
+
+  const calendar = (variant: "stack" | "split") => (
+    <CalendarView
+      activities={baseFiltered}
+      now={now}
+      month={calendarMonth}
+      onMonthChange={setCalendarMonth}
+      selectedKey={selectedDay}
+      onSelectDay={setSelectedDay}
+      variant={variant}
+    />
+  );
+
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-brand-bg overflow-hidden">
-      {/* ── Map strip — mobile, md, lg: fixed above filter bar, hidden at xl ── */}
-      <div className="xl:hidden flex-none">
-        <MapPanel
-          activities={visible}
-          userId={userId}
-          variant="strip"
-          selectedId={selectedId}
-          onDotClick={(id) =>
-            setSelectedId((prev) => (prev === id ? null : id))
-          }
-        />
-      </div>
+      {/* ── Map strip — mobile/md/lg map view only; hidden at xl and in calendar ── */}
+      {view === "map" && (
+        <div className="xl:hidden flex-none">
+          <MapPanel
+            activities={visible}
+            userId={userId}
+            variant="strip"
+            selectedId={selectedId}
+            onDotClick={(id) =>
+              setSelectedId((prev) => (prev === id ? null : id))
+            }
+          />
+        </div>
+      )}
 
-      {/* ── Filter bar — mobile + md (< xl): one row of pills, horizontal scroll
-          (hidden scrollbar) if they overflow, never wraps ── */}
+      {/* ── Filter bar — mobile + md (< xl): one row of pills + view toggle,
+          horizontal scroll (hidden scrollbar) if they overflow, never wraps ── */}
       <div className="xl:hidden flex-none relative z-10 border-b border-brand-border">
         <div className="flex flex-nowrap items-center gap-2.5 px-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <ActivitiesPicker
-            selected={sports}
-            onChange={setSports}
-            userActivities={userActivities}
-          />
-          <DatePickerPill value={dateFilter} onChange={setDateFilter} />
-          <DistancePickerPill
-            value={distance}
-            onChange={setDistance}
-            hasCoords={hasCoords}
-            status={locationStatus}
-            isLoggedIn={userId != null}
-            onRequestLocation={requestLocation}
-          />
-          {userId && <ShowPicker value={show} onChange={setShow} />}
+          {filterPills}
+          <div className="ml-auto flex-none pl-1">
+            <ViewToggle value={view} onChange={setView} />
+          </div>
         </div>
       </div>
 
       {/* ── Content area ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-hidden flex">
-        {/* Mobile + md + lg (< xl): single scrollable card grid */}
-        <div className="xl:hidden flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-4">
-            {!userId && (
-              <div className="mt-3 mb-1 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
-                Join to see who&apos;s going and save your spot
-              </div>
-            )}
-
-            {visible.length === 0 ? (
-              <p className="py-20 text-center text-sm text-brand-muted">
-                {emptyMessage}
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
-                {visible.map((a) => (
-                  <div
-                    key={a.id}
-                    className="h-full"
-                    ref={(el) => {
-                      if (el) cardRefs.current.set(a.id, el);
-                      else cardRefs.current.delete(a.id);
-                    }}
-                  >
-                    <ActivityCardDesktop
-                      activity={a}
-                      userId={userId}
-                      isActive={selectedId === a.id}
-                      showDetails={false}
-                      isJoined={joined.has(a.id)}
-                      isJoining={joining.has(a.id)}
-                      onSelect={() =>
-                        setSelectedId((prev) => (prev === a.id ? null : a.id))
-                      }
-                      onJoin={() => handleJoin(a.id)}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Mobile + md + lg (< xl): calendar (fixed grid + scrolling agenda) or
+            card grid (scrolling list) */}
+        {view === "calendar" ? (
+          <div className="xl:hidden flex-1 min-h-0 flex flex-col">
+            {calendar("stack")}
           </div>
-        </div>
+        ) : (
+          <div className="xl:hidden flex-1 overflow-y-auto">
+            <div className="max-w-5xl mx-auto px-4">
+              {!userId && (
+                <div className="mt-3 mb-1 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
+                  Join to see who&apos;s going and save your spot
+                </div>
+              )}
 
-        {/* xl (1280px+): fixed 720px left panel + map fills remaining space */}
-        <div className="hidden xl:flex flex-1 overflow-hidden">
-          {/* Left panel — 720px fixed, scrolls independently */}
-          <div className="w-180 flex-none flex flex-col border-r border-brand-border">
-            {/* Filter bar — full width of left panel */}
-            <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
-              <ActivitiesPicker
-                selected={sports}
-                onChange={setSports}
-                userActivities={userActivities}
-              />
-              <DatePickerPill value={dateFilter} onChange={setDateFilter} />
-              <DistancePickerPill
-                value={distance}
-                onChange={setDistance}
-                hasCoords={hasCoords}
-                status={locationStatus}
-                isLoggedIn={userId != null}
-                onRequestLocation={requestLocation}
-              />
-              {userId && <ShowPicker value={show} onChange={setShow} />}
-            </div>
-
-            {/* Scrollable card area */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="px-6 py-4">
-                {!userId && (
-                  <div className="mb-3 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
-                    Join to see who&apos;s going and save your spot
-                  </div>
-                )}
-
-                {visible.length === 0 ? (
-                  <p className="py-20 text-center text-sm text-brand-muted">
-                    No open activities
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {visible.map((a) => (
+              {visible.length === 0 ? (
+                <p className="py-20 text-center text-sm text-brand-muted">
+                  {emptyMessage}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
+                  {visible.map((a) => (
+                    <div
+                      key={a.id}
+                      className="h-full"
+                      ref={(el) => {
+                        if (el) cardRefs.current.set(a.id, el);
+                        else cardRefs.current.delete(a.id);
+                      }}
+                    >
                       <ActivityCardDesktop
-                        key={a.id}
                         activity={a}
                         userId={userId}
                         isActive={selectedId === a.id}
-                        showDetails={true}
+                        showDetails={false}
                         isJoined={joined.has(a.id)}
                         isJoining={joining.has(a.id)}
                         onSelect={() =>
@@ -332,38 +323,105 @@ export default function ActivityFeed({
                         }
                         onJoin={() => handleJoin(a.id)}
                       />
-                    ))}
-                  </div>
-                )}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+        )}
 
-          {/* Map panel — fills remaining space, always visible at xl */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <MapPanel
-              activities={visible}
-              userId={userId}
-              variant="full"
-              selectedId={selectedId}
-              onDotClick={(id) =>
-                setSelectedId((prev) => (prev === id ? null : id))
-              }
-              userLat={coords?.lat ?? null}
-              userLng={coords?.lng ?? null}
-            >
-              {selectedActivity && (
-                <MapPreviewCard
-                  key={selectedActivity.id}
-                  activity={selectedActivity}
+        {/* xl (1280px+): map view = 720px panel + map; calendar view = its own
+            full-width layout (grid + agenda), no map */}
+        <div className="hidden xl:flex flex-1 overflow-hidden">
+          {view === "map" ? (
+            <>
+              {/* Left panel — 720px fixed, scrolls independently */}
+              <div className="w-180 flex-none flex flex-col border-r border-brand-border">
+                {/* Filter bar — full width of left panel */}
+                <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
+                  {filterPills}
+                  <div className="ml-auto">
+                    <ViewToggle value={view} onChange={setView} />
+                  </div>
+                </div>
+
+                {/* Scrollable card area */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="px-6 py-4">
+                    {!userId && (
+                      <div className="mb-3 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
+                        Join to see who&apos;s going and save your spot
+                      </div>
+                    )}
+
+                    {visible.length === 0 ? (
+                      <p className="py-20 text-center text-sm text-brand-muted">
+                        No open activities
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        {visible.map((a) => (
+                          <ActivityCardDesktop
+                            key={a.id}
+                            activity={a}
+                            userId={userId}
+                            isActive={selectedId === a.id}
+                            showDetails={true}
+                            isJoined={joined.has(a.id)}
+                            isJoining={joining.has(a.id)}
+                            onSelect={() =>
+                              setSelectedId((prev) =>
+                                prev === a.id ? null : a.id,
+                              )
+                            }
+                            onJoin={() => handleJoin(a.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Map panel — fills remaining space, always visible at xl */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <MapPanel
+                  activities={visible}
                   userId={userId}
-                  onJoin={() => handleJoin(selectedActivity.id)}
-                  onLeave={() => handleLeave(selectedActivity.id)}
-                  onDismiss={() => setSelectedId(null)}
-                />
-              )}
-            </MapPanel>
-          </div>
+                  variant="full"
+                  selectedId={selectedId}
+                  onDotClick={(id) =>
+                    setSelectedId((prev) => (prev === id ? null : id))
+                  }
+                  userLat={coords?.lat ?? null}
+                  userLng={coords?.lng ?? null}
+                >
+                  {selectedActivity && (
+                    <MapPreviewCard
+                      key={selectedActivity.id}
+                      activity={selectedActivity}
+                      userId={userId}
+                      onJoin={() => handleJoin(selectedActivity.id)}
+                      onLeave={() => handleLeave(selectedActivity.id)}
+                      onDismiss={() => setSelectedId(null)}
+                    />
+                  )}
+                </MapPanel>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Filter bar — full width above the calendar */}
+              <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
+                {filterPills}
+                <div className="ml-auto">
+                  <ViewToggle value={view} onChange={setView} />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto">{calendar("split")}</div>
+            </div>
+          )}
         </div>
       </div>
 
