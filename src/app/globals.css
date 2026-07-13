@@ -121,6 +121,13 @@ body {
   }
 }
 
+/* Teal counterpart of pill-hover-tint for the active (teal) filter pill. */
+@utility pill-hover-tint-teal {
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-brand-teal) 9%, transparent);
+  }
+}
+
 /* Shared input/select shell. Callers add padding, text size, and text color
    (some fields set it dynamically). Standard focus ring: 1.5px teal, no outline. */
 @utility field-base {

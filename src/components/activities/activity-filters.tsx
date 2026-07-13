@@ -117,7 +117,7 @@ function FilterPill({
         disabled
           ? "cursor-not-allowed border-brand-border text-brand-muted opacity-60"
           : active
-            ? "cursor-pointer border-brand-teal text-brand-teal"
+            ? "cursor-pointer border-brand-teal text-brand-teal pill-hover-tint-teal"
             : "cursor-pointer border-brand-border text-brand-muted hover:border-brand-border-hover pill-hover-tint"
       }`}
     >
