@@ -90,7 +90,7 @@ export default function TimePicker({
                 onChange(slot.value);
                 setOpen(false);
               }}
-              className={`w-full px-4 py-2.5 text-sm text-left transition-colors ${
+              className={`w-full px-4 py-2.5 text-sm text-left transition-colors duration-200 ${
                 slot.value === value
                   ? "bg-brand-teal text-white font-medium"
                   : "text-brand-text hover:bg-brand-muted/15"

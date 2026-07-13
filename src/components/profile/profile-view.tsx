@@ -49,7 +49,7 @@ function ActionRow({
           href={`https://instagram.com/${profile.instagram_handle}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full flex items-center justify-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold py-3 hover:bg-brand-teal/5 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold py-3 hover:bg-brand-teal/15 transition-colors duration-200"
         >
           <InstagramIcon size={14} />
           Instagram
@@ -141,7 +141,7 @@ function TabBar({
           <button
             key={t}
             onClick={() => onTabChange(t)}
-            className={`flex-1 py-3 text-sm border-b-2 -mb-px transition-colors duration-300 ${
+            className={`flex-1 py-3 text-sm border-b-2 -mb-px transition-colors duration-200 ${
               isActive
                 ? "border-brand-teal text-brand-text font-semibold"
                 : "border-transparent text-brand-muted font-semibold hover:text-brand-text"
@@ -174,7 +174,7 @@ function NudgeCard() {
       </div>
       <Link
         href="/profile/edit"
-        className="btn-tier-1 flex items-center justify-center transition-colors"
+        className="btn-tier-1 flex items-center justify-center"
       >
         Complete your profile
       </Link>

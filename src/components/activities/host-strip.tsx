@@ -45,7 +45,7 @@ export default function HostStrip({ host }: { host: HostSummary }) {
           href={`https://instagram.com/${host.instagram_handle}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-none flex items-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold px-3.5 py-2 hover:bg-brand-teal/5 transition-colors"
+          className="flex-none flex items-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold px-3.5 py-2 hover:bg-brand-teal/15 transition-colors duration-200"
         >
           <InstagramIcon size={14} />
           Instagram

@@ -372,7 +372,7 @@ export default function ActivityFeed({
         <div className="xl:hidden flex-none border-t border-brand-border p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <Link
             href="/activity/new"
-            className="w-full md:max-w-xs md:mx-auto flex items-center justify-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+            className="w-full md:max-w-xs md:mx-auto flex items-center justify-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
           >
             <svg
               width="14"

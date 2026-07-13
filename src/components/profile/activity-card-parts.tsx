@@ -70,7 +70,7 @@ export function ActivitySection({
       {collapsible ? (
         <button
           onClick={onToggle}
-          className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-muted hover:text-brand-text transition-colors w-fit"
+          className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-muted hover:text-brand-text transition-colors duration-200 w-fit"
         >
           {title} ({count})
           <Chevron open={open} />

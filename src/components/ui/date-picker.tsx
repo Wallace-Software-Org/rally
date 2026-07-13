@@ -98,7 +98,7 @@ export default function DatePicker({
             <button
               type="button"
               onClick={prevMonth}
-              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-brand-avatar-bg text-brand-text transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-brand-avatar-bg text-brand-text transition-colors duration-200"
             >
               <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                 <path d="M11 14L6 9l5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -110,7 +110,7 @@ export default function DatePicker({
             <button
               type="button"
               onClick={nextMonth}
-              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-brand-avatar-bg text-brand-text transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-brand-avatar-bg text-brand-text transition-colors duration-200"
             >
               <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                 <path d="M7 4l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -139,7 +139,7 @@ export default function DatePicker({
                   type="button"
                   disabled={isDisabled}
                   onClick={() => selectDay(day)}
-                  className={`h-8 w-8 mx-auto flex items-center justify-center text-sm rounded-full transition-colors ${
+                  className={`h-8 w-8 mx-auto flex items-center justify-center text-sm rounded-full transition-colors duration-200 ${
                     isDisabled
                       ? "text-brand-muted/40 cursor-not-allowed"
                       : isSelected

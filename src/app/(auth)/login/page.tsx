@@ -39,7 +39,7 @@ export default function LoginPage() {
 
         <button
           onClick={handleGoogleSignIn}
-          className="cursor-pointer w-full flex items-center justify-center gap-3 rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+          className="cursor-pointer w-full flex items-center justify-center gap-3 rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
         >
           <GoogleIcon />
           Continue with Google

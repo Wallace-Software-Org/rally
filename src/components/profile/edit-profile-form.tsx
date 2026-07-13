@@ -219,7 +219,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
                 aria-label="Change photo"
-                className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-brand-teal flex items-center justify-center border-2 border-brand-bg hover:bg-brand-teal-hover transition-colors disabled:opacity-60"
+                className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-brand-teal flex items-center justify-center border-2 border-brand-bg hover:bg-brand-teal-hover transition-colors duration-200 disabled:opacity-60"
               >
                 <CameraIcon />
               </button>
@@ -434,7 +434,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                           type="button"
                           onClick={() => toggleSport(a)}
                           aria-pressed={active}
-                          className={`rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
+                          className={`rounded-xl py-3 px-2 text-sm font-medium border transition-colors duration-200 text-center ${
                             active
                               ? "bg-brand-teal border-brand-teal text-white"
                               : "border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg"
@@ -459,7 +459,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
           <button
             onClick={handleSave}
             disabled={submitting || !canSave}
-            className="w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40"
+            className="w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200 disabled:opacity-40"
           >
             {submitting ? "Saving..." : "Save changes"}
           </button>
@@ -473,7 +473,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                 signOutConfirm ? handleSignOut() : setSignOutConfirm(true)
               }
               disabled={signingOut}
-              className="w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 border border-brand-danger text-brand-danger hover:bg-brand-danger/10 transition-colors disabled:opacity-40"
+              className="w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 border border-brand-danger text-brand-danger hover:bg-brand-danger/10 transition-colors duration-200 disabled:opacity-40"
             >
               {signingOut
                 ? "Signing out..."
@@ -489,7 +489,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                   exit={{ opacity: 0, y: 16 }}
                   transition={{ duration: 0.2 }}
                   onClick={() => setSignOutConfirm(false)}
-                  className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+                  className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors duration-200"
                 >
                   Cancel
                 </motion.button>

@@ -113,12 +113,12 @@ function FilterPill({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-1 rounded-full border px-4 py-2 text-sm xl:px-3.5 xl:py-1.5 xl:text-xs font-medium transition-colors ${
+      className={`flex items-center gap-1 rounded-full border px-4 py-2 text-sm xl:px-3.5 xl:py-1.5 xl:text-xs font-medium transition-colors duration-200 ${
         disabled
           ? "cursor-not-allowed border-brand-border text-brand-muted opacity-60"
           : active
             ? "cursor-pointer border-brand-teal text-brand-teal"
-            : "cursor-pointer border-brand-border text-brand-muted hover:border-brand-border-hover"
+            : "cursor-pointer border-brand-border text-brand-muted hover:border-brand-border-hover pill-hover-tint"
       }`}
     >
       {label}
@@ -193,7 +193,7 @@ function FilterOption({
   return (
     <button
       onClick={onClick}
-      className="cursor-pointer w-full flex items-center justify-between gap-6 px-4 py-3 text-base xl:px-3.5 xl:py-2 xl:text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors"
+      className="cursor-pointer w-full flex items-center justify-between gap-6 px-4 py-3 text-base xl:px-3.5 xl:py-2 xl:text-xs font-medium text-brand-text hover:bg-brand-map-bg transition-colors duration-200"
     >
       {label}
       {selected && checkIcon}

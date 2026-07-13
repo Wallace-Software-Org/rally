@@ -14,7 +14,7 @@ export default function Toggle({
       role="switch"
       aria-checked={checked}
       onClick={onChange}
-      className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors flex-none ${
+      className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors duration-200 flex-none ${
         checked ? "bg-brand-teal justify-end" : "bg-brand-border justify-start"
       }`}
     >

@@ -151,14 +151,14 @@ function LocationButton({
       <div className="flex items-center gap-2 flex-wrap text-sm">
         <button
           onClick={() => setOpen((p) => !p)}
-          className="flex items-center gap-2 text-brand-muted hover:text-brand-teal transition-colors group"
+          className="flex items-center gap-2 text-brand-muted hover:text-brand-teal transition-colors duration-200 group"
         >
           <svg
             width="10"
             height="12"
             viewBox="0 0 8 10"
             fill="currentColor"
-            className="flex-none text-brand-teal/70 group-hover:text-brand-teal transition-colors"
+            className="flex-none text-brand-teal/70 group-hover:text-brand-teal transition-colors duration-200"
             aria-hidden="true"
           >
             <path d="M4 0C2.07 0 .5 1.57.5 3.5.5 6.125 4 10 4 10S7.5 6.125 7.5 3.5C7.5 1.57 5.93 0 4 0Zm0 4.75A1.25 1.25 0 1 1 4 2.25a1.25 1.25 0 0 1 0 2.5Z" />
@@ -201,7 +201,7 @@ function LocationButton({
             <div className="w-9 h-1 bg-brand-border rounded-full mx-auto mb-1" />
             <button
               onClick={copyAddress}
-              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors"
+              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors duration-200"
             >
               {copied ? "Copied" : "Copy address"}
             </button>
@@ -210,7 +210,7 @@ function LocationButton({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setOpen(false)}
-              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors"
+              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors duration-200"
             >
               Open in Apple Maps
             </a>
@@ -219,7 +219,7 @@ function LocationButton({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setOpen(false)}
-              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors"
+              className="w-full flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border py-3.5 text-sm font-medium text-brand-text hover:bg-brand-surface-deep transition-colors duration-200"
             >
               Open in Google Maps
             </a>
@@ -238,7 +238,7 @@ function LocationButton({
         <div className="hidden md:block absolute top-full mt-1.5 left-0 z-50 w-max min-w-48 bg-brand-bg border border-brand-border rounded-xl shadow-lg py-1 overflow-hidden">
           <button
             onClick={copyAddress}
-            className="w-full flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors text-left"
+            className="w-full flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors duration-200 text-left"
           >
             {copied ? "Copied" : "Copy address"}
           </button>
@@ -247,7 +247,7 @@ function LocationButton({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpen(false)}
-            className="flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors"
+            className="flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors duration-200"
           >
             Open in Apple Maps
           </a>
@@ -256,7 +256,7 @@ function LocationButton({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpen(false)}
-            className="flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors"
+            className="flex items-center px-4 py-2.5 text-sm text-brand-text hover:bg-brand-surface transition-colors duration-200"
           >
             Open in Google Maps
           </a>
@@ -485,7 +485,7 @@ export default function ActivityDetailView({
   const ctaButton = isHost ? (
     <Link
       href={`/activity/${activity.id}/edit`}
-      className="btn-tier-1 w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active transition-colors"
+      className="btn-tier-1 w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active"
     >
       Edit
     </Link>
@@ -493,7 +493,7 @@ export default function ActivityDetailView({
     <button
       data-leave-btn
       onClick={() => (leaveConfirm ? handleLeave() : setLeaveConfirm(true))}
-      className={`cursor-pointer w-full max-w-156 flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors border ${
+      className={`cursor-pointer w-full max-w-156 flex items-center justify-center rounded-xl text-sm font-semibold py-3.5 transition-colors duration-200 border ${
         leaveConfirm
           ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
           : "border-brand-teal text-brand-teal bg-transparent hover:bg-brand-teal/5"
@@ -505,7 +505,7 @@ export default function ActivityDetailView({
     <div className="flex flex-col items-center gap-1.5 w-full max-w-156">
       <Link
         href={quickJoinLoginHref(activity.id)}
-        className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+        className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
       >
         Sign in to join
       </Link>
@@ -516,7 +516,7 @@ export default function ActivityDetailView({
   ) : isFull ? (
     <button
       disabled
-      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 transition-colors disabled:opacity-60"
+      className="w-full max-w-156 flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 transition-colors duration-200 disabled:opacity-60"
     >
       Full
     </button>
@@ -524,7 +524,7 @@ export default function ActivityDetailView({
     <button
       onClick={handleJoin}
       disabled={joining}
-      className="btn-tier-1 cursor-pointer w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active transition-colors disabled:opacity-60"
+      className="btn-tier-1 cursor-pointer w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active disabled:opacity-60"
     >
       {joining ? "Joining…" : "Join activity"}
     </button>
@@ -534,7 +534,7 @@ export default function ActivityDetailView({
     userId ? (
       <button
         onClick={handleShare}
-        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors duration-200`}
       >
         <svg
           width="15"
@@ -559,7 +559,7 @@ export default function ActivityDetailView({
     isHost ? (
       <button
         onClick={() => setShowGroupChatModal(true)}
-        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors duration-200`}
       >
         <svg
           width="15"
@@ -586,7 +586,7 @@ export default function ActivityDetailView({
     isHost ? (
       <button
         onClick={handleCopyLink}
-        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-2 transition-colors`}
+        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-2 transition-colors duration-200`}
       >
         <svg
           width="15"
@@ -627,7 +627,7 @@ export default function ActivityDetailView({
       </span>
       <Link
         href="/profile/edit"
-        className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
+        className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors duration-200 whitespace-nowrap"
       >
         Add Instagram
       </Link>
@@ -640,7 +640,7 @@ export default function ActivityDetailView({
         href={activity.external_link}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${tier} w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors`}
+        className={`${tier} w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors duration-200`}
       >
         <ExternalLinkIcon />
         Register here
@@ -668,7 +668,7 @@ export default function ActivityDetailView({
                 <div className="flex items-center justify-end gap-2 flex-none">
                   <button
                     onClick={handleShare}
-                    className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors whitespace-nowrap"
+                    className="rounded-lg border border-brand-teal px-3 py-1.5 text-xs font-semibold text-brand-teal hover:bg-brand-teal/10 transition-colors duration-200 whitespace-nowrap"
                   >
                     Share to Story
                   </button>
@@ -677,7 +677,7 @@ export default function ActivityDetailView({
               <button
                 onClick={() => setShowPostedBanner(false)}
                 aria-label="Dismiss"
-                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors duration-200"
               >
                 ×
               </button>
@@ -695,7 +695,7 @@ export default function ActivityDetailView({
               <button
                 onClick={() => setShowJustJoinedBanner(false)}
                 aria-label="Dismiss"
-                className="absolute top-1/2 -translate-y-1/2 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors"
+                className="absolute top-1/2 -translate-y-1/2 right-3 w-8 h-8 flex items-center justify-center rounded-full text-brand-teal hover:bg-brand-teal/10 transition-colors duration-200"
               >
                 ×
               </button>

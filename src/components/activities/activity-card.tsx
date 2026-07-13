@@ -105,7 +105,7 @@ function CardAction({
           e.stopPropagation();
           router.push(quickJoinLoginHref(activity.id));
         }}
-        className={`${pill} border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors`}
+        className={`${pill} border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors duration-200`}
       >
         Sign in
       </button>
@@ -139,7 +139,7 @@ function CardAction({
         onJoin();
       }}
       disabled={isJoining}
-      className={`${pill} cursor-pointer bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-50`}
+      className={`${pill} cursor-pointer bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200 disabled:opacity-50`}
     >
       {isJoining ? "…" : "Join"}
     </button>
@@ -209,7 +209,7 @@ function HostedByLine({
     <Link
       href={`/profile/${host.username}`}
       onClick={(e) => e.stopPropagation()}
-      className="mt-0.5 flex items-center gap-1.5 text-xs text-brand-muted hover:text-brand-text transition-colors w-fit"
+      className="mt-0.5 flex items-center gap-1.5 text-xs text-brand-muted hover:text-brand-text transition-colors duration-200 w-fit"
     >
       {inner}
     </Link>
@@ -276,10 +276,10 @@ export function ActivityCardDesktop({
   const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
   const { time, date } = formatActivityDate(activity.starts_at);
 
-  const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-1 transition-all border ${
+  const cardClass = `h-full rounded-xl px-4 py-5 flex flex-col gap-1 transition-colors duration-200 border ${
     isActive
       ? "border-brand-teal bg-brand-teal/10"
-      : "border-brand-border bg-brand-bg hover:border-brand-border-hover"
+      : "border-brand-border bg-brand-bg hover:border-brand-border-hover card-hover-tint"
   }`;
 
   const inner = (

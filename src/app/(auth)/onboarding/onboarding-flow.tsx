@@ -124,7 +124,7 @@ export default function OnboardingFlow({
             {step > 1 && (
               <button
                 onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-1.5 text-sm text-brand-muted hover:text-brand-text transition-colors"
+                className="flex items-center gap-1.5 text-sm text-brand-muted hover:text-brand-text transition-colors duration-200"
               >
                 <svg
                   width="16"
@@ -276,7 +276,7 @@ export default function OnboardingFlow({
               <button
                 onClick={() => setStep(2)}
                 disabled={!step1Valid}
-                className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40"
+                className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200 disabled:opacity-40"
               >
                 Continue
               </button>
@@ -304,7 +304,7 @@ export default function OnboardingFlow({
                       type="button"
                       onClick={() => toggleActivity(a)}
                       aria-pressed={active}
-                      className={`rounded-xl py-3 px-2 text-sm font-medium border transition-colors text-center ${
+                      className={`rounded-xl py-3 px-2 text-sm font-medium border transition-colors duration-200 text-center ${
                         active
                           ? "bg-brand-teal border-brand-teal text-white"
                           : "border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal bg-brand-bg"
@@ -319,7 +319,7 @@ export default function OnboardingFlow({
               <button
                 onClick={() => setStep(3)}
                 disabled={!step2Valid}
-                className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40"
+                className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200 disabled:opacity-40"
               >
                 Continue
               </button>
@@ -384,7 +384,7 @@ export default function OnboardingFlow({
               <button
                 onClick={handleFinish}
                 disabled={submitting}
-                className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors disabled:opacity-40"
+                className="w-full rounded-xl bg-brand-teal px-5 py-3.5 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200 disabled:opacity-40"
               >
                 {submitting
                   ? "Setting up your profile..."

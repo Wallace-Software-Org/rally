@@ -29,7 +29,7 @@ export default function Select({ value, onChange, options, placeholder, listClas
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`w-full rounded-xl border bg-brand-input px-4 py-3 text-sm text-brand-text text-left flex items-center justify-between focus:outline-none transition-colors ${
+        className={`w-full rounded-xl border bg-brand-input px-4 py-3 text-sm text-brand-text text-left flex items-center justify-between focus:outline-none transition-colors duration-200 ${
           open
             ? "border-brand-teal ring-[1.5px] ring-brand-teal"
             : "border-brand-border"
@@ -64,7 +64,7 @@ export default function Select({ value, onChange, options, placeholder, listClas
                 key={option}
                 type="button"
                 onClick={() => { onChange(option); setOpen(false); }}
-                className={`w-full px-4 py-3 text-sm text-left transition-colors hover:bg-brand-muted/15 ${
+                className={`w-full px-4 py-3 text-sm text-left transition-colors duration-200 hover:bg-brand-muted/15 ${
                   option === value
                     ? "text-brand-teal font-medium"
                     : "text-brand-text"
