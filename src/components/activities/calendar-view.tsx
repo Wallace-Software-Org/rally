@@ -79,21 +79,30 @@ export default function CalendarView({
   }, [selectedKey]);
 
   const prevDisabled = isBeforeCurrentMonth(addMonths(month, -1), now);
+  // Mobile stack is compacted to ~a third of the viewport; desktop split keeps
+  // its roomier sizing.
+  const compact = variant === "stack";
+  const chevronBtn = `${compact ? "w-7 h-7" : "w-8 h-8"} flex-none flex items-center justify-center rounded-full text-brand-muted transition-colors duration-200 hover:text-brand-text disabled:opacity-30 disabled:cursor-not-allowed`;
+  const cellGap = compact ? "gap-0.5" : "gap-1";
 
   const grid = (
-    <div className="flex flex-col gap-3">
-      {/* Month header */}
-      <div className="flex items-center justify-between">
-        <p className="text-base font-semibold text-brand-text">
+    <div className={`flex flex-col ${compact ? "gap-1.5" : "gap-3"}`}>
+      {/* Month header — single compact row */}
+      <div className="flex items-center justify-between gap-2">
+        <p
+          className={`font-semibold text-brand-text ${
+            compact ? "text-sm" : "text-base"
+          }`}
+        >
           {monthLabel(month)}
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             aria-label="Previous month"
             disabled={prevDisabled}
             onClick={() => onMonthChange(addMonths(month, -1))}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-brand-muted transition-colors duration-200 hover:text-brand-text disabled:opacity-30 disabled:cursor-not-allowed"
+            className={chevronBtn}
           >
             <ChevronLeftIcon size={16} />
           </button>
@@ -101,7 +110,7 @@ export default function CalendarView({
             type="button"
             aria-label="Next month"
             onClick={() => onMonthChange(addMonths(month, 1))}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-brand-muted transition-colors duration-200 hover:text-brand-text"
+            className={chevronBtn}
           >
             <ChevronRightIcon size={16} />
           </button>
@@ -109,11 +118,13 @@ export default function CalendarView({
       </div>
 
       {/* Weekday header */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className={`grid grid-cols-7 ${cellGap}`}>
         {WEEKDAY_ABBR.map((abbr) => (
           <span
             key={abbr}
-            className="text-center text-xs font-medium text-brand-muted"
+            className={`text-center font-medium text-brand-muted ${
+              compact ? "text-[11px]" : "text-xs"
+            }`}
           >
             {abbr[0]}
           </span>
@@ -121,11 +132,17 @@ export default function CalendarView({
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className={`grid grid-cols-7 ${cellGap}`}>
         {cells.map((cell) => (
-          <div key={cell.key} className="flex items-center justify-center py-0.5">
+          <div
+            key={cell.key}
+            className={`flex items-center justify-center ${
+              compact ? "" : "py-0.5"
+            }`}
+          >
             <DayCellButton
               cell={cell}
+              compact={compact}
               hasActivities={cell.key >= todayKey && grouped.has(cell.key)}
               selected={cell.key === selectedKey}
               onSelect={() => onSelectDay(cell.key)}
@@ -182,13 +199,15 @@ export default function CalendarView({
   }
 
   // Stack (mobile): grid fixed, only the agenda scrolls — mirroring the map
-  // view's fixed-map / scrolling-list split.
+  // view's fixed-map / scrolling-list split. min-w-0 lets this shrink to the
+  // viewport so the grid never overflows (without it, the agenda's long text
+  // inflates the column min-width and the chevron/Saturday column get clipped).
   return (
-    <div className="flex-1 min-h-0 flex flex-col">
-      <div className="flex-none px-4 pt-4 pb-3">{grid}</div>
+    <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+      <div className="flex-none px-4 pt-3 pb-2">{grid}</div>
       <div
         ref={agendaScrollRef}
-        className="flex-1 min-h-0 overflow-y-auto px-4 pb-4"
+        className="flex-1 min-w-0 min-h-0 overflow-y-auto px-4 pb-4"
       >
         {agendaContent}
       </div>
@@ -201,55 +220,70 @@ function DayCellButton({
   hasActivities,
   selected,
   onSelect,
+  compact,
 }: {
   cell: DayCell;
   hasActivities: boolean;
   selected: boolean;
   onSelect: () => void;
+  compact: boolean;
 }) {
   const day = cell.date.getDate();
-  const base =
-    "w-9 h-9 rounded-full flex items-center justify-center text-sm transition-colors duration-200";
+  // Compact (mobile): a smaller visual circle inside a padded hit area, so taps
+  // stay ~40px while the circle shrinks to ~32px. Desktop: the circle is the
+  // button, unchanged.
+  const circle = compact
+    ? "w-8 h-8 rounded-full flex items-center justify-center text-xs transition-colors duration-200"
+    : "w-9 h-9 rounded-full flex items-center justify-center text-sm transition-colors duration-200";
+  const hitPad = compact ? "flex items-center justify-center p-1 rounded-full" : "";
+  const todayOutline = cell.isToday ? "border-[1.5px] border-brand-teal" : "";
 
-  // Adjacent-month days: muted and non-interactive.
-  if (!cell.inMonth) {
-    return <span className={`${base} text-brand-muted/30`}>{day}</span>;
-  }
+  const circleClass = (state: string) => `${circle} ${state}`.trim();
 
-  // Selected wins over every other state.
-  if (selected) {
+  function interactive(state: string, label: string) {
     return (
       <button
         type="button"
-        aria-label={`${day}, selected`}
+        aria-label={label}
         onClick={onSelect}
-        className={`${base} bg-brand-teal text-brand-warm-muted font-semibold`}
+        className={compact ? hitPad : circleClass(state)}
       >
-        {day}
+        {compact ? <span className={circleClass(state)}>{day}</span> : day}
       </button>
     );
   }
 
-  const todayOutline = cell.isToday ? "border-[1.5px] border-brand-teal" : "";
+  function inert(state: string) {
+    return compact ? (
+      <span className={hitPad}>
+        <span className={circleClass(state)}>{day}</span>
+      </span>
+    ) : (
+      <span className={circleClass(state)}>{day}</span>
+    );
+  }
+
+  // Adjacent-month days: muted and non-interactive.
+  if (!cell.inMonth) return inert("text-brand-muted/30");
+
+  // Selected wins over every other state.
+  if (selected) {
+    return interactive(
+      "bg-brand-teal text-brand-warm-muted font-semibold",
+      `${day}, selected`,
+    );
+  }
 
   // Has at least one activity after filters: interactive teal-muted chip.
   if (hasActivities) {
-    return (
-      <button
-        type="button"
-        aria-label={`${day}, has activities`}
-        onClick={onSelect}
-        className={`${base} bg-brand-teal-muted text-brand-teal-text font-medium ${todayOutline}`}
-      >
-        {day}
-      </button>
+    return interactive(
+      `bg-brand-teal-muted text-brand-teal-text font-medium ${todayOutline}`,
+      `${day}, has activities`,
     );
   }
 
   // No activities: non-interactive. Today still shows its outline.
-  return (
-    <span className={`${base} text-brand-text/70 ${todayOutline}`}>{day}</span>
-  );
+  return inert(`text-brand-text/70 ${todayOutline}`);
 }
 
 function AgendaRow({ activity }: { activity: ActivityWithParticipants }) {

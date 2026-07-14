@@ -284,7 +284,7 @@ export default function ActivityFeed({
         {/* Mobile + md + lg (< xl): calendar (fixed grid + scrolling agenda) or
             card grid (scrolling list) */}
         {view === "calendar" ? (
-          <div className="xl:hidden flex-1 min-h-0 flex flex-col">
+          <div className="xl:hidden flex-1 min-w-0 min-h-0 flex flex-col">
             {calendar("stack")}
           </div>
         ) : (
