@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ActivityWithParticipants } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
@@ -22,6 +23,10 @@ import CalendarView from "@/components/activities/calendar-view";
 import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
 import { type YearMonth, currentYearMonth } from "@/lib/utils/calendar";
+import {
+  parseFeedParams,
+  serializeFeedParams,
+} from "@/lib/utils/feed-url-params";
 import {
   type DistanceFilter,
   DEFAULT_DISTANCE_FILTER,
@@ -54,7 +59,17 @@ export default function ActivityFeed({
     status: locationStatus,
     request: requestLocation,
   } = useLocation(initialCoords);
-  const [sports, setSports] = useState<string[]>([]);
+
+  // URL mirroring: seed view + Activities from the query string on first client
+  // render (lazy, so params paint immediately with no default-state flash), then
+  // state is the single source of truth. Only these two are mirrored back below.
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [urlSeed] = useState(() =>
+    parseFeedParams(new URLSearchParams(searchParams?.toString() ?? "")),
+  );
+
+  const [sports, setSports] = useState<string[]>(urlSeed.sports);
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [distance, setDistance] = useState<DistanceFilter>(
     DEFAULT_DISTANCE_FILTER,
@@ -63,7 +78,7 @@ export default function ActivityFeed({
   // Map (default) vs calendar. Client-only, not persisted. Shared here so the
   // mobile and desktop trees never diverge.
   const [now] = useState(() => new Date());
-  const [view, setView] = useState<FeedView>("map");
+  const [view, setView] = useState<FeedView>(urlSeed.view);
   const [calendarMonth, setCalendarMonth] = useState<YearMonth>(() =>
     currentYearMonth(now),
   );
@@ -80,6 +95,16 @@ export default function ActivityFeed({
   const [joining, setJoining] = useState<Set<string>>(new Set());
 
   const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // Mirror view + Activities to the URL as they change. Uses the History API
+  // (not router.replace) so a filter toggle never re-requests the RSC payload
+  // for this client-filtered page, and replaceState (not push) so filter churn
+  // never pollutes back-button history. Non-default values only, so the bare URL
+  // stays bare.
+  useEffect(() => {
+    const url = `${pathname}${serializeFeedParams({ view, sports })}`;
+    window.history.replaceState(null, "", url);
+  }, [pathname, view, sports]);
 
   // Persist browser-granted coords to the profile (logged-in only). status is
   // "granted" only after an explicit request(), never for the initial profile
