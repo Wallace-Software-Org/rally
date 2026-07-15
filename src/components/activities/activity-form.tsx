@@ -395,13 +395,16 @@ export default function ActivityForm({
       : submitting
         ? "Posting..."
         : "Post activity";
+  // Highlight only the picker's trigger (the single .field-base element), not
+  // every descendant button. [&_button] leaked the ring onto the DatePicker's
+  // internal month-nav and day-cell buttons, drawing a teal circle on every day.
   const highlightedDateCls =
     mode === "duplicate" && !date
-      ? "[&_button]:border-brand-teal [&_button]:ring-[1.5px] [&_button]:ring-brand-teal"
+      ? "[&_.field-base]:border-brand-teal [&_.field-base]:ring-[1.5px] [&_.field-base]:ring-brand-teal"
       : "";
   const highlightedTimeCls =
     mode === "duplicate" && !time
-      ? "[&_button]:border-brand-teal [&_button]:ring-[1.5px] [&_button]:ring-brand-teal"
+      ? "[&_.field-base]:border-brand-teal [&_.field-base]:ring-[1.5px] [&_.field-base]:ring-brand-teal"
       : "";
 
   return (
