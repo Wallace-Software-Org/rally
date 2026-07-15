@@ -108,7 +108,7 @@ export default function GroupChatModal({
               <button
                 onClick={onClose}
                 aria-label="Close"
-                className="flex-none w-8 h-8 rounded-full border-[0.5px] border-brand-border bg-brand-surface flex items-center justify-center text-brand-muted hover:text-brand-text transition-colors"
+                className="flex-none w-8 h-8 rounded-full border-[0.5px] border-brand-border bg-brand-surface flex items-center justify-center text-brand-muted hover:text-brand-text transition-colors duration-200"
               >
                 <svg
                   width="12"
@@ -190,7 +190,7 @@ export default function GroupChatModal({
             <button
               onClick={() => copy(allHandles, "all")}
               disabled={withHandle.length === 0}
-              className="btn-tier-1 w-full flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+              className="btn-tier-1 w-full flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {copiedKey === "all" ? <CheckIcon /> : <CopyIcon />}
               {copiedKey === "all" ? "copied" : "copy all handles"}

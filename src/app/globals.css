@@ -104,6 +104,30 @@ body {
   border: 1px solid color-mix(in srgb, var(--color-brand-private-border) var(--tag-private-border-opacity), transparent);
 }
 
+/* Subtle warm background tint on hover for feed/personal-feed cards and filter
+   pills, layered alongside their existing border darkening. Applied only to the
+   non-selected/non-active state (the selected teal card and active teal pill
+   keep their own background). The element carries transition-colors duration-200,
+   so the tint animates over 200ms. */
+@utility card-hover-tint {
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-brand-warm) 4%, transparent);
+  }
+}
+
+@utility pill-hover-tint {
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-brand-warm) 5%, transparent);
+  }
+}
+
+/* Teal counterpart of pill-hover-tint for the active (teal) filter pill. */
+@utility pill-hover-tint-teal {
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-brand-teal) 9%, transparent);
+  }
+}
+
 /* Shared input/select shell. Callers add padding, text size, and text color
    (some fields set it dynamically). Standard focus ring: 1.5px teal, no outline. */
 @utility field-base {
@@ -160,6 +184,9 @@ body {
   border-radius: 10px;
   border: none;
   outline: none;
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
   &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-teal) 90%, black);
   }
@@ -181,6 +208,9 @@ body {
   padding: 12px;
   border-radius: 10px;
   outline: none;
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
   &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-warm) 20%, transparent);
     border-color: color-mix(in srgb, var(--color-brand-warm) 50%, transparent);
@@ -207,6 +237,9 @@ body {
   justify-content: center;
   gap: 6px;
   outline: none;
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
   &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-warm) 5%, transparent);
     border-color: color-mix(in srgb, var(--color-brand-warm) 25%, transparent);
@@ -229,6 +262,9 @@ body {
   padding: 12px;
   border-radius: 10px;
   outline: none;
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
   &:hover:not(:disabled) {
     background-color: rgba(204, 51, 51, 0.14);
     border-color: rgba(204, 51, 51, 0.55);
@@ -251,6 +287,9 @@ body {
   padding: 12px;
   border-radius: 10px;
   outline: none;
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
   &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-brand-warm-muted) 85%, var(--color-brand-warm));
   }

@@ -56,7 +56,7 @@ function HostLine({ host }: { host: AttendedHost | null }) {
   return host.username ? (
     <Link
       href={`/profile/${host.username}`}
-      className="flex items-center gap-1.5 text-xs text-brand-muted hover:text-brand-text transition-colors w-fit"
+      className="flex items-center gap-1.5 text-xs text-brand-muted hover:text-brand-text transition-colors duration-200 w-fit"
     >
       {inner}
     </Link>
@@ -166,7 +166,7 @@ function UpcomingCard({
               </button>
               <button
                 onClick={() => setConfirming(false)}
-                className="text-sm text-brand-muted hover:text-brand-text transition-colors px-2"
+                className="text-sm text-brand-muted hover:text-brand-text transition-colors duration-200 px-2"
               >
                 Stay
               </button>

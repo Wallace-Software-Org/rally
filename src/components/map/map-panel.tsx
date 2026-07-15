@@ -23,6 +23,9 @@ type MapPanelProps = {
   children?: React.ReactNode;
   userLat?: number | null;
   userLng?: number | null;
+  // Frame the view to the activities' pins on load (personal feed): fit bounds
+  // with padding for 2+, center at a sensible zoom for 1, default view for 0.
+  fitToPins?: boolean;
 };
 
 export default function MapPanel({
@@ -34,11 +37,22 @@ export default function MapPanel({
   children,
   userLat: _userLat,
   userLng: _userLng,
+  fitToPins = false,
 }: MapPanelProps) {
   const mapRef = useRef<MapRef>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const prevSelectedId = useRef<string | null>(null);
+  const hasFitted = useRef(false);
+
+  // Gate markers on the style being truly loaded, via both `load` and
+  // `styledata`. `onLoad` alone can fire before the style/canvas is attached
+  // (notably on Turbopack HMR), and mounting a Marker then throws an
+  // appendChild error. `styledata` has no usable event target in react-map-gl's
+  // types, so read readiness off the map ref.
+  const syncStyleReady = () => {
+    if (mapRef.current?.isStyleLoaded()) setMapLoaded(true);
+  };
 
   // Fly to selected activity at zoom 14; fly back to default view on deselect
   useEffect(() => {
@@ -72,12 +86,39 @@ export default function MapPanel({
     }
   }, [selectedId, activities, variant]);
 
-  const stripInteractionOff =
-    variant === "strip" ? { scrollZoom: false, doubleClickZoom: false } : {};
-
   const withCoords = activities.filter(
     (a) => typeof a.lat === "number" && typeof a.lng === "number",
   );
+
+  // Frame the host's pins once the style is ready (personal feed). Runs once per
+  // mount; selection fly-to takes over afterward.
+  useEffect(() => {
+    if (!fitToPins || !mapLoaded || hasFitted.current) return;
+    const map = mapRef.current;
+    if (!map) return;
+    hasFitted.current = true;
+
+    if (withCoords.length === 0) return;
+    if (withCoords.length === 1) {
+      map.jumpTo({
+        center: [withCoords[0].lng as number, withCoords[0].lat as number],
+        zoom: 13,
+      });
+      return;
+    }
+    const lngs = withCoords.map((a) => a.lng as number);
+    const lats = withCoords.map((a) => a.lat as number);
+    map.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: 56, maxZoom: 14, duration: 0 },
+    );
+  }, [fitToPins, mapLoaded, withCoords]);
+
+  const stripInteractionOff =
+    variant === "strip" ? { scrollZoom: false, doubleClickZoom: false } : {};
 
   const pins = mapLoaded
     ? withCoords.map((a) => (
@@ -107,7 +148,8 @@ export default function MapPanel({
             mapboxAccessToken={TOKEN}
             mapStyle={MAP_STYLE}
             initialViewState={DEFAULT_VIEW}
-            onLoad={() => setMapLoaded(true)}
+            onLoad={syncStyleReady}
+            onStyleData={syncStyleReady}
             {...stripInteractionOff}
             style={{ width: "100%", height: "100%" }}
           >
@@ -154,7 +196,8 @@ export default function MapPanel({
         mapboxAccessToken={TOKEN}
         mapStyle={MAP_STYLE}
         initialViewState={DEFAULT_VIEW}
-        onLoad={() => setMapLoaded(true)}
+        onLoad={syncStyleReady}
+        onStyleData={syncStyleReady}
         style={{ width: "100%", height: "100%" }}
       >
         {pins}

@@ -53,7 +53,7 @@ const inputCls =
   "field-base px-4 py-3 text-base xl:text-sm text-brand-text";
 
 const primaryBtn =
-  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:enabled:bg-brand-teal-hover active:bg-brand-teal-active transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-full rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:enabled:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
 export type ActivityFormMode = "edit" | "duplicate" | "new";
 
@@ -395,13 +395,16 @@ export default function ActivityForm({
       : submitting
         ? "Posting..."
         : "Post activity";
+  // Highlight only the picker's trigger (the single .field-base element), not
+  // every descendant button. [&_button] leaked the ring onto the DatePicker's
+  // internal month-nav and day-cell buttons, drawing a teal circle on every day.
   const highlightedDateCls =
     mode === "duplicate" && !date
-      ? "[&_button]:border-brand-teal [&_button]:ring-[1.5px] [&_button]:ring-brand-teal"
+      ? "[&_.field-base]:border-brand-teal [&_.field-base]:ring-[1.5px] [&_.field-base]:ring-brand-teal"
       : "";
   const highlightedTimeCls =
     mode === "duplicate" && !time
-      ? "[&_button]:border-brand-teal [&_button]:ring-[1.5px] [&_button]:ring-brand-teal"
+      ? "[&_.field-base]:border-brand-teal [&_.field-base]:ring-[1.5px] [&_.field-base]:ring-brand-teal"
       : "";
 
   return (
@@ -528,7 +531,7 @@ export default function ActivityForm({
               <button
                 type="button"
                 onClick={() => setEndTimeVisible((v) => !v)}
-                className="flex items-center justify-center w-5 h-5 rounded-full border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors flex-none"
+                className="flex items-center justify-center w-5 h-5 rounded-full border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors duration-200 flex-none"
                 aria-label={endTimeVisible ? "Remove end time" : "Add end time"}
               >
                 {endTimeVisible ? (
@@ -761,8 +764,8 @@ export default function ActivityForm({
                   disabled={cancelling}
                   className={
                     cancelConfirm
-                      ? "w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 border-brand-danger-dark bg-brand-danger-dark text-white hover:opacity-90"
-                      : "btn-tier-danger w-full xl:w-auto xl:px-6 flex items-center justify-center transition-colors disabled:opacity-40"
+                      ? "w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors duration-200 disabled:opacity-40 border-brand-danger-dark bg-brand-danger-dark text-white hover:opacity-90"
+                      : "btn-tier-danger w-full xl:w-auto xl:px-6 flex items-center justify-center disabled:opacity-40"
                   }
                 >
                   {cancelling
@@ -780,7 +783,7 @@ export default function ActivityForm({
                     exit={{ opacity: 0, y: 16 }}
                     transition={{ duration: 0.2 }}
                     onClick={() => setCancelConfirm(false)}
-                    className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+                    className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors duration-200"
                   >
                     Never mind
                   </motion.button>
@@ -793,8 +796,8 @@ export default function ActivityForm({
                   onClick={handleDuplicateActivity}
                   className={
                     duplicateConfirm
-                      ? "w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors disabled:opacity-40 border-brand-teal bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
-                      : "btn-tier-2 w-full xl:w-auto xl:px-6 flex items-center justify-center transition-colors disabled:opacity-40"
+                      ? "w-full xl:w-auto xl:px-6 rounded-xl border text-sm font-medium py-3 transition-colors duration-200 disabled:opacity-40 border-brand-teal bg-brand-teal text-white hover:bg-brand-teal-hover active:bg-brand-teal-active"
+                      : "btn-tier-2 w-full xl:w-auto xl:px-6 flex items-center justify-center disabled:opacity-40"
                   }
                 >
                   {duplicateConfirm
@@ -810,7 +813,7 @@ export default function ActivityForm({
                     exit={{ opacity: 0, y: 16 }}
                     transition={{ duration: 0.2 }}
                     onClick={() => setDuplicateConfirm(false)}
-                    className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors"
+                    className="w-full flex items-center justify-center text-sm text-brand-muted py-1 hover:text-brand-text transition-colors duration-200"
                   >
                     Cancel
                   </motion.button>

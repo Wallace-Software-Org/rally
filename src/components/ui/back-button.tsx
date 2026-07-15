@@ -15,7 +15,7 @@ export default function BackButton({ href }: BackButtonProps) {
       type="button"
       onClick={() => (href ? router.push(href) : router.back())}
       aria-label="Back"
-      className="xl:hidden fixed top-18 md:top-20 left-3 md:left-6 z-50 w-8.5 h-8.5 rounded-full bg-brand-surface shadow-sm flex items-center justify-center text-brand-muted hover:text-brand-text transition-colors"
+      className="xl:hidden fixed top-18 md:top-20 left-3 md:left-6 z-50 w-8.5 h-8.5 rounded-full bg-brand-surface shadow-sm flex items-center justify-center text-brand-muted hover:text-brand-text transition-colors duration-200"
     >
       <svg
         width="18"

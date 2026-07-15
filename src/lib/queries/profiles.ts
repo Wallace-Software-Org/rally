@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   AttendedActivity,
@@ -16,6 +17,21 @@ export async function getProfileById(userId: string) {
     .single();
   return data;
 }
+
+// Lean username lookup for the personal feed at /feed/[username]. Same
+// convention as getProfileByUsername (resolve by username, null when missing)
+// but without the hosting/attending payload, so it can run in both
+// generateMetadata and the page without the heavier joins. Wrapped in React
+// cache() so those two callers dedupe to a single query per request.
+export const getHostByUsername = cache(async (username: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, full_name, avatar_url, instagram_handle")
+    .eq("username", username)
+    .single();
+  return data;
+});
 
 export async function getProfileByUsername(
   username: string,

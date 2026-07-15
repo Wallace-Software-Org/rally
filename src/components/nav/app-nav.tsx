@@ -38,13 +38,13 @@ export default function AppNav({
           <div className="flex items-center gap-2 flex-none">
             <Link
               href="/login"
-              className="border border-brand-border text-brand-muted rounded-full px-4 py-1.5 text-sm hover:border-brand-border-hover transition-colors"
+              className="border border-brand-border text-brand-muted rounded-full px-4 py-1.5 text-sm hover:border-brand-border-hover transition-colors duration-200"
             >
               Log in
             </Link>
             <Link
               href="/login"
-              className="bg-brand-teal text-white rounded-full px-4 py-1.5 text-sm font-medium hover:bg-brand-teal-hover transition-colors"
+              className="bg-brand-teal text-white rounded-full px-4 py-1.5 text-sm font-medium hover:bg-brand-teal-hover transition-colors duration-200"
             >
               Sign up
             </Link>
@@ -63,7 +63,7 @@ export default function AppNav({
 
         <Link
           href="/activity/new"
-          className="hidden xl:flex items-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold px-4 py-2 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors flex-none"
+          className="hidden xl:flex items-center gap-2 rounded-xl bg-brand-teal text-white text-sm font-semibold px-4 py-2 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200 flex-none"
         >
           <svg
             width="12"

@@ -129,7 +129,7 @@ export default function MapPreviewCard({
   const primaryAction = isHost ? (
     <Link
       href={`/activity/${activity.id}`}
-      className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active transition-colors"
+      className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active"
     >
       Manage
     </Link>
@@ -137,7 +137,7 @@ export default function MapPreviewCard({
     <div className="flex w-full flex-col items-center gap-1.5">
       <Link
         href={quickJoinLoginHref(activity.id)}
-        className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors"
+        className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
       >
         Sign in to join
       </Link>
@@ -148,14 +148,14 @@ export default function MapPreviewCard({
   ) : isLeaving ? (
     <button
       disabled
-      className="w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3 transition-colors disabled:opacity-50 border border-brand-teal text-brand-teal bg-transparent"
+      className="w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3 transition-colors duration-200 disabled:opacity-50 border border-brand-teal text-brand-teal bg-transparent"
     >
       Leaving…
     </button>
   ) : isJoining ? (
     <button
       disabled
-      className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active transition-colors disabled:opacity-50"
+      className="btn-tier-1 w-full flex items-center justify-center active:bg-brand-teal-active disabled:opacity-50"
     >
       Joining…
     </button>
@@ -164,7 +164,7 @@ export default function MapPreviewCard({
       ref={btnRef}
       onClick={() => (confirming ? handleLeave() : setConfirming(true))}
       disabled={isLeaving}
-      className={`cursor-pointer w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3 transition-colors disabled:opacity-50 border ${
+      className={`cursor-pointer w-full flex items-center justify-center rounded-xl text-sm font-semibold py-3 transition-colors duration-200 disabled:opacity-50 border ${
         confirming
           ? "border-brand-danger text-brand-danger bg-transparent hover:bg-brand-danger/5"
           : "border-brand-teal text-brand-teal bg-transparent hover:bg-brand-teal/5"
@@ -176,21 +176,21 @@ export default function MapPreviewCard({
     <button
       onClick={handleJoin}
       disabled={isJoining}
-      className="btn-tier-1 cursor-pointer w-full flex items-center justify-center active:bg-brand-teal-active transition-colors disabled:opacity-50"
+      className="btn-tier-1 cursor-pointer w-full flex items-center justify-center active:bg-brand-teal-active disabled:opacity-50"
     >
       {isJoining ? "Joining…" : "Join activity"}
     </button>
   ) : (
     <button
       disabled
-      className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 transition-colors disabled:opacity-60"
+      className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 transition-colors duration-200 disabled:opacity-60"
     >
       Full
     </button>
   );
 
   const ghostButtonClass =
-    "btn-tier-2 w-full flex items-center justify-center gap-1.5 transition-colors";
+    "btn-tier-2 w-full flex items-center justify-center gap-1.5";
 
   return (
     <>
@@ -198,7 +198,7 @@ export default function MapPreviewCard({
         {/* Dismiss */}
         <button
           onClick={onDismiss}
-          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-brand-avatar-bg text-brand-muted hover:bg-brand-border transition-colors"
+          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full bg-brand-avatar-bg text-brand-muted hover:bg-brand-border transition-colors duration-200"
           aria-label="Close"
         >
           <svg
@@ -258,7 +258,7 @@ export default function MapPreviewCard({
           {!isHost && (
             <Link
               href={`/activity/${activity.id}`}
-              className="btn-tier-2 w-full flex items-center justify-center transition-colors"
+              className="btn-tier-2 w-full flex items-center justify-center"
             >
               View details
             </Link>
