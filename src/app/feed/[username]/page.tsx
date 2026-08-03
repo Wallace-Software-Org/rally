@@ -83,7 +83,9 @@ export default async function PersonalFeedPage({
         userId={user?.id ?? null}
         hostId={host.id}
         host={{
-          username: host.username,
+          // Resolved by exact username match, so the route param equals
+          // host.username and is guaranteed non-null.
+          username,
           full_name: host.full_name,
           avatar_url: host.avatar_url,
           instagram_handle: host.instagram_handle,

@@ -100,7 +100,7 @@ export default function AppNav({
                 />
               ) : (
                 <span className="text-xs font-semibold text-brand-avatar-text">
-                  {initials(profile.full_name)}
+                  {profile.full_name ? initials(profile.full_name) : "?"}
                 </span>
               )}
             </Link>

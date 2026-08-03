@@ -7,6 +7,45 @@ import type {
   HostParticipantProfile,
   ProfilePage,
 } from "@/types";
+import type { Database } from "@/types/supabase";
+
+type ActivityRow = Database["public"]["Tables"]["activities"]["Row"];
+
+// Query rows as returned by Supabase for the Hosting/Attending selects below.
+// Scalars come from the generated row type; the embedded relations are spelled
+// out to match each select.
+type HostingRow = Pick<
+  ActivityRow,
+  | "id"
+  | "title"
+  | "sport"
+  | "description"
+  | "location_name"
+  | "skill_level"
+  | "starts_at"
+  | "max_participants"
+  | "visibility"
+  | "status"
+> & {
+  participants: {
+    id: string;
+    user_id: string | null;
+    profiles: {
+      full_name: string | null;
+      avatar_url: string | null;
+      username: string | null;
+      instagram_handle: string | null;
+    } | null;
+  }[];
+};
+
+type AttendingRow = HostingRow & {
+  host: {
+    full_name: string | null;
+    avatar_url: string | null;
+    username: string | null;
+  } | null;
+};
 
 export async function getProfileById(userId: string) {
   const supabase = await createClient();
@@ -84,7 +123,9 @@ export async function getProfileByUsername(
 
   // Attending is a read-only hub mirroring Hosting: include past and cancelled
   // activities the user joined (but does not host), with host + participant data.
-  const activityIds = (participantRows ?? []).map((p) => p.activity_id);
+  const activityIds = (participantRows ?? [])
+    .map((p) => p.activity_id)
+    .filter((id): id is string => id !== null);
   let going: AttendedActivity[] = [];
   if (activityIds.length > 0) {
     const { data: goingData } = await supabase
@@ -106,14 +147,18 @@ export async function getProfileByUsername(
     going = normalizeAttending(goingData);
   }
 
+  // TODO: username/full_name are nullable in the schema but present here (this
+  // row was resolved by an exact username match, so username is set). Narrow to
+  // the domain shape (nullability only; TS still checks the object structure).
+  // Add NOT NULL on profiles.username to drop the cast.
   return {
     ...profile,
-    sports: (profile.sports ?? []) as string[],
+    sports: profile.sports ?? [],
     hosted_count: hostedCount ?? 0,
     attended_count: attendedCount ?? 0,
     going,
     hosting: normalizeHosting(hosting),
-  };
+  } as ProfilePage;
 }
 
 function normalizeRelation<T>(value: unknown): T | null {
@@ -123,7 +168,7 @@ function normalizeRelation<T>(value: unknown): T | null {
 }
 
 function normalizeParticipants(
-  participants: { id: string; user_id: string; profiles: unknown }[] | null,
+  participants: HostingRow["participants"] | null,
 ) {
   return (participants ?? []).map((p) => ({
     id: p.id,
@@ -132,34 +177,21 @@ function normalizeParticipants(
   }));
 }
 
-function normalizeAttending(
-  data:
-    | {
-        host: unknown;
-        participants: { id: string; user_id: string; profiles: unknown }[];
-        [key: string]: unknown;
-      }[]
-    | null,
-): AttendedActivity[] {
+// Flatten the embedded host relation and narrow the schema's loose nullability
+// (participants.user_id, host.full_name, visibility/status) to the domain shape.
+// TODO: add the NOT NULL constraints + visibility enum to drop these casts.
+// Nullability-only narrowing, so TS still flags any dropped column.
+function normalizeAttending(data: AttendingRow[] | null): AttendedActivity[] {
   return (data ?? []).map((a) => ({
-    ...(a as unknown as AttendedActivity),
+    ...a,
     host: normalizeRelation<AttendedHost>(a.host),
     participants: normalizeParticipants(a.participants),
-  }));
+  })) as AttendedActivity[];
 }
 
-// Supabase infers the participant->profiles join as an array at the type level
-// but it is an object at runtime; normalize so HostParticipant matches.
-function normalizeHosting(
-  data:
-    | {
-        participants: { id: string; user_id: string; profiles: unknown }[];
-        [key: string]: unknown;
-      }[]
-    | null,
-): HostedActivity[] {
+function normalizeHosting(data: HostingRow[] | null): HostedActivity[] {
   return (data ?? []).map((a) => ({
-    ...(a as unknown as HostedActivity),
+    ...a,
     participants: normalizeParticipants(a.participants),
-  }));
+  })) as HostedActivity[];
 }

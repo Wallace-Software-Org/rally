@@ -152,6 +152,14 @@ RLS policies exist on all tables. Storage: avatars bucket (public), own-folder p
 participants has REPLICA IDENTITY FULL (required so realtime DELETE events carry activity_id). Applied on prod and staging.
 join_activity(uuid) function: SECURITY DEFINER, locks the activity row, checks status + capacity, inserts with ON CONFLICT DO NOTHING. On staging; prod pending (see Environments).
 
+### Generated types
+
+- src/types/supabase.ts is generated from the prod schema. Never hand-edit it. Regenerate after any schema change:
+  `npx supabase gen types typescript --project-id ratzdsjmncygczrnclna > src/types/supabase.ts`
+- Both Supabase clients (src/lib/supabase/{server,client}.ts) are typed with the generated `Database`, so query results flow typed end to end.
+- src/types/index.ts stays the app-level domain type home; generated DB types are a separate concern. Domain types may derive from generated ones, but do not merge them.
+- The schema lacks NOT NULL on several always-present columns (activities.creator_id/location_name, participants.user_id) and types visibility/status as plain strings. Query-layer normalizers narrow these to the stricter domain types with a documented `as` (grep `TODO` in src/lib/queries). Adding the constraints + a visibility enum would let those casts go.
+
 ## Key decisions
 
 - creator_id not host_id. Hosts auto-join their own activities as participants.
@@ -187,7 +195,6 @@ Post-MVP shipped: mobile polish sprint, CI/CD + staging, site-url centralization
 - Pagination on feed and hosting/attending queries + shared select fragment (before growth)
 - loading.tsx / error.tsx for feed, profile, detail segments
 - Modal focus traps + dropdown keyboard nav (Escape, arrows, listbox roles)
-- Generated Supabase types (replace as unknown as casts; do before next schema change)
 - Muted-text contrast audit (brand-muted on bg is ~3.5:1, below AA for small text)
 - Multi-market timezone support: tz column per activity, single format helper, tz-aware repeat math, date-filter bucketing decision
 - Move radius filtering server-side for scale

@@ -46,10 +46,12 @@ export type ActivityWithParticipants = Activity & {
   host: ActivityHostSummary | null;
 };
 
-// Used by AppNav — includes username so the avatar can link to own profile
+// Used by AppNav — includes username so the avatar can link to own profile.
+// full_name is nullable: the profiles column has no NOT NULL constraint and
+// updateProfile writes null for an empty name.
 export type Profile = {
   avatar_url: string | null;
-  full_name: string;
+  full_name: string | null;
   city: string | null;
   username: string | null;
   instagram_handle: string | null;

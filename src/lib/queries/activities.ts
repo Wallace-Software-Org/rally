@@ -6,6 +6,41 @@ import type {
   DetailParticipantProfile,
   ParticipantProfile,
 } from "@/types";
+import type { Database } from "@/types/supabase";
+
+type ActivityRow = Database["public"]["Tables"]["activities"]["Row"];
+
+// The feed query row as returned by Supabase for the select below. Scalar
+// columns come straight from the generated row type; the embedded host (to-one)
+// and participants (to-many) are spelled out to match the select. host.username
+// is optional because the main feed omits it and the personal feed includes it.
+type FeedActivityRow = Pick<
+  ActivityRow,
+  | "id"
+  | "creator_id"
+  | "title"
+  | "sport"
+  | "external_link"
+  | "location_name"
+  | "starts_at"
+  | "ends_at"
+  | "visibility"
+  | "max_participants"
+  | "skill_level"
+  | "lat"
+  | "lng"
+> & {
+  host: {
+    full_name: string | null;
+    avatar_url: string | null;
+    username?: string | null;
+  } | null;
+  participants: {
+    id: string;
+    user_id: string | null;
+    profiles: { full_name: string | null; avatar_url: string | null } | null;
+  }[];
+};
 
 export async function getActivities(): Promise<ActivityWithParticipants[]> {
   const supabase = await createClient();
@@ -87,7 +122,9 @@ export async function getActivitiesByUser(
       .gte("starts_at", nowIso),
   ]);
 
-  const joinedIds = (joinedRows ?? []).map((r) => r.activity_id);
+  const joinedIds = (joinedRows ?? [])
+    .map((r) => r.activity_id)
+    .filter((id): id is string => id !== null);
   const { data: joined } =
     joinedIds.length > 0
       ? await supabase
@@ -109,23 +146,22 @@ export async function getActivitiesByUser(
   );
 }
 
-// Supabase without generated types infers many-to-one joins as arrays at the
-// type level but they are objects at runtime. Normalize so Participant matches.
-function normalize(
-  data: {
-    host: unknown;
-    participants: { id: string; user_id: string; profiles: unknown }[];
-    [key: string]: unknown;
-  }[] | null,
-): ActivityWithParticipants[] {
+// Flatten the embedded host relation (Supabase returns it as an object for this
+// to-one join) and the participant->profiles relations into the domain shape.
+// TODO: the trailing assertion narrows loose schema nullability the app treats
+// as present (creator_id, location_name, participants.user_id lack NOT NULL, and
+// visibility is a plain string in the DB). Add those NOT NULL constraints + a
+// visibility enum to drop the cast. It is a nullability-only narrowing, so TS
+// still flags any dropped column.
+function normalize(data: FeedActivityRow[] | null): ActivityWithParticipants[] {
   return (data ?? []).map((a) => ({
-    ...(a as ActivityWithParticipants),
+    ...a,
     host: normalizeRelation<ActivityHostSummary>(a.host),
     participants: a.participants.map((p) => ({
       ...p,
       profiles: normalizeRelation<ParticipantProfile>(p.profiles),
     })),
-  }));
+  })) as ActivityWithParticipants[];
 }
 
 function normalizeRelation<T>(value: unknown): T | null {
@@ -163,6 +199,11 @@ export async function getActivityById(
     return "private";
   }
 
+  // creator_id is nullable in the schema but always set for a real activity;
+  // narrow it here so the host lookups below are typed and treat a creatorless
+  // row as not found.
+  if (!data.creator_id) return null;
+
   const [{ data: host }, { count: hostedCount }] = await Promise.all([
     supabase
       .from("profiles")
@@ -177,6 +218,11 @@ export async function getActivityById(
 
   if (!host) return null;
 
+  // TODO: nullability-only narrowing to the domain shape. The DB leaves
+  // participants.user_id and profile columns (host.full_name) nullable and types
+  // visibility/status as plain strings, but the app treats them as present. Add
+  // NOT NULL constraints + a visibility enum to drop the cast. TS still checks
+  // the object shape, so a dropped column would fail.
   return {
     ...data,
     participants: data.participants.map((p) => ({
@@ -185,5 +231,5 @@ export async function getActivityById(
     })),
     host,
     hosted_count: hostedCount ?? 0,
-  };
+  } as ActivityDetail;
 }
