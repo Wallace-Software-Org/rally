@@ -8,8 +8,10 @@ import type {
   ProfilePage,
 } from "@/types";
 import type { Database } from "@/types/supabase";
+import { toVisibility } from "@/lib/utils/visibility";
 
 type ActivityRow = Database["public"]["Tables"]["activities"]["Row"];
+type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 
 // Query rows as returned by Supabase for the Hosting/Attending selects below.
 // Scalars come from the generated row type; the embedded relations are spelled
@@ -27,16 +29,14 @@ type HostingRow = Pick<
   | "visibility"
   | "status"
 > & {
-  participants: {
-    id: string;
-    user_id: string | null;
+  participants: (Pick<ParticipantRow, "id" | "user_id"> & {
     profiles: {
       full_name: string | null;
       avatar_url: string | null;
       username: string | null;
       instagram_handle: string | null;
     } | null;
-  }[];
+  })[];
 };
 
 type AttendingRow = HostingRow & {
@@ -147,10 +147,6 @@ export async function getProfileByUsername(
     going = normalizeAttending(goingData);
   }
 
-  // TODO: username/full_name are nullable in the schema but present here (this
-  // row was resolved by an exact username match, so username is set). Narrow to
-  // the domain shape (nullability only; TS still checks the object structure).
-  // Add NOT NULL on profiles.username to drop the cast.
   return {
     ...profile,
     sports: profile.sports ?? [],
@@ -158,7 +154,7 @@ export async function getProfileByUsername(
     attended_count: attendedCount ?? 0,
     going,
     hosting: normalizeHosting(hosting),
-  } as ProfilePage;
+  };
 }
 
 function normalizeRelation<T>(value: unknown): T | null {
@@ -177,21 +173,23 @@ function normalizeParticipants(
   }));
 }
 
-// Flatten the embedded host relation and narrow the schema's loose nullability
-// (participants.user_id, host.full_name, visibility/status) to the domain shape.
-// TODO: add the NOT NULL constraints + visibility enum to drop these casts.
-// Nullability-only narrowing, so TS still flags any dropped column.
+// Flatten the embedded host relation into the domain shape. toVisibility bridges
+// the DB's plain visibility string to the domain union; the NOT NULL constraints
+// make everything else line up without an assertion. Profile full_name stays
+// nullable (see the profile types) and is handled at render.
 function normalizeAttending(data: AttendingRow[] | null): AttendedActivity[] {
   return (data ?? []).map((a) => ({
     ...a,
+    visibility: toVisibility(a.visibility),
     host: normalizeRelation<AttendedHost>(a.host),
     participants: normalizeParticipants(a.participants),
-  })) as AttendedActivity[];
+  }));
 }
 
 function normalizeHosting(data: HostingRow[] | null): HostedActivity[] {
   return (data ?? []).map((a) => ({
     ...a,
+    visibility: toVisibility(a.visibility),
     participants: normalizeParticipants(a.participants),
-  })) as HostedActivity[];
+  }));
 }

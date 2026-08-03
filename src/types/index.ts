@@ -6,8 +6,13 @@ export type UsernameStatus =
   | "invalid"
   | "error";
 
+// Activity visibility. Stored as text + a check constraint (not a Postgres
+// enum), so generated types surface plain string; toVisibility() narrows the DB
+// string to this union at the query boundary.
+export type Visibility = "public" | "private";
+
 export type ParticipantProfile = {
-  full_name: string;
+  full_name: string | null;
   avatar_url: string | null;
 };
 
@@ -18,7 +23,7 @@ export type Participant = {
 };
 
 export type ActivityHostSummary = {
-  full_name: string;
+  full_name: string | null;
   avatar_url: string | null;
   // Present on the personal feed (getActivitiesByUser) so an attending card can
   // link its "Hosted by" line to the creator's profile; omitted by the main feed.
@@ -34,7 +39,7 @@ export type Activity = {
   location_name: string;
   starts_at: string;
   ends_at: string | null;
-  visibility: "public" | "private";
+  visibility: Visibility;
   max_participants: number | null;
   skill_level: string | null;
   lat: number | null;
@@ -60,7 +65,7 @@ export type Profile = {
 // ── Detail page types ────────────────────────────────────────────────────────
 
 export type DetailParticipantProfile = {
-  full_name: string;
+  full_name: string | null;
   avatar_url: string | null;
   instagram_handle: string | null;
   username: string | null;
@@ -74,7 +79,7 @@ export type DetailParticipant = {
 
 export type HostProfile = {
   id: string;
-  full_name: string;
+  full_name: string | null;
   avatar_url: string | null;
   instagram_handle: string | null;
   username: string | null;
@@ -85,7 +90,7 @@ export type HostProfile = {
 // Richer participant shape for the host management cards: enough to render the
 // avatar strip and hand off to the Instagram group-chat modal.
 export type HostParticipantProfile = {
-  full_name: string;
+  full_name: string | null;
   avatar_url: string | null;
   username: string | null;
   instagram_handle: string | null;
@@ -109,14 +114,14 @@ export type HostedActivity = {
   skill_level: string | null;
   starts_at: string;
   max_participants: number | null;
-  visibility: "public" | "private";
+  visibility: Visibility;
   status: string; // 'open' | 'cancelled'
   participants: HostParticipant[];
 };
 
 // Host summary for the Attending cards' "Hosted by" line.
 export type AttendedHost = {
-  full_name: string;
+  full_name: string | null;
   avatar_url: string | null;
   username: string | null;
 };
@@ -130,7 +135,7 @@ export type AttendedActivity = HostedActivity & {
 export type ProfilePage = {
   id: string;
   username: string;
-  full_name: string;
+  full_name: string | null;
   avatar_url: string | null;
   bio: string | null;
   instagram_handle: string | null;
@@ -155,7 +160,7 @@ export type ActivityDetail = {
   lng: number | null;
   status: string;
   creator_id: string;
-  visibility: "public" | "private";
+  visibility: Visibility;
   participants: DetailParticipant[];
   host: HostProfile;
   hosted_count: number;

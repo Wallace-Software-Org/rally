@@ -23,7 +23,6 @@ Supabase (auth + postgres + realtime). Mapbox GL. Deployed on Vercel at rallytim
 - Vercel env scoping: Production vars = prod Supabase, Preview vars = staging Supabase
 - NEXT_PUBLIC_SITE_URL set to https://rallytime.xyz on Production only; Preview falls back to VERCEL_URL via getSiteUrl()
 - Never commit directly to main. Branch off dev.
-- PENDING PROD MIGRATION: join_activity_capacity (supabase/migrations/20260708120000). Applied on staging. Apply to prod BEFORE the next main deploy or joins fail safe but blocked.
 
 ## Branch + commit naming
 
@@ -143,14 +142,14 @@ Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets c
 
 ## Schema (3 tables)
 
-profiles: id (FK auth.users), username (unique), full_name, avatar_url, bio, lat, lng, city, sports text[], instagram_handle, created_at
-activities: id, creator_id (FK profiles), title, sport, description, lat, lng, location_name, starts_at, ends_at (nullable, defaults starts_at + 1hr server-side), max_participants, skill_level, status ('open'/'cancelled', no check constraint), community_tag, external_link, visibility ('public'/'private', default public, check constraint), created_at
-participants: id, activity_id (FK activities), user_id (FK profiles), status, joined_at, unique (activity_id, user_id)
+profiles: id (FK auth.users), username (unique, NOT NULL), full_name, avatar_url, bio, lat, lng, city, sports text[], instagram_handle, created_at
+activities: id, creator_id (FK profiles, NOT NULL), title, sport, description, lat, lng, location_name (NOT NULL), starts_at, ends_at (nullable, defaults starts_at + 1hr server-side), max_participants, skill_level, status ('open'/'cancelled', NOT NULL default 'open', check constraint), community_tag, external_link, visibility ('public'/'private', NOT NULL default public, check constraint), created_at
+participants: id, activity_id (FK activities, NOT NULL), user_id (FK profiles, NOT NULL), status, joined_at, unique (activity_id, user_id)
 
 FKs: profiles.id → auth.users; activities.creator_id → profiles; participants.activity_id → activities; participants.user_id → profiles.
 RLS policies exist on all tables. Storage: avatars bucket (public), own-folder policies (INSERT/UPDATE/SELECT on {uid}/ path).
 participants has REPLICA IDENTITY FULL (required so realtime DELETE events carry activity_id). Applied on prod and staging.
-join_activity(uuid) function: SECURITY DEFINER, locks the activity row, checks status + capacity, inserts with ON CONFLICT DO NOTHING. On staging; prod pending (see Environments).
+join_activity(uuid) function: SECURITY DEFINER, locks the activity row, checks status + capacity, inserts with ON CONFLICT DO NOTHING. Applied on prod and staging.
 
 ### Generated types
 
@@ -158,7 +157,8 @@ join_activity(uuid) function: SECURITY DEFINER, locks the activity row, checks s
   `npx supabase gen types typescript --project-id ratzdsjmncygczrnclna > src/types/supabase.ts`
 - Both Supabase clients (src/lib/supabase/{server,client}.ts) are typed with the generated `Database`, so query results flow typed end to end.
 - src/types/index.ts stays the app-level domain type home; generated DB types are a separate concern. Domain types may derive from generated ones, but do not merge them.
-- The schema lacks NOT NULL on several always-present columns (activities.creator_id/location_name, participants.user_id) and types visibility/status as plain strings. Query-layer normalizers narrow these to the stricter domain types with a documented `as` (grep `TODO` in src/lib/queries). Adding the constraints + a visibility enum would let those casts go.
+- visibility and status are text + check constraints, not Postgres enums (enums are painful to alter). Generated types therefore surface them as plain string; toVisibility() (src/lib/utils/visibility.ts) bridges the DB string to the domain Visibility union at the query boundary. status maps straight through (domain type is string).
+- full_name is genuinely nullable (updateProfile writes null for an empty name); the profile-name domain types keep it string | null and render sites handle null (getInitials returns "?"). Do not narrow it away.
 
 ## Key decisions
 

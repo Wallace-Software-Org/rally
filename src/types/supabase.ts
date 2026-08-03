@@ -18,57 +18,57 @@ export type Database = {
         Row: {
           community_tag: string | null
           created_at: string | null
-          creator_id: string | null
+          creator_id: string
           description: string | null
           ends_at: string | null
           external_link: string | null
           id: string
           lat: number | null
           lng: number | null
-          location_name: string | null
+          location_name: string
           max_participants: number | null
           skill_level: string | null
           sport: string
           starts_at: string
-          status: string | null
+          status: string
           title: string
           visibility: string
         }
         Insert: {
           community_tag?: string | null
           created_at?: string | null
-          creator_id?: string | null
+          creator_id: string
           description?: string | null
           ends_at?: string | null
           external_link?: string | null
           id?: string
           lat?: number | null
           lng?: number | null
-          location_name?: string | null
+          location_name: string
           max_participants?: number | null
           skill_level?: string | null
           sport: string
           starts_at: string
-          status?: string | null
+          status?: string
           title: string
           visibility?: string
         }
         Update: {
           community_tag?: string | null
           created_at?: string | null
-          creator_id?: string | null
+          creator_id?: string
           description?: string | null
           ends_at?: string | null
           external_link?: string | null
           id?: string
           lat?: number | null
           lng?: number | null
-          location_name?: string | null
+          location_name?: string
           max_participants?: number | null
           skill_level?: string | null
           sport?: string
           starts_at?: string
-          status?: string | null
+          status?: string
           title?: string
           visibility?: string
         }
@@ -84,25 +84,25 @@ export type Database = {
       }
       participants: {
         Row: {
-          activity_id: string | null
+          activity_id: string
           id: string
           joined_at: string | null
           status: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
-          activity_id?: string | null
+          activity_id: string
           id?: string
           joined_at?: string | null
           status?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
-          activity_id?: string | null
+          activity_id?: string
           id?: string
           joined_at?: string | null
           status?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -133,7 +133,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           sports: string[] | null
-          username: string | null
+          username: string
         }
         Insert: {
           avatar_url?: string | null
@@ -146,7 +146,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           sports?: string[] | null
-          username?: string | null
+          username: string
         }
         Update: {
           avatar_url?: string | null
@@ -159,7 +159,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           sports?: string[] | null
-          username?: string | null
+          username?: string
         }
         Relationships: []
       }

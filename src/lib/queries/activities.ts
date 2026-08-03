@@ -7,8 +7,10 @@ import type {
   ParticipantProfile,
 } from "@/types";
 import type { Database } from "@/types/supabase";
+import { toVisibility } from "@/lib/utils/visibility";
 
 type ActivityRow = Database["public"]["Tables"]["activities"]["Row"];
+type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
 
 // The feed query row as returned by Supabase for the select below. Scalar
 // columns come straight from the generated row type; the embedded host (to-one)
@@ -35,11 +37,9 @@ type FeedActivityRow = Pick<
     avatar_url: string | null;
     username?: string | null;
   } | null;
-  participants: {
-    id: string;
-    user_id: string | null;
+  participants: (Pick<ParticipantRow, "id" | "user_id"> & {
     profiles: { full_name: string | null; avatar_url: string | null } | null;
-  }[];
+  })[];
 };
 
 export async function getActivities(): Promise<ActivityWithParticipants[]> {
@@ -148,20 +148,18 @@ export async function getActivitiesByUser(
 
 // Flatten the embedded host relation (Supabase returns it as an object for this
 // to-one join) and the participant->profiles relations into the domain shape.
-// TODO: the trailing assertion narrows loose schema nullability the app treats
-// as present (creator_id, location_name, participants.user_id lack NOT NULL, and
-// visibility is a plain string in the DB). Add those NOT NULL constraints + a
-// visibility enum to drop the cast. It is a nullability-only narrowing, so TS
-// still flags any dropped column.
+// toVisibility bridges the DB's plain visibility string to the domain union; the
+// NOT NULL constraints make everything else line up without an assertion.
 function normalize(data: FeedActivityRow[] | null): ActivityWithParticipants[] {
   return (data ?? []).map((a) => ({
     ...a,
+    visibility: toVisibility(a.visibility),
     host: normalizeRelation<ActivityHostSummary>(a.host),
     participants: a.participants.map((p) => ({
       ...p,
       profiles: normalizeRelation<ParticipantProfile>(p.profiles),
     })),
-  })) as ActivityWithParticipants[];
+  }));
 }
 
 function normalizeRelation<T>(value: unknown): T | null {
@@ -218,18 +216,16 @@ export async function getActivityById(
 
   if (!host) return null;
 
-  // TODO: nullability-only narrowing to the domain shape. The DB leaves
-  // participants.user_id and profile columns (host.full_name) nullable and types
-  // visibility/status as plain strings, but the app treats them as present. Add
-  // NOT NULL constraints + a visibility enum to drop the cast. TS still checks
-  // the object shape, so a dropped column would fail.
+  // toVisibility bridges the DB's plain visibility string to the domain union.
+  // host.full_name stays nullable (see HostProfile) and is handled at render.
   return {
     ...data,
+    visibility: toVisibility(data.visibility),
     participants: data.participants.map((p) => ({
       ...p,
       profiles: normalizeRelation<DetailParticipantProfile>(p.profiles),
     })),
     host,
     hosted_count: hostedCount ?? 0,
-  } as ActivityDetail;
+  };
 }
