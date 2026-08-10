@@ -4,7 +4,9 @@ import { InstagramIcon } from "@/components/ui/icons";
 
 export type HostSummary = {
   username: string;
-  full_name: string;
+  // Nullable: the profiles column has no NOT NULL constraint. Avatar and the
+  // name row both tolerate a null name.
+  full_name: string | null;
   avatar_url: string | null;
   instagram_handle: string | null;
 };

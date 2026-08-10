@@ -7,6 +7,45 @@ import type {
   HostParticipantProfile,
   ProfilePage,
 } from "@/types";
+import type { Database } from "@/types/supabase";
+import { toVisibility } from "@/lib/utils/visibility";
+
+type ActivityRow = Database["public"]["Tables"]["activities"]["Row"];
+type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
+
+// Query rows as returned by Supabase for the Hosting/Attending selects below.
+// Scalars come from the generated row type; the embedded relations are spelled
+// out to match each select.
+type HostingRow = Pick<
+  ActivityRow,
+  | "id"
+  | "title"
+  | "sport"
+  | "description"
+  | "location_name"
+  | "skill_level"
+  | "starts_at"
+  | "max_participants"
+  | "visibility"
+  | "status"
+> & {
+  participants: (Pick<ParticipantRow, "id" | "user_id"> & {
+    profiles: {
+      full_name: string | null;
+      avatar_url: string | null;
+      username: string | null;
+      instagram_handle: string | null;
+    } | null;
+  })[];
+};
+
+type AttendingRow = HostingRow & {
+  host: {
+    full_name: string | null;
+    avatar_url: string | null;
+    username: string | null;
+  } | null;
+};
 
 export async function getProfileById(userId: string) {
   const supabase = await createClient();
@@ -84,7 +123,9 @@ export async function getProfileByUsername(
 
   // Attending is a read-only hub mirroring Hosting: include past and cancelled
   // activities the user joined (but does not host), with host + participant data.
-  const activityIds = (participantRows ?? []).map((p) => p.activity_id);
+  const activityIds = (participantRows ?? [])
+    .map((p) => p.activity_id)
+    .filter((id): id is string => id !== null);
   let going: AttendedActivity[] = [];
   if (activityIds.length > 0) {
     const { data: goingData } = await supabase
@@ -108,7 +149,7 @@ export async function getProfileByUsername(
 
   return {
     ...profile,
-    sports: (profile.sports ?? []) as string[],
+    sports: profile.sports ?? [],
     hosted_count: hostedCount ?? 0,
     attended_count: attendedCount ?? 0,
     going,
@@ -123,7 +164,7 @@ function normalizeRelation<T>(value: unknown): T | null {
 }
 
 function normalizeParticipants(
-  participants: { id: string; user_id: string; profiles: unknown }[] | null,
+  participants: HostingRow["participants"] | null,
 ) {
   return (participants ?? []).map((p) => ({
     id: p.id,
@@ -132,34 +173,23 @@ function normalizeParticipants(
   }));
 }
 
-function normalizeAttending(
-  data:
-    | {
-        host: unknown;
-        participants: { id: string; user_id: string; profiles: unknown }[];
-        [key: string]: unknown;
-      }[]
-    | null,
-): AttendedActivity[] {
+// Flatten the embedded host relation into the domain shape. toVisibility bridges
+// the DB's plain visibility string to the domain union; the NOT NULL constraints
+// make everything else line up without an assertion. Profile full_name stays
+// nullable (see the profile types) and is handled at render.
+function normalizeAttending(data: AttendingRow[] | null): AttendedActivity[] {
   return (data ?? []).map((a) => ({
-    ...(a as unknown as AttendedActivity),
+    ...a,
+    visibility: toVisibility(a.visibility),
     host: normalizeRelation<AttendedHost>(a.host),
     participants: normalizeParticipants(a.participants),
   }));
 }
 
-// Supabase infers the participant->profiles join as an array at the type level
-// but it is an object at runtime; normalize so HostParticipant matches.
-function normalizeHosting(
-  data:
-    | {
-        participants: { id: string; user_id: string; profiles: unknown }[];
-        [key: string]: unknown;
-      }[]
-    | null,
-): HostedActivity[] {
+function normalizeHosting(data: HostingRow[] | null): HostedActivity[] {
   return (data ?? []).map((a) => ({
-    ...(a as unknown as HostedActivity),
+    ...a,
+    visibility: toVisibility(a.visibility),
     participants: normalizeParticipants(a.participants),
   }));
 }

@@ -67,7 +67,9 @@ function formatInviteDate(startsAt: string): string {
   return `${datePart}, ${time}`;
 }
 
-async function getActivityCardData(id: string) {
+async function getActivityCardData(
+  id: string,
+): Promise<ActivityCardData | null> {
   const supabase = await createClient();
 
   const { data: activity, error } = await supabase
@@ -79,7 +81,7 @@ async function getActivityCardData(id: string) {
   if (error) throw error;
   if (!activity) return null;
 
-  return activity as ActivityCardData;
+  return activity;
 }
 
 export async function GET(

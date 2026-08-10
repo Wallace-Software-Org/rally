@@ -51,7 +51,8 @@ function Avatar({
   size,
 }: {
   url: string | null;
-  name: string;
+  // Nullable: full_name has no NOT NULL constraint. getInitials renders "?".
+  name: string | null;
   size: "sm" | "md";
 }) {
   const dim = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";

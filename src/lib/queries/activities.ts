@@ -6,6 +6,41 @@ import type {
   DetailParticipantProfile,
   ParticipantProfile,
 } from "@/types";
+import type { Database } from "@/types/supabase";
+import { toVisibility } from "@/lib/utils/visibility";
+
+type ActivityRow = Database["public"]["Tables"]["activities"]["Row"];
+type ParticipantRow = Database["public"]["Tables"]["participants"]["Row"];
+
+// The feed query row as returned by Supabase for the select below. Scalar
+// columns come straight from the generated row type; the embedded host (to-one)
+// and participants (to-many) are spelled out to match the select. host.username
+// is optional because the main feed omits it and the personal feed includes it.
+type FeedActivityRow = Pick<
+  ActivityRow,
+  | "id"
+  | "creator_id"
+  | "title"
+  | "sport"
+  | "external_link"
+  | "location_name"
+  | "starts_at"
+  | "ends_at"
+  | "visibility"
+  | "max_participants"
+  | "skill_level"
+  | "lat"
+  | "lng"
+> & {
+  host: {
+    full_name: string | null;
+    avatar_url: string | null;
+    username?: string | null;
+  } | null;
+  participants: (Pick<ParticipantRow, "id" | "user_id"> & {
+    profiles: { full_name: string | null; avatar_url: string | null } | null;
+  })[];
+};
 
 export async function getActivities(): Promise<ActivityWithParticipants[]> {
   const supabase = await createClient();
@@ -87,7 +122,9 @@ export async function getActivitiesByUser(
       .gte("starts_at", nowIso),
   ]);
 
-  const joinedIds = (joinedRows ?? []).map((r) => r.activity_id);
+  const joinedIds = (joinedRows ?? [])
+    .map((r) => r.activity_id)
+    .filter((id): id is string => id !== null);
   const { data: joined } =
     joinedIds.length > 0
       ? await supabase
@@ -109,17 +146,14 @@ export async function getActivitiesByUser(
   );
 }
 
-// Supabase without generated types infers many-to-one joins as arrays at the
-// type level but they are objects at runtime. Normalize so Participant matches.
-function normalize(
-  data: {
-    host: unknown;
-    participants: { id: string; user_id: string; profiles: unknown }[];
-    [key: string]: unknown;
-  }[] | null,
-): ActivityWithParticipants[] {
+// Flatten the embedded host relation (Supabase returns it as an object for this
+// to-one join) and the participant->profiles relations into the domain shape.
+// toVisibility bridges the DB's plain visibility string to the domain union; the
+// NOT NULL constraints make everything else line up without an assertion.
+function normalize(data: FeedActivityRow[] | null): ActivityWithParticipants[] {
   return (data ?? []).map((a) => ({
-    ...(a as ActivityWithParticipants),
+    ...a,
+    visibility: toVisibility(a.visibility),
     host: normalizeRelation<ActivityHostSummary>(a.host),
     participants: a.participants.map((p) => ({
       ...p,
@@ -163,6 +197,11 @@ export async function getActivityById(
     return "private";
   }
 
+  // creator_id is nullable in the schema but always set for a real activity;
+  // narrow it here so the host lookups below are typed and treat a creatorless
+  // row as not found.
+  if (!data.creator_id) return null;
+
   const [{ data: host }, { count: hostedCount }] = await Promise.all([
     supabase
       .from("profiles")
@@ -177,8 +216,11 @@ export async function getActivityById(
 
   if (!host) return null;
 
+  // toVisibility bridges the DB's plain visibility string to the domain union.
+  // host.full_name stays nullable (see HostProfile) and is handled at render.
   return {
     ...data,
+    visibility: toVisibility(data.visibility),
     participants: data.participants.map((p) => ({
       ...p,
       profiles: normalizeRelation<DetailParticipantProfile>(p.profiles),
