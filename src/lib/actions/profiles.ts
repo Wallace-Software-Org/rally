@@ -70,6 +70,7 @@ export async function updateProfile(data: {
   bio: string;
   instagram_handle: string;
   sports: string[];
+  notification_emails: boolean;
 }): Promise<{ error: string | null }> {
   const { supabase, user, error: authError } = await requireUser();
   if (authError) return { error: authError };
@@ -79,6 +80,11 @@ export async function updateProfile(data: {
     return {
       error: "Lowercase letters, numbers, and hyphens only, no spaces.",
     };
+  }
+
+  // Mirror the form rule: the toggle is a plain boolean.
+  if (typeof data.notification_emails !== "boolean") {
+    return { error: "Invalid notification setting" };
   }
 
   if (!data.sports.every(isValidSport)) {
@@ -108,6 +114,7 @@ export async function updateProfile(data: {
       bio: data.bio.trim() || null,
       instagram_handle: data.instagram_handle.replace(/^@/, "").trim() || null,
       sports: data.sports,
+      notification_emails: data.notification_emails,
     })
     .eq("id", user.id);
 

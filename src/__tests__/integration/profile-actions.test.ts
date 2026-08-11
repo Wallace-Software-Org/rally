@@ -54,6 +54,7 @@ describe("updateProfile validation", () => {
     bio: "",
     instagram_handle: "",
     sports: ["running", "tennis"],
+    notification_emails: true,
   };
 
   it("rejects sports not in the list without writing", async () => {

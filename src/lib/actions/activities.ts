@@ -1,12 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect, RedirectType } from "next/navigation";
 import { SPORTS_LIST } from "@/lib/utils/sport-config";
 import { nextWeeklyOccurrence } from "@/lib/utils/next-occurrence";
 import { validateActivityInput } from "@/lib/utils/activity-validation";
 import { requireUser } from "@/lib/actions/require-user";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
+import {
+  notifyActivityCancelled,
+  notifyParticipantJoined,
+  notifyParticipantLeft,
+} from "@/lib/email/notify";
 
 const PREDEFINED_SPORTS = new Set(
   SPORTS_LIST.filter((sport) => sport !== "All").map((sport) =>
@@ -40,7 +46,7 @@ function normalizeSport(sport: string): string {
 export async function joinActivity(
   activityId: string,
 ): Promise<{ error: string | null }> {
-  const { supabase, error: authError } = await requireUser();
+  const { supabase, user, error: authError } = await requireUser();
   if (authError) return { error: authError };
 
   // Atomic capacity + status check server-side (see join_activity RPC). The
@@ -52,6 +58,16 @@ export async function joinActivity(
 
   switch (data) {
     case "ok":
+      // Email the host after responding. Swallow-and-log: a mail failure must
+      // never change the { error } contract. The idempotency key inside makes a
+      // double submit a no-op.
+      after(async () => {
+        try {
+          await notifyParticipantJoined(supabase, activityId, user.id);
+        } catch (err) {
+          console.error("[email] join notification failed", err);
+        }
+      });
       return { error: null };
     case "full":
       return { error: ACTIVITY_FULL_ERROR };
@@ -70,11 +86,27 @@ export async function leaveActivity(
   const { supabase, user, error: authError } = await requireUser();
   if (authError) return { error: authError };
 
-  const { error } = await supabase
+  // select() returns the deleted rows so we only notify on a real leave, never
+  // on a no-op delete (user was not a participant).
+  const { data: removed, error } = await supabase
     .from("participants")
     .delete()
     .eq("activity_id", activityId)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select("id");
+
+  if (!error && removed && removed.length > 0) {
+    // Email the host after responding. Swallow-and-log; return value untouched.
+    // Pass the deleted row id so the notice is keyed to this leave event.
+    const removedRowId = removed[0].id;
+    after(async () => {
+      try {
+        await notifyParticipantLeft(supabase, activityId, user.id, removedRowId);
+      } catch (err) {
+        console.error("[email] leave notification failed", err);
+      }
+    });
+  }
 
   return { error: error?.message ?? null };
 }
@@ -207,13 +239,30 @@ export async function cancelActivity(
 
   // Soft cancel: flip status only. Participants are kept so people who joined
   // still see it as cancelled and the host card can show how many had joined.
-  const { error } = await supabase
+  // neq("status", "cancelled") makes this a real open->cancelled transition:
+  // select() then returns a row only the first time, so a re-cancel does not
+  // re-fire the fan-out (and never inflates the send log).
+  const { data: cancelled, error } = await supabase
     .from("activities")
     .update({ status: "cancelled" })
     .eq("id", activityId)
-    .eq("creator_id", user.id);
+    .eq("creator_id", user.id)
+    .neq("status", "cancelled")
+    .select("id");
 
   if (error) return { error: error.message };
+
+  if (cancelled && cancelled.length > 0) {
+    // Fan out to participants (except the creator) after responding.
+    // Swallow-and-log; return value untouched.
+    after(async () => {
+      try {
+        await notifyActivityCancelled(supabase, activityId);
+      } catch (err) {
+        console.error("[email] cancel notification failed", err);
+      }
+    });
+  }
 
   revalidatePath("/");
   revalidatePath(`/activity/${activityId}`);

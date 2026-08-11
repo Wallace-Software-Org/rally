@@ -25,6 +25,7 @@ const baseProfile = {
   bio: null,
   instagram_handle: null,
   sports: [],
+  notification_emails: true,
 };
 
 describe("EditProfileForm sign out", () => {

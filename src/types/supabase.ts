@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -132,6 +132,7 @@ export type Database = {
           instagram_handle: string | null
           lat: number | null
           lng: number | null
+          notification_emails: boolean
           sports: string[] | null
           username: string
         }
@@ -145,6 +146,7 @@ export type Database = {
           instagram_handle?: string | null
           lat?: number | null
           lng?: number | null
+          notification_emails?: boolean
           sports?: string[] | null
           username: string
         }
@@ -158,6 +160,7 @@ export type Database = {
           instagram_handle?: string | null
           lat?: number | null
           lng?: number | null
+          notification_emails?: boolean
           sports?: string[] | null
           username?: string
         }
@@ -168,6 +171,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_notification_recipient: {
+        Args: { p_user_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          notification_emails: boolean
+        }[]
+      }
       join_activity: { Args: { p_activity_id: string }; Returns: string }
     }
     Enums: {

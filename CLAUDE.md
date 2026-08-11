@@ -176,6 +176,7 @@ join_activity(uuid) function: SECURITY DEFINER, locks the activity row, checks s
 - Profile header: identity stack is avatar, name, username, bio, then stacked full-width action buttons: Instagram (teal border, all viewers with handle set) above Edit profile (btn-tier-2, owner only).
 - Timezones: starts_at is a UTC instant; in-app rendering is viewer-local; the OG share card is intentionally pinned to America/Phoenix (activity-local). Multi-market support is backlogged.
 - external_link: when set, Join becomes Register (opens external), Rally members shown separately
+- Email notifications use a dedicated secret-key Supabase client (src/lib/email/client.ts, SUPABASE_SECRET_KEY, service_role). It exists solely to call get_notification_recipient, which reads auth.users for the recipient address. That function is granted to service_role only, never authenticated: user ids are already visible via participant lists, so an authenticated grant would be a working email-enumeration path. The client is server-only (server-only import + runtime window guard) and never used for any other query; the publishable-key clients in src/lib/supabase/ are untouched.
 
 ## Working style
 
