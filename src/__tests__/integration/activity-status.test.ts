@@ -24,6 +24,9 @@ vi.mock("next/navigation", () => ({
   redirect,
   RedirectType: { replace: "replace" },
 }));
+// after() schedules the email side effects; no-op it here so these action tests
+// stay focused on the return contract and never run the email orchestration.
+vi.mock("next/server", () => ({ after: vi.fn() }));
 
 import {
   joinActivity,
@@ -162,7 +165,14 @@ describe("updateActivity validation", () => {
 describe("cancelActivity", () => {
   it("sets status to cancelled, keeps participants, and revalidates", async () => {
     const update = vi.fn(() => ({
-      eq: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      eq: () => ({
+        eq: () => ({
+          neq: () => ({
+            select: () =>
+              Promise.resolve({ data: [{ id: "a1" }], error: null }),
+          }),
+        }),
+      }),
     }));
     const del = vi.fn();
     mockFrom.mockImplementation((table: string) => {

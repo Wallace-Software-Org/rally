@@ -13,6 +13,7 @@ import {
 import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
 import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
 import ActivityPill from "@/components/ui/activity-pill";
+import Toggle from "@/components/ui/toggle";
 import { CameraIcon, InstagramIcon } from "@/components/ui/icons";
 import type { UsernameStatus } from "@/types";
 
@@ -25,6 +26,7 @@ type ProfileData = {
   bio: string | null;
   instagram_handle: string | null;
   sports: string[] | null;
+  notification_emails: boolean;
 };
 
 function initials(name: string | null): string {
@@ -54,6 +56,9 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
   );
   const [sports, setSports] = useState<string[]>(profile.sports ?? []);
   const [tagsOpen, setTagsOpen] = useState(false);
+  const [notificationEmails, setNotificationEmails] = useState(
+    profile.notification_emails,
+  );
 
   function toggleSport(s: string) {
     const key = s.toLowerCase();
@@ -167,6 +172,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
       bio,
       instagram_handle: instagramHandle,
       sports,
+      notification_emails: notificationEmails,
     });
     setSubmitting(false);
     if (error) {
@@ -448,6 +454,25 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+
+          <div className="mt-2 border-t-[0.5px] border-brand-border pt-2" />
+
+          {/* Email notifications */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="field-label">Email notifications</span>
+              <p className="text-xs text-brand-muted">
+                Get an email when someone joins or leaves your activity, or when
+                an activity you joined is cancelled. Not marketing.
+              </p>
+            </div>
+            <div className="pt-0.5">
+              <Toggle
+                checked={notificationEmails}
+                onChange={() => setNotificationEmails((v) => !v)}
+              />
+            </div>
           </div>
 
           <div className="mt-2 border-t-[0.5px] border-brand-border pt-2" />

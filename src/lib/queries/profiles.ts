@@ -51,7 +51,9 @@ export async function getProfileById(userId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, username, full_name, avatar_url, bio, instagram_handle, sports")
+    .select(
+      "id, username, full_name, avatar_url, bio, instagram_handle, sports, notification_emails",
+    )
     .eq("id", userId)
     .single();
   return data;
