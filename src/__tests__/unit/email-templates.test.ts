@@ -99,4 +99,35 @@ describe("email layout", () => {
     expect(html).toContain("profile settings");
     expect(html).not.toContain("rally profile settings");
   });
+
+  it("declares a light color scheme and restates the palette for dark mode", async () => {
+    const { react } = participantJoinedEmail({
+      activity,
+      participantName: "Dana",
+    });
+    const html = (await render(react)).toLowerCase();
+
+    // Light color scheme declared to clients (Rally is light-mode only).
+    expect(html).toContain('name="color-scheme"');
+    expect(html).toContain('name="supported-color-schemes"');
+    expect(html).toContain('content="light"');
+    // Dark-mode block restates the card so honoring clients keep it a light
+    // island (the email itself has no outer background).
+    expect(html).toContain("prefers-color-scheme: dark");
+    expect(html).toContain(EMAIL_PALETTE.input.toLowerCase());
+    expect(html).toContain(EMAIL_PALETTE.border.toLowerCase());
+  });
+
+  it("uses a white button label on brand teal for contrast", async () => {
+    const { react } = participantJoinedEmail({
+      activity,
+      participantName: "Dana",
+    });
+    const html = (await render(react)).toLowerCase();
+
+    // White label (clears WCAG 3:1 for large/bold text) on brand teal, beating
+    // the old cream-on-teal while keeping brand teal.
+    expect(html).toContain(EMAIL_PALETTE.buttonText.toLowerCase());
+    expect(html).toContain(EMAIL_PALETTE.teal.toLowerCase());
+  });
 });
