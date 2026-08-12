@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type {
   ActivityHostSummary,
@@ -17,10 +16,7 @@ import {
 } from "@/lib/utils/activity-participants";
 import { formatActivityDate } from "@/lib/utils/format-time";
 import Avatar from "@/components/ui/avatar";
-import {
-  getInitials,
-  shouldBlurAvatarForViewer,
-} from "@/lib/utils/avatar";
+import { shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import ActivityPill from "@/components/ui/activity-pill";
 
 type CardProps = {
@@ -338,29 +334,15 @@ export function ActivityCardDesktop({
               );
 
               return (
-                <div
+                <Avatar
                   key={participant.id}
-                  className="relative w-5 h-5 rounded-full bg-brand-avatar-bg ring-[1.5px] ring-brand-bg overflow-hidden flex items-center justify-center"
-                >
-                  {profile.avatar_url ? (
-                    <Image
-                      src={profile.avatar_url}
-                      alt=""
-                      fill
-                      className={`object-cover${
-                        shouldBlurAvatar ? " blur-sm" : ""
-                      }`}
-                    />
-                  ) : (
-                    <span
-                      className={`text-[8px] font-semibold text-brand-avatar-text${
-                        shouldBlurAvatar ? " blur-sm" : ""
-                      }`}
-                    >
-                      {getInitials(profile.full_name)}
-                    </span>
-                  )}
-                </div>
+                  src={profile.avatar_url}
+                  name={profile.full_name}
+                  dimension={20}
+                  blur={shouldBlurAvatar}
+                  className="w-5 h-5 ring-[1.5px] ring-brand-bg"
+                  initialsClassName="text-[8px]"
+                />
               );
             })}
           </div>

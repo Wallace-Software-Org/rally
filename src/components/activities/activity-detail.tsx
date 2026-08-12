@@ -9,7 +9,6 @@ const ActivityMiniMap = dynamic(
   () => import("@/components/map/activity-mini-map"),
   { ssr: false },
 );
-import Image from "next/image";
 import type { ActivityDetail } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
@@ -20,13 +19,14 @@ import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import GroupChatModal from "@/components/activities/group-chat-modal";
 import BackButton from "@/components/ui/back-button";
+import Avatar from "@/components/ui/avatar";
 import {
   ACTIVITY_FULL_ERROR,
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
   spotsLeftText,
 } from "@/lib/utils/activity-participants";
-import { getInitials, shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
+import { shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import { isIOSDevice } from "@/lib/utils/platform";
 import { COPY_FEEDBACK_MS } from "@/lib/brand";
 
@@ -43,32 +43,6 @@ function formatDetailDate(startsAt: string): string {
     hour12: true,
   });
   return `${date} · ${time}`;
-}
-
-function Avatar({
-  url,
-  name,
-  size,
-}: {
-  url: string | null;
-  // Nullable: full_name has no NOT NULL constraint. getInitials renders "?".
-  name: string | null;
-  size: "sm" | "md";
-}) {
-  const dim = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
-  return (
-    <div
-      className={`${dim} relative rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center`}
-    >
-      {url ? (
-        <Image src={url} alt="" fill className="object-cover" />
-      ) : (
-        <span className="font-semibold text-brand-avatar-text">
-          {getInitials(name)}
-        </span>
-      )}
-    </div>
-  );
 }
 
 function Divider() {
@@ -763,16 +737,20 @@ export default function ActivityDetailView({
                 {activity.host.username ? (
                   <Link href={`/profile/${activity.host.username}`}>
                     <Avatar
-                      url={activity.host.avatar_url}
+                      src={activity.host.avatar_url}
                       name={activity.host.full_name}
-                      size="md"
+                      dimension={40}
+                      className="w-10 h-10 flex-none"
+                      initialsClassName="text-sm"
                     />
                   </Link>
                 ) : (
                   <Avatar
-                    url={activity.host.avatar_url}
+                    src={activity.host.avatar_url}
                     name={activity.host.full_name}
-                    size="md"
+                    dimension={40}
+                    className="w-10 h-10 flex-none"
+                    initialsClassName="text-sm"
                   />
                 )}
                 <div className="flex flex-col gap-1 min-w-0">
@@ -858,26 +836,14 @@ export default function ActivityDetailView({
                           p.user_id === activity.creator_id,
                         );
                         const avatarEl = (
-                          <div className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
-                            {p.profiles?.avatar_url ? (
-                              <Image
-                                src={p.profiles.avatar_url}
-                                alt=""
-                                fill
-                                className={`object-cover${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              />
-                            ) : (
-                              <span
-                                className={`text-xs font-semibold text-brand-avatar-text${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              >
-                                {getInitials(name)}
-                              </span>
-                            )}
-                          </div>
+                          <Avatar
+                            src={p.profiles?.avatar_url ?? null}
+                            name={name}
+                            dimension={44}
+                            blur={shouldBlurAvatar}
+                            className="w-11 h-11"
+                            initialsClassName="text-xs"
+                          />
                         );
                         return (
                           <div
@@ -917,26 +883,14 @@ export default function ActivityDetailView({
                           p.user_id === activity.creator_id,
                         );
                         const avatarEl = (
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
-                            {p.profiles?.avatar_url ? (
-                              <Image
-                                src={p.profiles.avatar_url}
-                                alt=""
-                                fill
-                                className={`object-cover${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              />
-                            ) : (
-                              <span
-                                className={`text-xs font-semibold text-brand-avatar-text${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              >
-                                {getInitials(name)}
-                              </span>
-                            )}
-                          </div>
+                          <Avatar
+                            src={p.profiles?.avatar_url ?? null}
+                            name={name}
+                            dimension={40}
+                            blur={shouldBlurAvatar}
+                            className="w-10 h-10"
+                            initialsClassName="text-xs"
+                          />
                         );
                         return (
                           <div
