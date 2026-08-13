@@ -8,6 +8,10 @@ import {
   addMonths,
   isBeforeCurrentMonth,
   monthLabel,
+  keyToDate,
+  nextDayWithActivities,
+  longDayLabel,
+  shortDayLabel,
 } from "@/lib/utils/calendar";
 
 // Minimal activity factory. starts_at strings are timezone-naive (no Z), so
@@ -143,5 +147,43 @@ describe("month navigation helpers", () => {
 
   it("monthLabel formats as 'Month YYYY'", () => {
     expect(monthLabel({ year: 2026, month: 6 })).toBe("July 2026");
+  });
+});
+
+describe("keyToDate", () => {
+  it("round-trips a day key to a local-midnight date", () => {
+    const d = keyToDate("2026-08-16");
+    expect(d.getFullYear()).toBe(2026);
+    expect(d.getMonth()).toBe(7);
+    expect(d.getDate()).toBe(16);
+    expect(localDayKey(d)).toBe("2026-08-16");
+  });
+});
+
+describe("nextDayWithActivities", () => {
+  const grouped = groupActivitiesByDay([
+    act("a", "2026-08-16T09:00:00"),
+    act("b", "2026-08-20T18:00:00"),
+  ]);
+
+  it("returns the earliest activity day strictly after the given key", () => {
+    expect(nextDayWithActivities(grouped, "2026-08-16")?.key).toBe("2026-08-20");
+    expect(nextDayWithActivities(grouped, "2026-08-10")?.key).toBe("2026-08-16");
+  });
+
+  it("returns null when nothing follows", () => {
+    expect(nextDayWithActivities(grouped, "2026-08-20")).toBeNull();
+    expect(nextDayWithActivities(new Map(), "2026-08-16")).toBeNull();
+  });
+});
+
+describe("day labels", () => {
+  it("longDayLabel reads 'Weekday, Month D'", () => {
+    // 2026-08-16 is a Sunday.
+    expect(longDayLabel(keyToDate("2026-08-16"))).toBe("Sunday, August 16");
+  });
+
+  it("shortDayLabel reads 'Mon D'", () => {
+    expect(shortDayLabel(keyToDate("2026-08-16"))).toBe("Aug 16");
   });
 });

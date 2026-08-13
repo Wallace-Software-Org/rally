@@ -19,10 +19,18 @@ import {
   type FeedView,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
-import CalendarView from "@/components/activities/calendar-view";
+import CalendarView, {
+  CalendarDesktop,
+} from "@/components/activities/calendar-view";
 import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
-import { type YearMonth, currentYearMonth } from "@/lib/utils/calendar";
+import {
+  type YearMonth,
+  currentYearMonth,
+  localDayKey,
+  keyToDate,
+  shortDayLabel,
+} from "@/lib/utils/calendar";
 import {
   parseFeedParams,
   serializeFeedParams,
@@ -176,6 +184,20 @@ export default function ActivityFeed({
     matchesDateFilter(a.starts_at, dateFilter),
   );
 
+  // Calendar view: the day the grid and the map's teal markers highlight.
+  // Defaults to today until the user picks one; the shared selectedDay stays
+  // null so the mobile calendar (which starts with no selection) is unaffected.
+  const calendarDay = selectedDay ?? localDayKey(now);
+
+  // Desktop day selection also snaps the grid to that day's month, so choosing a
+  // day from another month (a map pin, or the empty-day "next up" link) brings
+  // the grid along. Mobile keeps plain setSelectedDay (its days are always in the
+  // displayed month).
+  function selectCalendarDay(key: string) {
+    setSelectedDay(key);
+    setCalendarMonth(currentYearMonth(keyToDate(key)));
+  }
+
   const emptyMessage =
     show === "hosting"
       ? "You are not hosting any activities."
@@ -183,7 +205,10 @@ export default function ActivityFeed({
         ? "You are not attending any activities."
         : "No open activities";
 
-  const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
+  // Search baseFiltered (superset of visible) so the map popup resolves in
+  // calendar view too, where the Time pill is off and cards come from baseFiltered.
+  const selectedActivity =
+    baseFiltered.find((a) => a.id === selectedId) ?? null;
 
   useEffect(() => {
     if (!selectedId) return;
@@ -264,7 +289,8 @@ export default function ActivityFeed({
     </>
   );
 
-  const calendar = (variant: "stack" | "split") => (
+  // Mobile calendar (stack). Desktop uses CalendarDesktop below.
+  const mobileCalendar = (
     <CalendarView
       activities={baseFiltered}
       now={now}
@@ -272,7 +298,6 @@ export default function ActivityFeed({
       onMonthChange={setCalendarMonth}
       selectedKey={selectedDay}
       onSelectDay={setSelectedDay}
-      variant={variant}
     />
   );
 
@@ -310,7 +335,7 @@ export default function ActivityFeed({
             card grid (scrolling list) */}
         {view === "calendar" ? (
           <div className="xl:hidden flex-1 min-w-0 min-h-0 flex flex-col">
-            {calendar("stack")}
+            {mobileCalendar}
           </div>
         ) : (
           <div className="xl:hidden flex-1 overflow-y-auto">
@@ -436,16 +461,64 @@ export default function ActivityFeed({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Filter bar — full width above the calendar */}
-              <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
-                {filterPills}
-                <div className="ml-auto">
-                  <ViewToggle value={view} onChange={setView} />
+            <>
+              {/* Left panel — same 720px width as list view: filter bar, then
+                  the month grid pinned over the selected day's activities */}
+              <div className="w-180 flex-none flex flex-col border-r border-brand-border">
+                <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
+                  {filterPills}
+                  <div className="ml-auto">
+                    <ViewToggle value={view} onChange={setView} />
+                  </div>
                 </div>
+                <CalendarDesktop
+                  activities={baseFiltered}
+                  now={now}
+                  month={calendarMonth}
+                  onMonthChange={setCalendarMonth}
+                  selectedKey={calendarDay}
+                  onSelectDay={selectCalendarDay}
+                  userId={userId}
+                  joined={joined}
+                  joining={joining}
+                  selectedId={selectedId}
+                  onSelectActivity={(id) =>
+                    setSelectedId((prev) => (prev === id ? null : id))
+                  }
+                  onJoin={handleJoin}
+                />
               </div>
-              <div className="flex-1 overflow-y-auto">{calendar("split")}</div>
-            </div>
+
+              {/* Map — all filtered activities toned by selected day, with the
+                  same activity selection (fly-to + popup) as list view */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <MapPanel
+                  activities={baseFiltered}
+                  userId={userId}
+                  variant="full"
+                  calendarMode
+                  selectedDayKey={calendarDay}
+                  legendSelectedLabel={shortDayLabel(keyToDate(calendarDay))}
+                  selectedId={selectedId}
+                  onDotClick={(id) =>
+                    setSelectedId((prev) => (prev === id ? null : id))
+                  }
+                  userLat={coords?.lat ?? null}
+                  userLng={coords?.lng ?? null}
+                >
+                  {selectedActivity && (
+                    <MapPreviewCard
+                      key={selectedActivity.id}
+                      activity={selectedActivity}
+                      userId={userId}
+                      onJoin={() => handleJoin(selectedActivity.id)}
+                      onLeave={() => handleLeave(selectedActivity.id)}
+                      onDismiss={() => setSelectedId(null)}
+                    />
+                  )}
+                </MapPanel>
+              </div>
+            </>
           )}
         </div>
       </div>

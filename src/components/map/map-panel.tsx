@@ -7,6 +7,7 @@ import type { ActivityWithParticipants } from "@/types";
 import ActivityPin from "@/components/map/activity-pin";
 import { MAP_STYLE, TOKEN, MAP_LOADING_BG } from "@/lib/utils/map-config";
 import { MAP_SPRING, MAP_FLY_MS } from "@/lib/brand";
+import { localDayKey } from "@/lib/utils/calendar";
 
 const DEFAULT_VIEW = {
   longitude: -111.9261,
@@ -26,6 +27,12 @@ type MapPanelProps = {
   // Frame the view to the activities' pins on load (personal feed): fit bounds
   // with padding for 2+, center at a sensible zoom for 1, default view for 0.
   fitToPins?: boolean;
+  // Calendar view: tone pins by whether their day is the selected one and show a
+  // legend. Selection (fly-to + popup via selectedId/onDotClick) works the same
+  // as list view; the grid is what picks the day.
+  calendarMode?: boolean;
+  selectedDayKey?: string | null;
+  legendSelectedLabel?: string;
 };
 
 export default function MapPanel({
@@ -38,6 +45,9 @@ export default function MapPanel({
   userLat: _userLat,
   userLng: _userLng,
   fitToPins = false,
+  calendarMode = false,
+  selectedDayKey = null,
+  legendSelectedLabel,
 }: MapPanelProps) {
   const mapRef = useRef<MapRef>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -54,7 +64,8 @@ export default function MapPanel({
     if (mapRef.current?.isStyleLoaded()) setMapLoaded(true);
   };
 
-  // Fly to selected activity at zoom 14; fly back to default view on deselect
+  // Fly to selected activity at zoom 14; fly back to default view on deselect.
+  // Same in calendar view: selecting an activity (card or pin) flies + pops up.
   useEffect(() => {
     if (variant !== "full") return;
     if (selectedId === prevSelectedId.current) return;
@@ -121,17 +132,50 @@ export default function MapPanel({
     variant === "strip" ? { scrollZoom: false, doubleClickZoom: false } : {};
 
   const pins = mapLoaded
-    ? withCoords.map((a) => (
-        <ActivityPin
-          key={a.id}
-          lat={a.lat as number}
-          lng={a.lng as number}
-          isSelected={selectedId === a.id}
-          onClick={() => onDotClick?.(a.id)}
-          label={a.location_name}
-        />
-      ))
+    ? withCoords.map((a) => {
+        if (calendarMode) {
+          const dayKey = a.starts_at ? localDayKey(new Date(a.starts_at)) : null;
+          return (
+            <ActivityPin
+              key={a.id}
+              lat={a.lat as number}
+              lng={a.lng as number}
+              isSelected={false}
+              tone={
+                dayKey && dayKey === selectedDayKey
+                  ? "calendar-selected"
+                  : "calendar-other"
+              }
+              onClick={() => onDotClick?.(a.id)}
+              label={a.location_name}
+            />
+          );
+        }
+        return (
+          <ActivityPin
+            key={a.id}
+            lat={a.lat as number}
+            lng={a.lng as number}
+            isSelected={selectedId === a.id}
+            onClick={() => onDotClick?.(a.id)}
+            label={a.location_name}
+          />
+        );
+      })
     : null;
+
+  const legend = calendarMode ? (
+    <div className="absolute z-10 bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-3 rounded-full bg-brand-input/90 border-[0.5px] border-brand-border px-3 py-1.5 text-xs font-medium text-brand-text">
+      <span className="flex items-center gap-1.5">
+        <span className="w-2.5 h-2.5 rounded-full bg-brand-teal" />
+        {legendSelectedLabel ?? "Selected day"}
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="w-2.5 h-2.5 rounded-full border-[1.5px] border-brand-teal-muted" />
+        Other days
+      </span>
+    </div>
+  ) : null;
 
   if (variant === "strip") {
     return (
@@ -202,6 +246,7 @@ export default function MapPanel({
       >
         {pins}
       </Map>
+      {legend}
       {children}
     </div>
   );

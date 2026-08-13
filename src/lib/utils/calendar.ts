@@ -113,6 +113,40 @@ export function groupActivitiesByDay(
   return map;
 }
 
+// Parse a viewer-local YYYY-MM-DD key back to a local-midnight Date.
+export function keyToDate(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// "Sunday, August 16" — the selected-day header above the calendar's day list.
+export function longDayLabel(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+// "Aug 16" — compact date for the map legend.
+export function shortDayLabel(date: Date): string {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// The earliest day strictly after `afterKey` that has at least one activity, or
+// null. Powers the empty-day state ("nothing today, next is ...").
+export function nextDayWithActivities(
+  grouped: Map<string, ActivityWithParticipants[]>,
+  afterKey: string,
+): { key: string; date: Date } | null {
+  let best: string | null = null;
+  for (const key of grouped.keys()) {
+    if (key <= afterKey) continue;
+    if (best === null || key < best) best = key;
+  }
+  return best === null ? null : { key: best, date: keyToDate(best) };
+}
+
 // Agenda for one month: days in that month, from today forward, that have at
 // least one activity, ordered chronologically.
 export function agendaForMonth(
