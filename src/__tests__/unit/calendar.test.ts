@@ -11,7 +11,6 @@ import {
   keyToDate,
   nextDayWithActivities,
   longDayLabel,
-  shortDayLabel,
 } from "@/lib/utils/calendar";
 
 // Minimal activity factory. starts_at strings are timezone-naive (no Z), so
@@ -85,21 +84,19 @@ describe("groupActivitiesByDay", () => {
 
 describe("buildMonthGrid", () => {
   it("returns 42 cells starting on a Sunday", () => {
-    const cells = buildMonthGrid({ year: 2026, month: 6 }, new Date(2026, 6, 1));
+    const cells = buildMonthGrid({ year: 2026, month: 6 });
     expect(cells).toHaveLength(42);
     expect(cells[0].date.getDay()).toBe(0);
   });
 
-  it("flags in-month days and today", () => {
+  it("flags in-month days", () => {
     // July 2026 starts on a Wednesday, so the grid begins Sun Jun 28.
-    const now = new Date(2026, 6, 10, 9, 0);
-    const cells = buildMonthGrid({ year: 2026, month: 6 }, now);
+    const cells = buildMonthGrid({ year: 2026, month: 6 });
 
     expect(cells[0].key).toBe("2026-06-28");
     expect(cells[0].inMonth).toBe(false);
     expect(cells.find((c) => c.key === "2026-07-01")!.inMonth).toBe(true);
     expect(cells.filter((c) => c.inMonth)).toHaveLength(31);
-    expect(cells.find((c) => c.isToday)!.key).toBe("2026-07-10");
   });
 });
 
@@ -181,9 +178,5 @@ describe("day labels", () => {
   it("longDayLabel reads 'Weekday, Month D'", () => {
     // 2026-08-16 is a Sunday.
     expect(longDayLabel(keyToDate("2026-08-16"))).toBe("Sunday, August 16");
-  });
-
-  it("shortDayLabel reads 'Mon D'", () => {
-    expect(shortDayLabel(keyToDate("2026-08-16"))).toBe("Aug 16");
   });
 });

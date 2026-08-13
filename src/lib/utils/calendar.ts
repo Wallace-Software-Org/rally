@@ -27,7 +27,6 @@ export type DayCell = {
   date: Date; // local midnight of this cell
   key: string; // YYYY-MM-DD, viewer-local
   inMonth: boolean; // belongs to the displayed month
-  isToday: boolean;
 };
 
 export type DayGroup = {
@@ -72,21 +71,15 @@ export function currentYearMonth(now: Date): YearMonth {
 
 // Sunday-first 6-week (42 cell) grid covering the displayed month plus the
 // leading/trailing days needed to fill the weeks.
-export function buildMonthGrid(
-  { year, month }: YearMonth,
-  now: Date,
-): DayCell[] {
+export function buildMonthGrid({ year, month }: YearMonth): DayCell[] {
   const startOffset = new Date(year, month, 1).getDay(); // 0 = Sunday
-  const todayKey = localDayKey(now);
   const cells: DayCell[] = [];
   for (let i = 0; i < 42; i++) {
     const date = new Date(year, month, 1 - startOffset + i);
-    const key = localDayKey(date);
     cells.push({
       date,
-      key,
+      key: localDayKey(date),
       inMonth: date.getMonth() === month,
-      isToday: key === todayKey,
     });
   }
   return cells;
@@ -126,11 +119,6 @@ export function longDayLabel(date: Date): string {
     month: "long",
     day: "numeric",
   });
-}
-
-// "Aug 16" — compact date for the map legend.
-export function shortDayLabel(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 // The earliest day strictly after `afterKey` that has at least one activity, or

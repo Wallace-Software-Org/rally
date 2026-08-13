@@ -161,27 +161,6 @@ export function ExternalLinkIcon({ size = 15 }: { size?: number }) {
   );
 }
 
-export function MapIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M9 3 3 5.5v15L9 18l6 3 6-2.5v-15L15 6 9 3z" />
-      <path d="M9 3v15" />
-      <path d="M15 6v15" />
-    </svg>
-  );
-}
-
 export function CalendarIcon({ size = 15 }: { size?: number }) {
   return (
     <svg

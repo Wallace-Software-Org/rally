@@ -29,7 +29,6 @@ import {
   currentYearMonth,
   localDayKey,
   keyToDate,
-  shortDayLabel,
 } from "@/lib/utils/calendar";
 import {
   parseFeedParams,
@@ -184,7 +183,7 @@ export default function ActivityFeed({
     matchesDateFilter(a.starts_at, dateFilter),
   );
 
-  // Calendar view: the day the grid and the map's teal markers highlight.
+  // Calendar view: the day the desktop grid highlights and lists activities for.
   // Defaults to today until the user picks one; the shared selectedDay stays
   // null so the mobile calendar (which starts with no selection) is unaffected.
   const calendarDay = selectedDay ?? localDayKey(now);
@@ -489,16 +488,13 @@ export default function ActivityFeed({
                 />
               </div>
 
-              {/* Map — all filtered activities toned by selected day, with the
-                  same activity selection (fly-to + popup) as list view */}
+              {/* Map — identical to list view: same pins, same selection
+                  (click a pin or a card to fly + pop up) */}
               <div className="flex-1 overflow-hidden flex flex-col">
                 <MapPanel
                   activities={baseFiltered}
                   userId={userId}
                   variant="full"
-                  calendarMode
-                  selectedDayKey={calendarDay}
-                  legendSelectedLabel={shortDayLabel(keyToDate(calendarDay))}
                   selectedId={selectedId}
                   onDotClick={(id) =>
                     setSelectedId((prev) => (prev === id ? null : id))

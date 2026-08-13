@@ -102,7 +102,7 @@ export default function CalendarView({
 }: CalendarViewProps) {
   const todayKey = localDayKey(now);
   const grouped = useMemo(() => groupActivitiesByDay(activities), [activities]);
-  const cells = useMemo(() => buildMonthGrid(month, now), [month, now]);
+  const cells = useMemo(() => buildMonthGrid(month), [month]);
   const agenda = useMemo(
     () => agendaForMonth(grouped, month, now),
     [grouped, month, now],
@@ -292,7 +292,7 @@ export function CalendarDesktop({
 }) {
   const todayKey = localDayKey(now);
   const grouped = useMemo(() => groupActivitiesByDay(activities), [activities]);
-  const cells = useMemo(() => buildMonthGrid(month, now), [month, now]);
+  const cells = useMemo(() => buildMonthGrid(month), [month]);
 
   const dayActivities = grouped.get(selectedKey) ?? [];
   const selectedDate = keyToDate(selectedKey);
