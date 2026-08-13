@@ -22,6 +22,11 @@ import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import CalendarView, {
   CalendarDesktop,
 } from "@/components/activities/calendar-view";
+import LocationFilterBar from "@/components/activities/location-filter-bar";
+import {
+  type ActivityGroup,
+  isAtCoordKey,
+} from "@/lib/utils/map-groups";
 import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
 import {
@@ -91,6 +96,10 @@ export default function ActivityFeed({
   );
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Coordinate key of the place whose grouped pin was tapped, or null. Only the
+  // key is held: the activities are re-derived, so realtime and filter changes
+  // flow through instead of freezing at tap time.
+  const [locationKey, setLocationKey] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
       new Set(
@@ -183,16 +192,66 @@ export default function ActivityFeed({
     matchesDateFilter(a.starts_at, dateFilter),
   );
 
+  // Every map on the page draws from this list, so a grouped pin's count always
+  // matches the cards the panel shows for it. Calendar view feeds the map the
+  // full set: its time filter is the grid, not the Time pill.
+  const mapActivities = view === "calendar" ? baseFiltered : visible;
+
+  // Panel filter set by tapping a grouped pin. Derived rather than stored, so
+  // it tracks the current filters, and drops itself when the place no longer
+  // has anything to show (a filter change, say) rather than stranding the bar.
+  const locationActivities = locationKey
+    ? mapActivities.filter((a) => isAtCoordKey(a, locationKey))
+    : [];
+  const activeLocation =
+    locationKey && locationActivities.length > 0
+      ? {
+          key: locationKey,
+          name: locationActivities[0].location_name,
+          activities: locationActivities,
+        }
+      : null;
+
+  function selectLocation(group: ActivityGroup) {
+    // A grouped pin stands for several activities, so there is no one activity
+    // to preview: close any open popup and let the panel do the showing.
+    setSelectedId(null);
+    setLocationKey(group.key);
+  }
+
+  // Picking a pin drops any location filter, so the popup can't preview an
+  // activity the filtered panel isn't listing. Card clicks keep the filter:
+  // those cards are the filter.
+  function selectActivityFromPin(id: string) {
+    setLocationKey(null);
+    setSelectedId((prev) => (prev === id ? null : id));
+  }
+
+  // The toggle swaps the panel out from under the bar, and the mobile calendar
+  // has no map to set a location filter from, so drop it on the way across.
+  function changeView(next: FeedView) {
+    setLocationKey(null);
+    setView(next);
+  }
+
   // Calendar view: the day the desktop grid highlights and lists activities for.
   // Defaults to today until the user picks one; the shared selectedDay stays
   // null so the mobile calendar (which starts with no selection) is unaffected.
   const calendarDay = selectedDay ?? localDayKey(now);
 
   // Desktop day selection also snaps the grid to that day's month, so choosing a
-  // day from another month (a map pin, or the empty-day "next up" link) brings
-  // the grid along. Mobile keeps plain setSelectedDay (its days are always in the
-  // displayed month).
+  // day from another month (the empty-day "next up" link) brings the grid along.
+  // Mobile keeps plain setSelectedDay (its days are always in the displayed
+  // month, and the mobile calendar has no map).
+  //
+  // Moving to a different day drops the map selection, so the popup can never
+  // show an activity from a day the panel isn't listing. Re-picking the day
+  // already selected is a no-op, which leaves a pin click on that day standing.
+  // Picking any day also leaves a location filter: the day is what the user
+  // asked for now, and the bar is the other way back.
   function selectCalendarDay(key: string) {
+    if (key !== calendarDay) setSelectedId(null);
+    setLocationKey(null);
     setSelectedDay(key);
     setCalendarMonth(currentYearMonth(keyToDate(key)));
   }
@@ -288,6 +347,17 @@ export default function ActivityFeed({
     </>
   );
 
+  // Location filter, shared by every panel: the same bar and the same cards on
+  // mobile and desktop, differing only in the width they sit in.
+  const locationBar = activeLocation ? (
+    <LocationFilterBar
+      name={activeLocation.name}
+      count={activeLocation.activities.length}
+      onClear={() => setLocationKey(null)}
+    />
+  ) : null;
+  const listActivities = activeLocation ? activeLocation.activities : visible;
+
   // Mobile calendar (stack). Desktop uses CalendarDesktop below.
   const mobileCalendar = (
     <CalendarView
@@ -306,13 +376,13 @@ export default function ActivityFeed({
       {view === "map" && (
         <div className="xl:hidden flex-none">
           <MapPanel
-            activities={visible}
+            activities={mapActivities}
             userId={userId}
             variant="strip"
             selectedId={selectedId}
-            onDotClick={(id) =>
-              setSelectedId((prev) => (prev === id ? null : id))
-            }
+            onDotClick={selectActivityFromPin}
+            onGroupClick={selectLocation}
+            activeGroupKey={activeLocation?.key ?? null}
           />
         </div>
       )}
@@ -323,7 +393,7 @@ export default function ActivityFeed({
         <div className="flex flex-nowrap items-center gap-2.5 px-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {filterPills}
           <div className="ml-auto flex-none pl-1">
-            <ViewToggle value={view} onChange={setView} />
+            <ViewToggle value={view} onChange={changeView} />
           </div>
         </div>
       </div>
@@ -339,19 +409,21 @@ export default function ActivityFeed({
         ) : (
           <div className="xl:hidden flex-1 overflow-y-auto">
             <div className="max-w-5xl mx-auto px-4">
+              {locationBar && <div className="pt-4">{locationBar}</div>}
+
               {!userId && (
                 <div className="mt-3 mb-1 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                   Join to see who&apos;s going and save your spot
                 </div>
               )}
 
-              {visible.length === 0 ? (
+              {listActivities.length === 0 ? (
                 <p className="py-20 text-center text-sm text-brand-muted">
                   {emptyMessage}
                 </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
-                  {visible.map((a) => (
+                  {listActivities.map((a) => (
                     <div
                       key={a.id}
                       className="h-full"
@@ -391,26 +463,28 @@ export default function ActivityFeed({
                 <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
                   {filterPills}
                   <div className="ml-auto">
-                    <ViewToggle value={view} onChange={setView} />
+                    <ViewToggle value={view} onChange={changeView} />
                   </div>
                 </div>
 
                 {/* Scrollable card area */}
                 <div className="flex-1 overflow-y-auto">
                   <div className="px-6 py-4">
+                    {locationBar && <div className="mb-3">{locationBar}</div>}
+
                     {!userId && (
                       <div className="mb-3 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                         Join to see who&apos;s going and save your spot
                       </div>
                     )}
 
-                    {visible.length === 0 ? (
+                    {listActivities.length === 0 ? (
                       <p className="py-20 text-center text-sm text-brand-muted">
                         No open activities
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-3">
-                        {visible.map((a) => (
+                        {listActivities.map((a) => (
                           <ActivityCardDesktop
                             key={a.id}
                             activity={a}
@@ -436,13 +510,13 @@ export default function ActivityFeed({
               {/* Map panel — fills remaining space, always visible at xl */}
               <div className="flex-1 overflow-hidden flex flex-col">
                 <MapPanel
-                  activities={visible}
+                  activities={mapActivities}
                   userId={userId}
                   variant="full"
                   selectedId={selectedId}
-                  onDotClick={(id) =>
-                    setSelectedId((prev) => (prev === id ? null : id))
-                  }
+                  onDotClick={selectActivityFromPin}
+                  onGroupClick={selectLocation}
+                  activeGroupKey={activeLocation?.key ?? null}
                   userLat={coords?.lat ?? null}
                   userLng={coords?.lng ?? null}
                 >
@@ -467,7 +541,7 @@ export default function ActivityFeed({
                 <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
                   {filterPills}
                   <div className="ml-auto">
-                    <ViewToggle value={view} onChange={setView} />
+                    <ViewToggle value={view} onChange={changeView} />
                   </div>
                 </div>
                 <CalendarDesktop
@@ -485,6 +559,8 @@ export default function ActivityFeed({
                     setSelectedId((prev) => (prev === id ? null : id))
                   }
                   onJoin={handleJoin}
+                  locationBar={locationBar}
+                  locationActivities={activeLocation?.activities ?? null}
                 />
               </div>
 
@@ -492,13 +568,13 @@ export default function ActivityFeed({
                   (click a pin or a card to fly + pop up) */}
               <div className="flex-1 overflow-hidden flex flex-col">
                 <MapPanel
-                  activities={baseFiltered}
+                  activities={mapActivities}
                   userId={userId}
                   variant="full"
                   selectedId={selectedId}
-                  onDotClick={(id) =>
-                    setSelectedId((prev) => (prev === id ? null : id))
-                  }
+                  onDotClick={selectActivityFromPin}
+                  onGroupClick={selectLocation}
+                  activeGroupKey={activeLocation?.key ?? null}
                   userLat={coords?.lat ?? null}
                   userLng={coords?.lng ?? null}
                 >

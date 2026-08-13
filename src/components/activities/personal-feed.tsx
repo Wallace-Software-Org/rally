@@ -8,6 +8,8 @@ import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import HostStrip, { type HostSummary } from "@/components/activities/host-strip";
+import LocationFilterBar from "@/components/activities/location-filter-bar";
+import { type ActivityGroup, isAtCoordKey } from "@/lib/utils/map-groups";
 
 const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
   ssr: false,
@@ -27,6 +29,9 @@ export default function PersonalFeed({
   host: HostSummary;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Coordinate key of the place whose grouped pin was tapped, or null. A host's
+  // repeat series shares a venue, so this is the common case here.
+  const [locationKey, setLocationKey] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
       new Set(
@@ -71,6 +76,43 @@ export default function PersonalFeed({
   const emptyMessage = `${host.full_name} has no upcoming activities`;
 
   const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
+
+  // Panel filter set by tapping a grouped pin, derived so it tracks the live
+  // list and clears itself if the place empties out.
+  const locationActivities = locationKey
+    ? visible.filter((a) => isAtCoordKey(a, locationKey))
+    : [];
+  const activeLocation =
+    locationKey && locationActivities.length > 0
+      ? {
+          key: locationKey,
+          name: locationActivities[0].location_name,
+          activities: locationActivities,
+        }
+      : null;
+  const listActivities = activeLocation ? activeLocation.activities : visible;
+
+  function selectLocation(group: ActivityGroup) {
+    // No single activity to preview, so the panel does the showing.
+    setSelectedId(null);
+    setLocationKey(group.key);
+  }
+
+  // Picking a pin drops any location filter, so the popup can't preview an
+  // activity the filtered panel isn't listing. Card clicks keep the filter:
+  // those cards are the filter.
+  function selectActivityFromPin(id: string) {
+    setLocationKey(null);
+    setSelectedId((prev) => (prev === id ? null : id));
+  }
+
+  const locationBar = activeLocation ? (
+    <LocationFilterBar
+      name={activeLocation.name}
+      count={activeLocation.activities.length}
+      onClear={() => setLocationKey(null)}
+    />
+  ) : null;
 
   useEffect(() => {
     if (!selectedId) return;
@@ -145,9 +187,9 @@ export default function PersonalFeed({
           variant="strip"
           selectedId={selectedId}
           fitToPins
-          onDotClick={(id) =>
-            setSelectedId((prev) => (prev === id ? null : id))
-          }
+          onDotClick={selectActivityFromPin}
+          onGroupClick={selectLocation}
+          activeGroupKey={activeLocation?.key ?? null}
         />
       </div>
 
@@ -161,11 +203,13 @@ export default function PersonalFeed({
         {/* Mobile + md + lg (< xl): single scrollable card grid */}
         <div className="xl:hidden flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-4">
-            {visible.length === 0 ? (
+            {locationBar && <div className="pt-4">{locationBar}</div>}
+
+            {listActivities.length === 0 ? (
               emptyPanel
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
-                {visible.map((a) => (
+                {listActivities.map((a) => (
                   <div
                     key={a.id}
                     className="h-full"
@@ -206,11 +250,13 @@ export default function PersonalFeed({
             {/* Scrollable card area */}
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-4">
-                {visible.length === 0 ? (
+                {locationBar && <div className="mb-3">{locationBar}</div>}
+
+                {listActivities.length === 0 ? (
                   emptyPanel
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    {visible.map((a) => (
+                    {listActivities.map((a) => (
                       <ActivityCardDesktop
                         key={a.id}
                         activity={a}
@@ -240,9 +286,9 @@ export default function PersonalFeed({
               variant="full"
               selectedId={selectedId}
               fitToPins
-              onDotClick={(id) =>
-                setSelectedId((prev) => (prev === id ? null : id))
-              }
+              onDotClick={selectActivityFromPin}
+              onGroupClick={selectLocation}
+              activeGroupKey={activeLocation?.key ?? null}
             >
               {selectedActivity && (
                 <MapPreviewCard

@@ -1,11 +1,15 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Map, { type MapRef } from "react-map-gl";
 import type { ActivityWithParticipants } from "@/types";
 import ActivityPin from "@/components/map/activity-pin";
 import { MAP_STYLE, TOKEN, MAP_LOADING_BG } from "@/lib/utils/map-config";
+import {
+  type ActivityGroup,
+  groupActivitiesByCoord,
+} from "@/lib/utils/map-groups";
 import { MAP_SPRING, MAP_FLY_MS } from "@/lib/brand";
 
 const DEFAULT_VIEW = {
@@ -26,6 +30,11 @@ type MapPanelProps = {
   // Frame the view to the activities' pins on load (personal feed): fit bounds
   // with padding for 2+, center at a sensible zoom for 1, default view for 0.
   fitToPins?: boolean;
+  // A pin standing for several activities at one place can't open a popup for
+  // "the" activity, so the consumer filters its panel to the group instead.
+  onGroupClick?: (group: ActivityGroup) => void;
+  // Group whose panel filter is active, drawn in the selected pin state.
+  activeGroupKey?: string | null;
 };
 
 export default function MapPanel({
@@ -38,6 +47,8 @@ export default function MapPanel({
   userLat: _userLat,
   userLng: _userLng,
   fitToPins = false,
+  onGroupClick,
+  activeGroupKey = null,
 }: MapPanelProps) {
   const mapRef = useRef<MapRef>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -86,28 +97,30 @@ export default function MapPanel({
     }
   }, [selectedId, activities, variant]);
 
-  const withCoords = activities.filter(
-    (a) => typeof a.lat === "number" && typeof a.lng === "number",
+  // One pin per place, not per activity: activities at identical coordinates
+  // would otherwise stack with a zero offset, leaving all but the last one
+  // unclickable at every zoom.
+  const groups = useMemo(
+    () => groupActivitiesByCoord(activities),
+    [activities],
   );
 
   // Frame the host's pins once the style is ready (personal feed). Runs once per
-  // mount; selection fly-to takes over afterward.
+  // mount; selection fly-to takes over afterward. Bounds are per place, so a
+  // repeat series at one venue frames as the single point it is.
   useEffect(() => {
     if (!fitToPins || !mapLoaded || hasFitted.current) return;
     const map = mapRef.current;
     if (!map) return;
     hasFitted.current = true;
 
-    if (withCoords.length === 0) return;
-    if (withCoords.length === 1) {
-      map.jumpTo({
-        center: [withCoords[0].lng as number, withCoords[0].lat as number],
-        zoom: 13,
-      });
+    if (groups.length === 0) return;
+    if (groups.length === 1) {
+      map.jumpTo({ center: [groups[0].lng, groups[0].lat], zoom: 13 });
       return;
     }
-    const lngs = withCoords.map((a) => a.lng as number);
-    const lats = withCoords.map((a) => a.lat as number);
+    const lngs = groups.map((g) => g.lng);
+    const lats = groups.map((g) => g.lat);
     map.fitBounds(
       [
         [Math.min(...lngs), Math.min(...lats)],
@@ -115,22 +128,33 @@ export default function MapPanel({
       ],
       { padding: 56, maxZoom: 14, duration: 0 },
     );
-  }, [fitToPins, mapLoaded, withCoords]);
+  }, [fitToPins, mapLoaded, groups]);
 
   const stripInteractionOff =
     variant === "strip" ? { scrollZoom: false, doubleClickZoom: false } : {};
 
   const pins = mapLoaded
-    ? withCoords.map((a) => (
-        <ActivityPin
-          key={a.id}
-          lat={a.lat as number}
-          lng={a.lng as number}
-          isSelected={selectedId === a.id}
-          onClick={() => onDotClick?.(a.id)}
-          label={a.location_name}
-        />
-      ))
+    ? groups.map((group) => {
+        // A lone activity keeps the original behaviour end to end: same pin,
+        // same selected state, same popup on click.
+        const single =
+          group.activities.length === 1 ? group.activities[0] : null;
+        return (
+          <ActivityPin
+            key={group.key}
+            lat={group.lat}
+            lng={group.lng}
+            count={group.activities.length}
+            isSelected={
+              single ? selectedId === single.id : activeGroupKey === group.key
+            }
+            onClick={() =>
+              single ? onDotClick?.(single.id) : onGroupClick?.(group)
+            }
+            label={group.locationName}
+          />
+        );
+      })
     : null;
 
   if (variant === "strip") {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import type { ActivityWithParticipants } from "@/types";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
@@ -276,6 +276,8 @@ export function CalendarDesktop({
   selectedId,
   onSelectActivity,
   onJoin,
+  locationBar,
+  locationActivities = null,
 }: {
   activities: ActivityWithParticipants[];
   now: Date;
@@ -289,6 +291,10 @@ export function CalendarDesktop({
   selectedId: string | null;
   onSelectActivity: (id: string) => void;
   onJoin: (id: string) => Promise<{ ok: boolean; full: boolean }>;
+  // A grouped map pin was tapped: the panel lists that place's activities
+  // instead of the day's, and this bar names the place and clears the filter.
+  locationBar?: ReactNode;
+  locationActivities?: ActivityWithParticipants[] | null;
 }) {
   const todayKey = localDayKey(now);
   const grouped = useMemo(() => groupActivitiesByDay(activities), [activities]);
@@ -299,11 +305,20 @@ export function CalendarDesktop({
   const nextDay = nextDayWithActivities(grouped, selectedKey);
   const prevDisabled = isBeforeCurrentMonth(addMonths(month, -1), now);
 
+  // A place overrides the day rather than intersecting with it: tapping the pin
+  // means the user wants that place, whenever it runs. The grid drops its
+  // highlight to match, and picking any day is the other way back.
+  const listed = locationActivities ?? dayActivities;
+
   const chevronBtn =
     "w-8 h-8 flex-none flex items-center justify-center rounded-full text-brand-muted transition-colors duration-200 hover:text-brand-text disabled:opacity-30 disabled:cursor-not-allowed";
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
+      {locationBar && (
+        <div className="flex-none px-6 pt-4">{locationBar}</div>
+      )}
+
       {/* Month grid — pinned */}
       <div className="flex-none border-b border-brand-border px-6 pt-5 pb-4">
         <div className="flex flex-col gap-3">
@@ -349,7 +364,7 @@ export function CalendarDesktop({
                 key={cell.key}
                 cell={cell}
                 todayKey={todayKey}
-                selectedKey={selectedKey}
+                selectedKey={locationActivities ? null : selectedKey}
                 hasActivities={grouped.has(cell.key)}
                 onSelect={onSelectDay}
               />
@@ -358,12 +373,15 @@ export function CalendarDesktop({
         </div>
       </div>
 
-      {/* Selected-day header + activities — single column, scrolls */}
+      {/* Day header + activities — single column, scrolls. The header and the
+          empty state belong to the day, so a location filter replaces both. */}
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
-        <p className="mb-3 text-sm font-semibold text-brand-text">
-          {longDayLabel(selectedDate)}
-        </p>
-        {dayActivities.length === 0 ? (
+        {!locationActivities && (
+          <p className="mb-3 text-sm font-semibold text-brand-text">
+            {longDayLabel(selectedDate)}
+          </p>
+        )}
+        {listed.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-sm text-brand-muted">No activities on this day.</p>
             {nextDay && (
@@ -378,7 +396,7 @@ export function CalendarDesktop({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {dayActivities.map((a) => (
+            {listed.map((a) => (
               <ActivityCardDesktop
                 key={a.id}
                 activity={a}
