@@ -9,7 +9,6 @@ import {
   InstagramIcon,
   EditIcon,
   LinkIcon,
-  ExternalLinkIcon,
   CheckIcon,
 } from "@/components/ui/icons";
 import { getSiteUrl } from "@/lib/utils/site-url";
@@ -21,7 +20,8 @@ import AttendingManager from "@/components/profile/attending-manager";
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
 // Profile header action row: Instagram (when set, all viewers) and Edit profile
-// (owner only), stacked full width. Renders nothing when neither applies.
+// (owner only). Side by side on mobile, stacked full width at xl. Renders
+// nothing when neither applies.
 function ActionRow({
   profile,
   isOwner,
@@ -30,91 +30,136 @@ function ActionRow({
   isOwner: boolean;
 }) {
   const hasInstagram = !!profile.instagram_handle;
-  const [copied, setCopied] = useState(false);
   if (!hasInstagram && !isOwner) return null;
 
-  // Reuses the copy-feedback pattern: flip to "Copied" for COPY_FEEDBACK_MS.
-  async function handleShareFeed() {
-    await navigator.clipboard
-      .writeText(`${getSiteUrl()}/feed/${profile.username}`)
-      .catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
-  }
+  // A visitor's row holds Instagram alone. Left at its own width rather than
+  // stretched across the card: full width would make it the loudest thing on
+  // the profile for the viewer least likely to want it. The padding lands it at
+  // roughly the width it has when it splits the row with Edit profile. At xl
+  // both buttons stack full width as before.
+  const instagramWidth = isOwner ? "flex-1" : "flex-none px-6 xl:px-0";
 
   return (
-    <div className="w-full flex flex-col gap-2">
+    <div className="w-full flex gap-2 xl:flex-col">
       {hasInstagram && (
         <a
           href={`https://instagram.com/${profile.instagram_handle}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full flex items-center justify-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold py-3 hover:bg-brand-teal/15 transition-colors duration-200"
+          className={`${instagramWidth} xl:w-full flex items-center justify-center gap-1.5 rounded-[10px] border border-brand-teal bg-transparent text-brand-teal text-sm font-semibold py-3 hover:bg-brand-teal/15 transition-colors duration-200`}
         >
           <InstagramIcon size={14} />
           Instagram
         </a>
       )}
       {isOwner && (
-        <>
-          <Link
-            href="/profile/edit"
-            className="btn-tier-2 text-sm w-full flex items-center justify-center gap-1.5"
-          >
-            <EditIcon size={14} />
-            Edit profile
-          </Link>
-          <div className="w-full flex gap-2">
-            <button
-              type="button"
-              onClick={handleShareFeed}
-              className={`btn-tier-3 flex-1${
-                copied ? " border-brand-teal! text-brand-teal!" : ""
-              }`}
-            >
-              {copied ? <CheckIcon size={14} /> : <LinkIcon size={14} />}
-              {copied ? "Copied" : "Share feed"}
-            </button>
-            <Link
-              href={`/feed/${profile.username}`}
-              className="btn-tier-3 flex-1"
-            >
-              <ExternalLinkIcon size={14} />
-              View feed
-            </Link>
-          </div>
-        </>
+        <Link
+          href="/profile/edit"
+          className="btn-tier-2 text-sm flex-1 xl:w-full flex items-center justify-center gap-1.5"
+        >
+          <EditIcon size={14} />
+          Edit profile
+        </Link>
       )}
     </div>
   );
 }
 
-function Avatar({ profile }: { profile: ProfilePage }) {
+// Copies rallytime.xyz/feed/[username], so it sits with the username rather than
+// in the action row. Shown to visitors too: sharing someone's feed is fair game,
+// and it drops an owner-versus-visitor branch. Same copy-feedback pattern as
+// everywhere else, on the shared COPY_FEEDBACK_MS timing.
+function ShareFeedButton({ username }: { username: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard
+      .writeText(`${getSiteUrl()}/feed/${username}`)
+      .catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
+  }
+
   return (
-    <AvatarCircle
-      src={profile.avatar_url}
-      name={profile.full_name}
-      dimension={96}
-      className="w-36 xl:w-24 h-36 xl:h-24 border-3 border-brand-border flex-none"
-      initialsClassName="text-2xl"
-    />
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label={copied ? "Feed link copied" : "Copy feed link"}
+      className={`flex-none flex items-center justify-center w-6 h-6 rounded-full transition-colors duration-200 ${
+        copied ? "text-brand-teal" : "text-brand-muted hover:text-brand-text"
+      }`}
+    >
+      {copied ? <CheckIcon size={13} /> : <LinkIcon size={13} />}
+    </button>
   );
 }
 
-function Identity({ profile }: { profile: ProfilePage }) {
+// The identity card: avatar, name, username, bio, tags, actions.
+//
+// Mobile runs left-justified and compact, because this card plus the stats,
+// tags and tabs otherwise fills the first screen before a single activity. At
+// xl the card is a roomy sidebar, so it keeps the centered treatment. This is
+// the documented exception to the xl-only rule: alignment and stacking inside
+// one component, one tree, no forked layout.
+function IdentityCard({
+  profile,
+  isOwner,
+}: {
+  profile: ProfilePage;
+  isOwner: boolean;
+}) {
   return (
-    <div className="flex flex-col items-center gap-1 text-center w-full">
-      <p className="text-lg font-bold text-brand-text leading-tight">
-        {profile.full_name}
-      </p>
-      <p className="text-sm text-brand-muted font-medium">
-        @{profile.username}
-      </p>
+    <div className="flex flex-col gap-4 xl:items-center">
+      {/* Avatar beside the name on mobile, above it at xl */}
+      <div className="w-full flex items-center gap-3.5 xl:flex-col xl:gap-4">
+        <AvatarCircle
+          src={profile.avatar_url}
+          name={profile.full_name}
+          dimension={96}
+          className="w-15 h-15 xl:w-22.5 xl:h-22.5 border-3 border-brand-border flex-none"
+          initialsClassName="text-lg xl:text-2xl"
+        />
+        <div className="min-w-0 flex-1 flex flex-col gap-0.5 xl:flex-none xl:items-center xl:text-center">
+          <p className="text-lg font-bold text-brand-text leading-tight">
+            {profile.full_name}
+          </p>
+          <div className="flex items-center gap-1">
+            <p className="text-sm font-medium text-brand-muted truncate">
+              @{profile.username}
+            </p>
+            <ShareFeedButton username={profile.username} />
+          </div>
+          {/* Two beige tiles inside a beige card never read as separate
+              surfaces, so mobile states the counts in a line. xl keeps the
+              stats card in the sidebar below. */}
+          <p className="xl:hidden text-sm text-brand-muted">
+            {profile.attended_count} attended · {profile.hosted_count} hosted
+          </p>
+        </div>
+      </div>
+
       {profile.bio && (
-        <p className="text-sm text-brand-text leading-relaxed mt-3">
+        <p className="text-sm text-brand-text leading-relaxed xl:text-center">
           {profile.bio}
         </p>
       )}
+
+      {/* Tags read above the actions on mobile and below them at xl, which is
+          where the sidebar has always carried them. Order only, same markup. */}
+      {profile.sports.length > 0 && (
+        <div className="w-full xl:order-1">
+          <div className="xl:hidden">
+            <SportTagsScroller sports={profile.sports} />
+          </div>
+          <div className="hidden xl:flex flex-wrap gap-2 justify-center">
+            {profile.sports.map((sport) => (
+              <ActivityPill key={sport} sport={sport} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <ActionRow profile={profile} isOwner={isOwner} />
     </div>
   );
 }
@@ -221,7 +266,7 @@ function SportTagsScroller({ sports }: { sports: string[] }) {
       onMouseLeave={endDrag}
       className="overflow-x-auto [&::-webkit-scrollbar]:hidden scrollbar-none cursor-grab active:cursor-grabbing select-none"
     >
-      <div className="flex gap-2 w-fit mx-auto">
+      <div className="flex gap-2 w-fit">
         {sports.map((sport) => (
           <ActivityPill key={sport} sport={sport} />
         ))}
@@ -256,38 +301,11 @@ export default function ProfileView({
       <div className="xl:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-140 mx-auto">
-            {/* Hero */}
+            {/* Hero — the identity card carries the stats and tags inline */}
             <div className="px-6 pt-6 pb-7 flex flex-col gap-5">
-              <div className="flex flex-col items-center gap-4">
-                <Avatar profile={profile} />
-                <Identity profile={profile} />
-                <ActionRow profile={profile} isOwner={isOwner} />
-              </div>
+              <IdentityCard profile={profile} isOwner={isOwner} />
 
               {showNudge && <NudgeCard />}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
-                  <span className="text-2xl font-bold text-brand-text leading-none">
-                    {profile.attended_count}
-                  </span>
-                  <span className="text-sm text-brand-muted">
-                    Activities Attended
-                  </span>
-                </div>
-                <div className="h-24 bg-brand-surface/70 border border-brand-border/80 rounded-xl p-4 flex flex-col justify-center gap-0.5 text-center">
-                  <span className="text-2xl font-bold text-brand-text leading-none">
-                    {profile.hosted_count}
-                  </span>
-                  <span className="text-sm text-brand-muted">
-                    Activities Hosted
-                  </span>
-                </div>
-              </div>
-
-              {profile.sports.length > 0 && (
-                <SportTagsScroller sports={profile.sports} />
-              )}
             </div>
 
             {/* Tab bar — owner only; a visitor sees Hosting as the whole body */}
@@ -322,17 +340,8 @@ export default function ProfileView({
           {/* Sidebar */}
           <div className="flex flex-col overflow-y-auto px-5 py-6 gap-4 xl:w-96">
             {/* Identity card */}
-            <div className="w-full bg-brand-surface border border-brand-border rounded-xl p-5 flex flex-col items-center gap-4">
-              <Avatar profile={profile} />
-              <Identity profile={profile} />
-              <ActionRow profile={profile} isOwner={isOwner} />
-              {profile.sports.length > 0 && (
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {profile.sports.map((sport) => (
-                    <ActivityPill key={sport} sport={sport} />
-                  ))}
-                </div>
-              )}
+            <div className="w-full bg-brand-surface border border-brand-border rounded-xl p-5">
+              <IdentityCard profile={profile} isOwner={isOwner} />
             </div>
 
             {showNudge && <NudgeCard />}

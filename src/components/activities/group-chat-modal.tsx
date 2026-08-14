@@ -54,7 +54,10 @@ export default function GroupChatModal({
     await navigator.clipboard.writeText(text);
     setCopiedKey(key);
     if (revertTimer.current) clearTimeout(revertTimer.current);
-    revertTimer.current = setTimeout(() => setCopiedKey(null), COPY_FEEDBACK_MS);
+    revertTimer.current = setTimeout(
+      () => setCopiedKey(null),
+      COPY_FEEDBACK_MS,
+    );
   }
 
   // Handle-havers first, no-handle rows last; stable within each group.
@@ -170,15 +173,12 @@ export default function GroupChatModal({
                     {hasHandle && (
                       <button
                         onClick={() =>
-                          copy(
-                            formatHandle(p.instagram_handle as string),
-                            p.id,
-                          )
+                          copy(formatHandle(p.instagram_handle as string), p.id)
                         }
                         className="btn-tier-3 flex-none text-xs px-3 py-1.5"
                       >
                         {isCopied ? <CheckIcon /> : <CopyIcon />}
-                        {isCopied ? "copied" : "copy"}
+                        {isCopied ? "Copied" : "Copy"}
                       </button>
                     )}
                   </div>
@@ -193,7 +193,7 @@ export default function GroupChatModal({
               className="btn-tier-1 w-full flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {copiedKey === "all" ? <CheckIcon /> : <CopyIcon />}
-              {copiedKey === "all" ? "copied" : "copy all handles"}
+              {copiedKey === "all" ? "Copied" : "Copy all handles"}
             </button>
 
             {/* Instructions */}
@@ -211,7 +211,13 @@ export default function GroupChatModal({
 
 function CopyIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <rect
         x="9"
         y="9"
@@ -234,7 +240,13 @@ function CopyIcon() {
 
 function CheckIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M4 12.5l5 5 11-11"
         stroke="currentColor"

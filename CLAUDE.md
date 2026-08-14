@@ -112,6 +112,7 @@ Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets c
 - lg: allowed only for card grid column density.
 - md: allowed only for content density within a component (button labels vs icon-only, clamped description visibility), never structure.
 - Desktop layout must never change when making mobile-only adjustments.
+- Documented exception: the profile identity card (IdentityCard in profile-view.tsx) branches on xl: for alignment and stacking inside one component (mobile left-justified and compact, xl centered). It is one tree with xl: utilities, not a forked layout, so it does not violate the rule above. Do not copy the pattern into a second component without the same justification: mobile screen budget, one shared tree.
 
 ## Next.js 16 + React 19 conventions
 

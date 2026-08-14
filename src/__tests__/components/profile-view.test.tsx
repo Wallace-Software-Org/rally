@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProfileView from "@/components/profile/profile-view";
 import type { ProfilePage } from "@/types";
 
@@ -52,7 +52,7 @@ describe("ProfileView header action row", () => {
     expect(screen.queryByText("wallaceig")).not.toBeInTheDocument();
   });
 
-  it("owner with instagram shows both, stacked full width", () => {
+  it("owner with instagram shows both, sharing the row", () => {
     render(<ProfileView profile={makeProfile()} currentUserId="u1" />);
     expect(links("Instagram").length).toBeGreaterThan(0);
     expect(links("Edit profile").length).toBeGreaterThan(0);
@@ -61,21 +61,21 @@ describe("ProfileView header action row", () => {
       "href",
       "https://instagram.com/wallaceig",
     );
-    // Full width, never half-width.
-    expect(links("Instagram")[0]).toHaveClass("w-full");
-    expect(links("Edit profile")[0]).toHaveClass("w-full");
-    expect(links("Instagram")[0].className).not.toContain("w-1/2");
+    // Side by side below xl, stacked full width at xl.
+    expect(links("Instagram")[0]).toHaveClass("flex-1", "xl:w-full");
+    expect(links("Edit profile")[0]).toHaveClass("flex-1", "xl:w-full");
   });
 
-  it("visitor with instagram shows Instagram only, full width", () => {
+  it("visitor with instagram shows Instagram only, unstretched", () => {
     render(<ProfileView profile={makeProfile()} currentUserId="other" />);
     expect(links("Instagram").length).toBeGreaterThan(0);
     expect(links("Edit profile").length).toBe(0);
-    expect(links("Instagram")[0]).toHaveClass("w-full");
-    expect(links("Instagram")[0].className).not.toContain("w-1/2");
+    // Alone in the row it keeps its own width instead of filling the card.
+    expect(links("Instagram")[0]).toHaveClass("flex-none", "xl:w-full");
+    expect(links("Instagram")[0].className).not.toContain("flex-1");
   });
 
-  it("owner without instagram shows Edit profile only, full width", () => {
+  it("owner without instagram shows Edit profile only", () => {
     render(
       <ProfileView
         profile={makeProfile({ instagram_handle: null })}
@@ -84,8 +84,7 @@ describe("ProfileView header action row", () => {
     );
     expect(links("Instagram").length).toBe(0);
     expect(links("Edit profile").length).toBeGreaterThan(0);
-    expect(links("Edit profile")[0]).toHaveClass("w-full");
-    expect(links("Edit profile")[0].className).not.toContain("w-1/2");
+    expect(links("Edit profile")[0]).toHaveClass("flex-1", "xl:w-full");
   });
 
   it("visitor without instagram shows no action buttons", () => {
@@ -97,6 +96,45 @@ describe("ProfileView header action row", () => {
     );
     expect(links("Instagram").length).toBe(0);
     expect(links("Edit profile").length).toBe(0);
+  });
+
+  it("drops View feed for everyone", () => {
+    render(<ProfileView profile={makeProfile()} currentUserId="u1" />);
+    expect(links("View feed").length).toBe(0);
+  });
+});
+
+describe("ProfileView share feed", () => {
+  const shareButtons = () =>
+    screen.queryAllByRole("button", { name: "Copy feed link" });
+
+  it("owner sees the share icon by the username", () => {
+    render(<ProfileView profile={makeProfile()} currentUserId="u1" />);
+    expect(shareButtons().length).toBeGreaterThan(0);
+    // The old full-width labelled button is gone.
+    expect(screen.queryByText("Share feed")).not.toBeInTheDocument();
+  });
+
+  it("visitor sees it too", () => {
+    render(<ProfileView profile={makeProfile()} currentUserId="other" />);
+    expect(shareButtons().length).toBeGreaterThan(0);
+  });
+
+  it("copies the feed url and flips to a copied state", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    render(<ProfileView profile={makeProfile()} currentUserId="other" />);
+    fireEvent.click(shareButtons()[0]);
+
+    await waitFor(() =>
+      expect(
+        screen.queryAllByRole("button", { name: "Feed link copied" }).length,
+      ).toBeGreaterThan(0),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("/feed/wallace"),
+    );
   });
 });
 
