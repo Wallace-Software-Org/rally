@@ -6,16 +6,12 @@ import { AnimatePresence } from "framer-motion";
 import type { HostedActivity, HostParticipantProfile } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
-import GroupChatModal, {
-  type GroupChatParticipant,
-} from "@/components/activities/group-chat-modal";
 import {
   EditIcon,
   CopyIcon,
   CheckIcon,
   RefreshIcon,
   ShareIcon,
-  InstagramIcon,
 } from "@/components/ui/icons";
 import {
   AvatarStrip,
@@ -40,8 +36,9 @@ import {
 
 const PARTICIPANT_COLUMNS = "full_name, avatar_url, username, instagram_handle";
 
-// Card action button. Icon-only below md (square, aria-label carries the name),
-// icon + visible label from md up. Density only: no layout/structure change.
+// Card action button: icon + label at every width. Three actions fit labelled
+// on mobile, so the row no longer drops to icons below md. Four bare icons were
+// hard to decode anyway.
 function ActionButton({
   label,
   icon,
@@ -57,19 +54,20 @@ function ActionButton({
   onClick?: () => void;
   style?: React.CSSProperties;
 }) {
-  const cls = `${tier} text-sm flex items-center justify-center gap-1.5 h-10 w-10 md:h-auto md:w-auto`;
+  const cls = `${tier} text-sm flex items-center justify-center gap-1.5`;
   const inner = (
     <>
       {icon}
-      <span className="hidden md:inline">{label}</span>
+      {label}
     </>
   );
+  // The label is visible text now, so it names the control on its own.
   return href ? (
-    <Link href={href} aria-label={label} className={cls} style={style}>
+    <Link href={href} className={cls} style={style}>
       {inner}
     </Link>
   ) : (
-    <button onClick={onClick} aria-label={label} className={cls} style={style}>
+    <button onClick={onClick} className={cls} style={style}>
       {inner}
     </button>
   );
@@ -93,7 +91,6 @@ function UpcomingCard({
       profileColumns: PARTICIPANT_COLUMNS,
     });
 
-  const [showGroupChat, setShowGroupChat] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -140,16 +137,6 @@ function UpcomingCard({
     setShowShareModal(true);
   }
 
-  const groupChatParticipants: GroupChatParticipant[] = participants.map(
-    (p) => ({
-      id: p.user_id,
-      full_name: p.profiles?.full_name ?? "",
-      username: p.profiles?.username ?? null,
-      avatar_url: p.profiles?.avatar_url ?? null,
-      instagram_handle: p.profiles?.instagram_handle ?? null,
-    }),
-  );
-
   const isPrivateCopy = isPrivate;
   const copyLabel = copied
     ? "Copied"
@@ -175,11 +162,6 @@ function UpcomingCard({
         style={copyStyle}
         label={copyLabel}
         icon={copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
-      />
-      <ActionButton
-        onClick={() => setShowGroupChat(true)}
-        label="Group chat"
-        icon={<InstagramIcon size={16} />}
       />
       <ActionButton
         onClick={handleShare}
@@ -236,11 +218,6 @@ function UpcomingCard({
         <div className="border-t border-brand-border/70 pt-3">{actionRow}</div>
       )}
 
-      <GroupChatModal
-        participants={groupChatParticipants}
-        isOpen={showGroupChat}
-        onClose={() => setShowGroupChat(false)}
-      />
       <AnimatePresence>
         {showShareModal && (
           <ShareStoryModal onClose={() => setShowShareModal(false)} />
