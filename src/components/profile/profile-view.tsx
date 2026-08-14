@@ -243,9 +243,12 @@ export default function ProfileView({
   const showNudge =
     isOwner && (!profile.avatar_url || profile.sports.length === 0);
 
-  const [tab, setTab] = useState<"going" | "hosting">(
-    isOwner ? "hosting" : "going",
-  );
+  // Attending is owner-only: a visitor has no business seeing which activities
+  // someone has joined, with times and places. That leaves visitors one tab, so
+  // the bar drops out and Hosting is simply the body of the profile. Hosting is
+  // the default for the owner too, so there is nothing else to land on.
+  const [tab, setTab] = useState<"going" | "hosting">("hosting");
+  const activeTab = isOwner ? tab : "hosting";
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-brand-bg">
@@ -287,14 +290,16 @@ export default function ProfileView({
               )}
             </div>
 
-            {/* Tab bar */}
-            <div className="sticky top-0 bg-brand-bg z-10 flex border-b border-brand-border">
-              <TabBar tab={tab} profile={profile} onTabChange={setTab} />
-            </div>
+            {/* Tab bar — owner only; a visitor sees Hosting as the whole body */}
+            {isOwner && (
+              <div className="sticky top-0 bg-brand-bg z-10 flex border-b border-brand-border">
+                <TabBar tab={tab} profile={profile} onTabChange={setTab} />
+              </div>
+            )}
 
             {/* Activity cards */}
             <div className="bg-brand-bg px-4 py-4">
-              {tab === "hosting" ? (
+              {activeTab === "hosting" ? (
                 <HostingManager
                   activities={profile.hosting}
                   isOwner={isOwner}
@@ -353,14 +358,16 @@ export default function ProfileView({
 
           {/* Main */}
           <div className="flex flex-col min-h-0 overflow-hidden px-6 xl:w-2xl 2xl:w-3xl">
-            {/* Tab bar */}
-            <div className="flex-none flex border-b border-brand-border bg-brand-bg">
-              <TabBar tab={tab} profile={profile} onTabChange={setTab} />
-            </div>
+            {/* Tab bar — owner only; a visitor sees Hosting as the whole body */}
+            {isOwner && (
+              <div className="flex-none flex border-b border-brand-border bg-brand-bg">
+                <TabBar tab={tab} profile={profile} onTabChange={setTab} />
+              </div>
+            )}
 
             {/* Activity cards */}
             <div className="flex-1 overflow-y-auto scrollbar-brand px-6 py-4">
-              {tab === "hosting" ? (
+              {activeTab === "hosting" ? (
                 <HostingManager
                   activities={profile.hosting}
                   isOwner={isOwner}

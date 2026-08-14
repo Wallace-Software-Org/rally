@@ -18,11 +18,13 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// The tab managers are exercised elsewhere; stub them so this test focuses on
-// the profile header action row.
-vi.mock("@/components/profile/hosting-manager", () => ({ default: () => null }));
+// The tab managers are exercised elsewhere; stub them down to a marker so these
+// tests can tell which list the body is showing without their internals.
+vi.mock("@/components/profile/hosting-manager", () => ({
+  default: () => <div>hosting-list</div>,
+}));
 vi.mock("@/components/profile/attending-manager", () => ({
-  default: () => null,
+  default: () => <div>attending-list</div>,
 }));
 
 function makeProfile(over: Partial<ProfilePage> = {}): ProfilePage {
@@ -95,5 +97,42 @@ describe("ProfileView header action row", () => {
     );
     expect(links("Instagram").length).toBe(0);
     expect(links("Edit profile").length).toBe(0);
+  });
+});
+
+// Both layout trees mount at once (mobile and desktop), so these count matches
+// rather than asserting on a single node.
+const tabs = (name: RegExp) => screen.queryAllByRole("button", { name });
+
+describe("ProfileView tabs", () => {
+  it("owner sees both tabs, starting on Hosting", () => {
+    render(<ProfileView profile={makeProfile()} currentUserId="u1" />);
+    expect(tabs(/Hosting/).length).toBeGreaterThan(0);
+    expect(tabs(/Attending/).length).toBeGreaterThan(0);
+    expect(screen.queryAllByText("hosting-list").length).toBeGreaterThan(0);
+    expect(screen.queryByText("attending-list")).not.toBeInTheDocument();
+  });
+
+  it("visitor sees no tab bar at all", () => {
+    render(<ProfileView profile={makeProfile()} currentUserId="other" />);
+    expect(tabs(/Hosting/).length).toBe(0);
+    expect(tabs(/Attending/).length).toBe(0);
+  });
+
+  it("visitor gets the hosting list as the profile body, never attending", () => {
+    render(
+      <ProfileView
+        profile={makeProfile({ going: [] })}
+        currentUserId="other"
+      />,
+    );
+    expect(screen.queryAllByText("hosting-list").length).toBeGreaterThan(0);
+    expect(screen.queryByText("attending-list")).not.toBeInTheDocument();
+  });
+
+  it("signed-out visitor is treated as a visitor", () => {
+    render(<ProfileView profile={makeProfile()} currentUserId={null} />);
+    expect(tabs(/Attending/).length).toBe(0);
+    expect(screen.queryAllByText("hosting-list").length).toBeGreaterThan(0);
   });
 });

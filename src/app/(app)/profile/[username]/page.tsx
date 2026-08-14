@@ -11,10 +11,12 @@ export default async function ProfilePage({
   const { username } = await params;
   const supabase = await createClient();
 
-  const [profile, { data: { user } }] = await Promise.all([
-    getProfileByUsername(username),
-    supabase.auth.getUser(),
-  ]);
+  // The viewer is resolved first: the profile query needs it to decide whether
+  // to fetch the owner-only Attending list at all.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const profile = await getProfileByUsername(username, user?.id ?? null);
 
   if (!profile) notFound();
 
