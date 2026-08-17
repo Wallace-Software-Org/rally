@@ -153,6 +153,11 @@ function mockShareBrowserApis() {
   return { fetchMock, writeText, createObjectURL, revokeObjectURL };
 }
 
+// The section wrapping the Who's going label, its header row, and the avatars.
+function whosGoingSection(): HTMLElement {
+  return screen.getByText("Who's going").parentElement!.parentElement!;
+}
+
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 describe("ActivityDetailView — rendering", () => {
@@ -186,7 +191,7 @@ describe("ActivityDetailView — rendering", () => {
   it("shows the host in Who's going when participants are empty", () => {
     renderAsViewer({ participants: [] });
 
-    const section = screen.getByText("Who's going").parentElement!;
+    const section = whosGoingSection();
     expect(within(section).getAllByText("Jake").length).toBeGreaterThan(0);
     expect(screen.queryByText(/no one yet/i)).not.toBeInTheDocument();
   });
@@ -269,7 +274,7 @@ describe("ActivityDetailView — unauthenticated", () => {
       ],
     });
 
-    const section = screen.getByText("Who's going").parentElement!;
+    const section = whosGoingSection();
     const hostInitials = within(section).getAllByText("WP");
     const participantInitials = within(section).getAllByText("PA");
 
@@ -308,13 +313,48 @@ describe("ActivityDetailView — join flow", () => {
 // ── Share flow + CTA tiers ───────────────────────────────────────────────────
 
 describe("ActivityDetailView — share flow and CTA tiers", () => {
-  it("Edit button has btn-tier-1 class", () => {
+  it("Edit is a teal text action, not the primary action", () => {
     renderAsHost();
     const editLinks = screen.getAllByRole("link", { name: /edit/i });
 
     expect(editLinks.length).toBeGreaterThan(0);
     editLinks.forEach((link) => {
-      expect(link).toHaveClass("btn-tier-1");
+      expect(link).toHaveClass("link-action");
+      expect(link.className).not.toContain("btn-tier");
+    });
+  });
+
+  it("Get directions and Group chat share the link-action treatment", () => {
+    renderAsHost(withRoster("jakekline", ["joinerig"]));
+
+    for (const button of screen.getAllByRole("button", {
+      name: /get directions/i,
+    })) {
+      expect(button).toHaveClass("link-action");
+    }
+    for (const button of groupChatButton()) {
+      expect(button).toHaveClass("link-action");
+      expect(button.className).not.toContain("btn-tier");
+    }
+  });
+
+  it("host rail leads with Share to Story at tier-1 and Copy invite link at tier-2", () => {
+    renderAsHost();
+
+    const shareButtons = screen.getAllByRole("button", {
+      name: /share to story/i,
+    });
+    expect(shareButtons.length).toBeGreaterThan(0);
+    shareButtons.forEach((button) => {
+      expect(button).toHaveClass("btn-tier-1");
+    });
+
+    const copyButtons = screen.getAllByRole("button", {
+      name: /copy invite link/i,
+    });
+    expect(copyButtons.length).toBeGreaterThan(0);
+    copyButtons.forEach((button) => {
+      expect(button).toHaveClass("btn-tier-2");
     });
   });
 
@@ -429,5 +469,101 @@ describe("ActivityDetailView — host actions", () => {
     expect(
       screen.getAllByRole("button", { name: /copy invite link/i }).length,
     ).toBeGreaterThan(0);
+  });
+});
+
+// ── Group chat ───────────────────────────────────────────────────────────────
+
+// Host plus joiners, where `handles` gives each joiner's instagram_handle.
+function withRoster(
+  hostHandle: string | null,
+  handles: (string | null)[],
+): Partial<ActivityDetail> {
+  return {
+    host: { ...mockActivity.host, instagram_handle: hostHandle },
+    participants: [
+      {
+        id: "p-1",
+        user_id: "host-1",
+        profiles: {
+          full_name: "Jake Kline",
+          avatar_url: null,
+          instagram_handle: hostHandle,
+          username: "jakekline",
+        },
+      },
+      ...handles.map((handle, i) => ({
+        id: `p-${i + 2}`,
+        user_id: `joiner-${i + 1}`,
+        profiles: {
+          full_name: `Joiner ${i + 1}`,
+          avatar_url: null,
+          instagram_handle: handle,
+          username: `joiner${i + 1}`,
+        },
+      })),
+    ],
+  };
+}
+
+const groupChatButton = () =>
+  screen.queryAllByRole("button", { name: /^group chat$/i });
+
+describe("ActivityDetailView — group chat", () => {
+  beforeEach(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+  });
+
+  it("hides the button when no joiner has Instagram", () => {
+    // Host has a handle, but there is no one else to invite.
+    renderAsHost(withRoster("jakekline", [null]));
+    expect(groupChatButton().length).toBe(0);
+  });
+
+  it("hides the button when the host is the only person going", () => {
+    renderAsHost(withRoster("jakekline", []));
+    expect(groupChatButton().length).toBe(0);
+  });
+
+  it("shows the button once a joiner has Instagram", () => {
+    renderAsHost(withRoster("jakekline", ["joinerig"]));
+    expect(groupChatButton().length).toBeGreaterThan(0);
+  });
+
+  it("hides the button from non-host viewers", () => {
+    renderAsViewer(withRoster("jakekline", ["joinerig"]));
+    expect(groupChatButton().length).toBe(0);
+  });
+
+  it("counts the host in the total, even with no handle of their own", () => {
+    renderAsHost(withRoster(null, ["one", "two", null]));
+    fireEvent.click(groupChatButton()[0]);
+    expect(screen.getByText("2 of 4 going have Instagram")).toBeInTheDocument();
+  });
+
+  it("counts and copies the host's own handle when they have one", async () => {
+    renderAsHost(withRoster("jakekline", ["one", null]));
+    fireEvent.click(groupChatButton()[0]);
+    expect(screen.getByText("2 of 3 going have Instagram")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /copy all handles/i }));
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        "@jakekline, @one",
+      );
+    });
+  });
+
+  it("omits a handle-less host from the copied list", async () => {
+    renderAsHost(withRoster(null, ["one", "two"]));
+    fireEvent.click(groupChatButton()[0]);
+
+    fireEvent.click(screen.getByRole("button", { name: /copy all handles/i }));
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith("@one, @two");
+    });
   });
 });

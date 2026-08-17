@@ -128,6 +128,23 @@ body {
   }
 }
 
+/* Borderless teal text action: Get directions, Edit, Group chat. Sits below the
+   button tiers, for actions that read as part of the text around them. No
+   underline in either state, and no font size of its own, so it takes the size
+   of whatever line it sits on. */
+@utility link-action {
+  color: var(--color-brand-teal);
+  text-decoration: none;
+  transition: color 150ms ease;
+  &:hover:not(:disabled) {
+    color: var(--color-brand-teal-active);
+    text-decoration: none;
+  }
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
 /* Shared input/select shell. Callers add padding, text size, and text color
    (some fields set it dynamically). Standard focus ring: 1.5px teal, no outline. */
 @utility field-base {
@@ -226,7 +243,10 @@ body {
 
 @utility btn-tier-3 {
   background-color: transparent;
-  border: 1px solid color-mix(in srgb, var(--color-brand-warm) 15%, transparent);
+  /* rgba(90, 74, 58, 0.45): brand-text is #5A4A3A, so this is the requested
+     border colour expressed through the token rather than hardcoded. Ghost
+     buttons were reading as bare text at the old weight. */
+  border: 1px solid color-mix(in srgb, var(--color-brand-text) 45%, transparent);
   color: var(--color-text-muted);
   font-weight: 500;
   font-size: 14px;

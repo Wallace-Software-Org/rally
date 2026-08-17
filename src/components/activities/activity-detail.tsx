@@ -20,6 +20,7 @@ import ShareStoryModal from "@/components/ui/share-story-modal";
 import GroupChatModal from "@/components/activities/group-chat-modal";
 import BackButton from "@/components/ui/back-button";
 import Avatar from "@/components/ui/avatar";
+import { EditIcon } from "@/components/ui/icons";
 import {
   ACTIVITY_FULL_ERROR,
   getParticipantsWithHostFirst,
@@ -76,11 +77,22 @@ function ExternalLinkIcon() {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+// `action` puts a control on the header row, right aligned against the label.
+// Without one the row renders exactly as the plain label always did.
+function SectionLabel({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted mb-3">
-      {children}
-    </p>
+    <div className="mb-3 flex items-center gap-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted">
+        {children}
+      </p>
+      {action}
+    </div>
   );
 }
 
@@ -143,7 +155,7 @@ function LocationButton({
         <span className="text-brand-muted/50 select-none">·</span>
         <button
           onClick={() => setOpen((p) => !p)}
-          className="text-brand-teal hover:underline cursor-pointer"
+          className="link-action cursor-pointer"
         >
           Get directions
         </button>
@@ -360,16 +372,26 @@ export default function ActivityDetailView({
       profiles: profile,
     }),
   });
-  // Group-chat roster: confirmed participants only, host excluded.
-  const groupChatRoster = participants
-    .filter((p) => p.user_id !== activity.creator_id)
-    .map((p) => ({
-      id: p.id,
-      full_name: p.profiles?.full_name ?? "",
-      username: p.profiles?.username ?? null,
-      avatar_url: p.profiles?.avatar_url ?? null,
-      instagram_handle: p.profiles?.instagram_handle ?? null,
-    }));
+  // Group-chat roster: everyone going, host included, host first. The host is
+  // part of the chat, so they count toward the total and their own handle goes
+  // in the copied list. A host with no handle still counts in the denominator;
+  // the modal only copies handles that exist.
+  const groupChatRoster = goingParticipants.map((p) => ({
+    id: p.id,
+    full_name: p.profiles?.full_name ?? "",
+    username: p.profiles?.username ?? null,
+    avatar_url: p.profiles?.avatar_url ?? null,
+    instagram_handle: p.profiles?.instagram_handle ?? null,
+  }));
+  // The button is pointless with no one to invite, so it only appears once a
+  // joiner other than the host has a handle set.
+  const canInviteToGroupChat =
+    isHost &&
+    participants.some(
+      (p) =>
+        p.user_id !== activity.creator_id &&
+        Boolean(p.profiles?.instagram_handle?.trim()),
+    );
   const isFull = forcedFull || (spotsLeft !== null && spotsLeft <= 0);
   const displayCount =
     isFull && activity.max_participants !== null
@@ -456,15 +478,10 @@ export default function ActivityDetailView({
     setShowShareModal(true);
   }
 
-  // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
-  const ctaButton = isHost ? (
-    <Link
-      href={`/activity/${activity.id}/edit`}
-      className="btn-tier-1 w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active"
-    >
-      Edit
-    </Link>
-  ) : isJoined ? (
+  // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl).
+  // Viewer-side only: the host's primary action is Share to Story, and Edit is
+  // a ghost button on the tag row, so neither call site renders this for a host.
+  const ctaButton = isJoined ? (
     <button
       data-leave-btn
       onClick={() => (leaveConfirm ? handleLeave() : setLeaveConfirm(true))}
@@ -530,30 +547,32 @@ export default function ActivityDetailView({
       </button>
     ) : null;
 
-  const groupChatBtn = (tier: string) =>
-    isHost ? (
-      <button
-        onClick={() => setShowGroupChatModal(true)}
-        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors duration-200`}
+  // Teal text action on the Who's going header row, not in the action rail:
+  // setting up the chat is a one-time job, not a primary action. Sized to the
+  // label it sits beside.
+  const groupChatBtn = canInviteToGroupChat ? (
+    <button
+      onClick={() => setShowGroupChatModal(true)}
+      className="link-action inline-flex items-center gap-1.5 flex-none cursor-pointer text-xs whitespace-nowrap"
+    >
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
       >
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 19v-1a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v1M16.5 9.5a2.5 2.5 0 1 0 0-5M17 14h.5a4 4 0 0 1 4 4v.5"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        Invite to group chat
-      </button>
-    ) : null;
+        <path
+          d="M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 19v-1a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v1M16.5 9.5a2.5 2.5 0 1 0 0-5M17 14h.5a4 4 0 0 1 4 4v.5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      Group chat
+    </button>
+  ) : null;
 
   // Host-only, shown on all activities (public and private) so any host can
   // grab a shareable link. Uses a neutral tier to match the sibling actions.
@@ -684,9 +703,22 @@ export default function ActivityDetailView({
             {/* 1. Header */}
             <div className="flex flex-col gap-3">
               <ActivityPill sport={activity.sport} />
-              <h1 className="text-2xl font-medium text-brand-text leading-snug">
-                {activity.title}
-              </h1>
+              {/* Edit reads as a text action beside the title it edits, sitting
+                  on the title's first baseline. Same row at every width. */}
+              <div className="flex items-baseline gap-2.5">
+                <h1 className="text-2xl font-medium text-brand-text leading-snug">
+                  {activity.title}
+                </h1>
+                {isHost && (
+                  <Link
+                    href={`/activity/${activity.id}/edit`}
+                    className="link-action inline-flex items-center gap-1 flex-none text-sm"
+                  >
+                    <EditIcon size={13} />
+                    Edit
+                  </Link>
+                )}
+              </div>
               <p className="flex items-center gap-2 text-sm text-brand-muted">
                 <svg
                   width="14"
@@ -815,7 +847,7 @@ export default function ActivityDetailView({
 
             {/* 5. Who's going */}
             <div>
-              <SectionLabel>Who&apos;s going</SectionLabel>
+              <SectionLabel action={groupChatBtn}>Who&apos;s going</SectionLabel>
               {goingParticipants.length === 0 ? (
                 <p className="text-sm text-brand-muted">
                   No one yet — be the first
@@ -919,14 +951,14 @@ export default function ActivityDetailView({
               )}
             </div>
 
-            {/* 6. Secondary actions — mobile/tablet only; xl keeps them in the right panel */}
+            {/* 6. Secondary actions — mobile/tablet only; xl keeps them in the
+                right panel. The host's Share to Story moves to the sticky bar,
+                so Copy invite link takes the slot Share holds for a viewer. */}
             {userId && (
               <div className="xl:hidden flex flex-col items-center gap-3">
                 {instagramNudge}
-                {copyLinkBtn("btn-tier-2")}
                 {registerBtn("btn-tier-2")}
-                {shareBtn("btn-tier-2")}
-                {groupChatBtn("btn-tier-2")}
+                {isHost ? copyLinkBtn("btn-tier-2") : shareBtn("btn-tier-2")}
               </div>
             )}
           </div>
@@ -946,20 +978,26 @@ export default function ActivityDetailView({
               </div>
             )}
             <div className="flex flex-col gap-3">
-              {ctaButton}
-              {copyLinkBtn("btn-tier-2")}
+              {isHost ? (
+                <>
+                  {shareBtn("btn-tier-1")}
+                  {copyLinkBtn("btn-tier-2")}
+                </>
+              ) : (
+                ctaButton
+              )}
               {registerBtn("btn-tier-2")}
-              {shareBtn("btn-tier-2")}
-              {groupChatBtn("btn-tier-2")}
+              {!isHost && shareBtn("btn-tier-2")}
               {instagramNudge}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Bottom CTA bar — mobile/tablet only ────────────────────────────────────── */}
+      {/* ── Bottom CTA bar — mobile/tablet only. The host has nothing to join,
+          so their primary action here is Share to Story. ─────────────────────── */}
       <div className="xl:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col items-center gap-2">
-        {ctaButton}
+        {isHost ? shareBtn("btn-tier-1") : ctaButton}
       </div>
 
       <AnimatePresence>
