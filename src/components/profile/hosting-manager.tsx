@@ -34,7 +34,9 @@ import {
   cancelledParticipantLine,
 } from "@/lib/utils/hosting";
 
-const PARTICIPANT_COLUMNS = "full_name, avatar_url, username, instagram_handle";
+// Only what the card renders: the avatar strip reads full_name and avatar_url.
+// instagram_handle went with the group chat button.
+const PARTICIPANT_COLUMNS = "full_name, avatar_url, username";
 
 // Card action button: icon + label at every width. Three actions fit labelled
 // on mobile, so the row no longer drops to icons below md. Four bare icons were
