@@ -11,6 +11,7 @@ import {
   signOut,
 } from "@/lib/actions/profiles";
 import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
+import { resizeImageForUpload } from "@/lib/utils/image-resize";
 import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
 import ActivityPill from "@/components/ui/activity-pill";
 import Toggle from "@/components/ui/toggle";
@@ -140,24 +141,32 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
     }
   }
 
+  // Phone photos arrive at several megabytes, over the server action body limit,
+  // which rejects the request before any server-side check can answer. Resize in
+  // the browser first, and clear the uploading state in every path so the button
+  // can never sit on "Uploading..." forever.
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setUploadError("Photo must be under 2MB");
-      e.target.value = "";
-      return;
-    }
+
     setUploadError(null);
     setUploading(true);
-    const { url, error } = await uploadAvatar(file);
-    setUploading(false);
-    if (error) {
-      setUploadError(error);
-    } else if (url) {
-      setPreviewUrl(url);
+    try {
+      const resized = await resizeImageForUpload(file);
+      const { url, error } = await uploadAvatar(resized);
+      if (error) {
+        setUploadError(error);
+      } else if (url) {
+        setPreviewUrl(url);
+      }
+    } catch (err) {
+      console.error(err);
+      setUploadError("Could not upload that image. Try another one.");
+    } finally {
+      setUploading(false);
+      input.value = "";
     }
-    e.target.value = "";
   }
 
   const canSave = usernameStatus === "available";
@@ -233,9 +242,7 @@ export default function EditProfileForm({ profile }: { profile: ProfileData }) {
             {uploading && (
               <p className="text-xs text-brand-muted">Uploading...</p>
             )}
-            {uploadError && (
-              <p className="text-xs text-brand-danger">{uploadError}</p>
-            )}
+            {uploadError && <p className="field-error">{uploadError}</p>}
             <input
               ref={fileInputRef}
               type="file"

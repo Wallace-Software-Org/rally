@@ -25,6 +25,12 @@ const nextConfig: NextConfig = {
       dynamic: 30,
       static: 180,
     },
+    // Headroom, not the fix: avatars are resized in the browser to well under
+    // 200KB before they reach the action. This stops the default 1MB limit from
+    // rejecting anything that reaches the server unresized.
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
   },
 };
 
