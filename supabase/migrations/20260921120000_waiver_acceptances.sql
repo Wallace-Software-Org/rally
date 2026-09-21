@@ -15,7 +15,7 @@
 -- painful to alter).
 create table public.waiver_acceptances (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references public.profiles (id) on delete cascade,
+  user_id     uuid not null references public.profiles (id) on delete restrict,
   waiver_type text not null check (waiver_type in ('participant', 'host')),
   version     integer not null,
   initials    text not null,
@@ -38,9 +38,9 @@ create policy "Users can read their own waiver acceptances"
 -- alone: with no insert, update, or delete policy RLS already denies those
 -- statements, and revoking the privileges makes that hold even if a policy is
 -- added by mistake later. authenticated keeps select (own rows, via the policy
--- above). service_role bypasses RLS and is the only writer. The on delete cascade
--- from profiles is unaffected (referential actions run with the table owner's
--- rights).
+-- above). service_role bypasses RLS and is the only writer. Profiles with waiver
+-- rows cannot be deleted (on delete restrict), so acceptance evidence survives
+-- account removal.
 revoke all on public.waiver_acceptances from anon;
 revoke insert, update, delete, truncate on public.waiver_acceptances from authenticated;
 grant select, insert on public.waiver_acceptances to service_role;
