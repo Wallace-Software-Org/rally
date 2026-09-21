@@ -36,6 +36,8 @@ import {
   repeatActivity,
 } from "@/lib/actions/activities";
 import { getActivities } from "@/lib/queries/activities";
+import { WAIVERS } from "@/lib/waivers";
+import { fakeWaiverTable, type FakeWaiverRow } from "@/test/fake-waiver-table";
 
 // A valid create/update payload; individual tests override one field to test a
 // specific bound.
@@ -58,6 +60,23 @@ function validActivity(over: Record<string, unknown> = {}) {
   };
 }
 
+// Serves waiver_acceptances from a fake table holding the given acceptances (all
+// at version 1, for the signed-in user). Returns the table so a test can inspect
+// which waiver types were queried.
+function withAcceptedWaivers(...types: ("participant" | "host")[]) {
+  const rows: FakeWaiverRow[] = types.map((waiver_type) => ({
+    user_id: "host-1",
+    waiver_type,
+    version: 1,
+  }));
+  const waivers = fakeWaiverTable(rows);
+  mockFrom.mockImplementation((table: string) => {
+    if (table === "waiver_acceptances") return waivers.query();
+    throw new Error(`unexpected table ${table}`);
+  });
+  return waivers;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetUser.mockResolvedValue({ data: { user: { id: "host-1" } } });
@@ -68,12 +87,17 @@ afterEach(() => {
 });
 
 describe("joinActivity (atomic capacity RPC)", () => {
+  beforeEach(() => {
+    withAcceptedWaivers("participant");
+  });
+
   it("delegates to the join_activity RPC and succeeds on 'ok'", async () => {
     mockRpc.mockResolvedValue({ data: "ok", error: null });
     const res = await joinActivity("a1");
     expect(mockRpc).toHaveBeenCalledWith("join_activity", {
       p_activity_id: "a1",
     });
+    expect(res.ok).toBe(true);
     expect(res.error).toBeNull();
   });
 
@@ -94,6 +118,156 @@ describe("joinActivity (atomic capacity RPC)", () => {
     const res = await joinActivity("a1");
     expect(res.error).toBe("Not authenticated");
     expect(mockRpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("joinActivity participant waiver gate", () => {
+  it("blocks the join server-side when the waiver is not accepted", async () => {
+    withAcceptedWaivers();
+    const res = await joinActivity("a1");
+    expect(res).toEqual({
+      ok: false,
+      error: "Waiver required",
+      waiverRequired: true,
+    });
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("does not accept the host waiver in place of the participant waiver", async () => {
+    withAcceptedWaivers("host");
+    const res = await joinActivity("a1");
+    expect(res.waiverRequired).toBe(true);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("joins once the participant waiver is accepted", async () => {
+    withAcceptedWaivers("participant");
+    mockRpc.mockResolvedValue({ data: "ok", error: null });
+    const res = await joinActivity("a1");
+    expect(res.waiverRequired).toBeUndefined();
+    expect(mockRpc).toHaveBeenCalledWith("join_activity", {
+      p_activity_id: "a1",
+    });
+  });
+
+  it("requires re-acceptance when the current version is raised", async () => {
+    const waiver = WAIVERS.participant;
+    const original = waiver.version;
+    try {
+      withAcceptedWaivers("participant"); // accepted at version 1
+      waiver.version = 2;
+      const res = await joinActivity("a1");
+      expect(res.waiverRequired).toBe(true);
+      expect(mockRpc).not.toHaveBeenCalled();
+    } finally {
+      waiver.version = original;
+    }
+  });
+});
+
+describe("createActivity host waiver gate", () => {
+  // Chains for the two writes createActivity makes on success.
+  function mockCreateWrites() {
+    const participantInsert = vi.fn(() => Promise.resolve({ error: null }));
+    const activityInsert = vi.fn(() => ({
+      select: () => ({
+        single: () => Promise.resolve({ data: { id: "new-1" }, error: null }),
+      }),
+    }));
+    return { participantInsert, activityInsert };
+  }
+
+  function serveTables(
+    waivers: ReturnType<typeof fakeWaiverTable>,
+    writes: ReturnType<typeof mockCreateWrites>,
+  ) {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "waiver_acceptances") return waivers.query();
+      if (table === "activities") return { insert: writes.activityInsert };
+      if (table === "participants") return { insert: writes.participantInsert };
+      throw new Error(`unexpected table ${table}`);
+    });
+  }
+
+  it("blocks posting when the host waiver is not accepted", async () => {
+    const writes = mockCreateWrites();
+    serveTables(fakeWaiverTable([]), writes);
+
+    const res = await createActivity(validActivity());
+
+    expect(res).toEqual({ error: "Waiver required", waiverRequired: true });
+    expect(writes.activityInsert).not.toHaveBeenCalled();
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("does not accept the participant waiver in place of the host waiver", async () => {
+    const writes = mockCreateWrites();
+    serveTables(
+      fakeWaiverTable([
+        { user_id: "host-1", waiver_type: "participant", version: 1 },
+      ]),
+      writes,
+    );
+
+    const res = await createActivity(validActivity());
+
+    expect(res.waiverRequired).toBe(true);
+    expect(writes.activityInsert).not.toHaveBeenCalled();
+  });
+
+  it("posts, and auto-joins the host without the participant waiver", async () => {
+    // Only the HOST waiver is accepted. The host's own participants row must
+    // still be inserted, and nothing may ask about the participant waiver.
+    const writes = mockCreateWrites();
+    const waivers = fakeWaiverTable([
+      { user_id: "host-1", waiver_type: "host", version: 1 },
+    ]);
+    serveTables(waivers, writes);
+
+    await createActivity(validActivity());
+
+    expect(writes.activityInsert).toHaveBeenCalledTimes(1);
+    expect(writes.participantInsert).toHaveBeenCalledWith({
+      activity_id: "new-1",
+      user_id: "host-1",
+      status: "joined",
+    });
+    expect(waivers.eqCalls).toContainEqual(["waiver_type", "host"]);
+    expect(waivers.eqCalls).not.toContainEqual(["waiver_type", "participant"]);
+    expect(redirect).toHaveBeenCalledWith(
+      "/activity/new-1?posted=true",
+      "replace",
+    );
+  });
+
+  it("requires re-acceptance when the current version is raised", async () => {
+    const waiver = WAIVERS.host;
+    const original = waiver.version;
+    try {
+      const writes = mockCreateWrites();
+      serveTables(
+        fakeWaiverTable([
+          { user_id: "host-1", waiver_type: "host", version: 1 },
+        ]),
+        writes,
+      );
+      waiver.version = 2;
+
+      const res = await createActivity(validActivity());
+
+      expect(res.waiverRequired).toBe(true);
+      expect(writes.activityInsert).not.toHaveBeenCalled();
+    } finally {
+      waiver.version = original;
+    }
+  });
+
+  it("checks validation before the waiver, so a bad form never hits the waiver table", async () => {
+    mockFrom.mockImplementation(() => {
+      throw new Error("no table access expected");
+    });
+    const res = await createActivity(validActivity({ description: "short" }));
+    expect(res.error).toMatch(/at least 20 characters/);
   });
 });
 

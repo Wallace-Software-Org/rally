@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import type {
   ActivityHostSummary,
   ActivityWithParticipants,
+  JoinResult,
   Participant,
 } from "@/types";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
@@ -18,6 +21,7 @@ import { formatActivityDate } from "@/lib/utils/format-time";
 import Avatar from "@/components/ui/avatar";
 import { shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import ActivityPill from "@/components/ui/activity-pill";
+import JoinConfirmModal from "@/components/activities/join-confirm-modal";
 
 type CardProps = {
   activity: ActivityWithParticipants;
@@ -25,8 +29,9 @@ type CardProps = {
   isJoined: boolean;
   isJoining: boolean;
   // Returns the join outcome so the card can flip to Full on a capacity
-  // rejection, mirroring the map popup.
-  onJoin: () => Promise<{ ok: boolean; full: boolean }>;
+  // rejection, mirroring the map popup, and so the join modal can react to a
+  // waiverRequired answer.
+  onJoin: () => Promise<JoinResult>;
 };
 
 function initialParticipants(
@@ -222,6 +227,9 @@ function HostedByLine({
 // showDetails=false (< xl grid):     clicking navigates to the detail page
 
 type DesktopCardProps = CardProps & {
+  // Whether the viewer has accepted the participant waiver at the current
+  // version, as the server page saw it. Decides which join modal opens.
+  participantWaiverAccepted: boolean;
   isActive: boolean;
   showDetails: boolean;
   onSelect: () => void;
@@ -238,9 +246,11 @@ export function ActivityCardDesktop({
   isJoining,
   onSelect,
   onJoin,
+  participantWaiverAccepted,
   showHostedBy = false,
 }: DesktopCardProps) {
   const router = useRouter();
+  const [showJoinModal, setShowJoinModal] = useState(false);
   const { participants: liveParticipants, participantCount } =
     useRealtimeParticipants({
       activityId: activity.id,
@@ -259,7 +269,9 @@ export function ActivityCardDesktop({
   const spotsLeft = max === null ? null : isFull ? 0 : max - participantCount;
   const displayCount = isFull && max !== null ? max : participantCount;
 
-  async function handleJoin() {
+  // The join itself, run by the join modal on confirm. Full handling is exactly
+  // what it was before the modal existed.
+  async function handleJoin(): Promise<JoinResult> {
     const result = await onJoin();
     if (result.full) {
       setForcedFull(true);
@@ -267,6 +279,7 @@ export function ActivityCardDesktop({
       // the count self-corrects everywhere, not just this card.
       router.refresh();
     }
+    return result;
   }
 
   const avatarParticipants = getAvatarParticipants(activity, liveParticipants);
@@ -355,7 +368,7 @@ export function ActivityCardDesktop({
           userId={userId}
           isJoined={isJoinedLive}
           isJoining={isJoining}
-          onJoin={handleJoin}
+          onJoin={() => setShowJoinModal(true)}
           spotsLeft={spotsLeft}
           router={router}
           showJoinAction={showDetails}
@@ -364,26 +377,47 @@ export function ActivityCardDesktop({
     </>
   );
 
+  // A sibling of the card, not a child: the card root is a Link or a tappable
+  // div, and clicks or Enter inside the modal must not reach its handlers.
+  const joinModal = (
+    <AnimatePresence>
+      {showJoinModal && (
+        <JoinConfirmModal
+          activity={activity}
+          waiverAccepted={participantWaiverAccepted}
+          onJoin={handleJoin}
+          onClose={() => setShowJoinModal(false)}
+        />
+      )}
+    </AnimatePresence>
+  );
+
   if (showDetails) {
     return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={onSelect}
-        onKeyDown={(e) => e.key === "Enter" && onSelect()}
-        className={`cursor-pointer ${cardClass}`}
-      >
-        {inner}
-      </div>
+      <>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={onSelect}
+          onKeyDown={(e) => e.key === "Enter" && onSelect()}
+          className={`cursor-pointer ${cardClass}`}
+        >
+          {inner}
+        </div>
+        {joinModal}
+      </>
     );
   }
 
   return (
-    <Link
-      href={`/activity/${activity.id}`}
-      className={`cursor-pointer ${cardClass}`}
-    >
-      {inner}
-    </Link>
+    <>
+      <Link
+        href={`/activity/${activity.id}`}
+        className={`cursor-pointer ${cardClass}`}
+      >
+        {inner}
+      </Link>
+      {joinModal}
+    </>
   );
 }

@@ -1,12 +1,30 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import MapPreviewCard from "@/components/map/map-preview-card";
-import type { ActivityWithParticipants } from "@/types";
+import { resetParticipantWaiverOverride } from "@/hooks/use-participant-waiver";
+import type { ActivityWithParticipants, JoinResult } from "@/types";
 
 const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh }),
 }));
+
+// The join modal imports this server action; nothing here reaches it because the
+// waiver is treated as already accepted.
+vi.mock("@/lib/actions/waivers", () => ({ acceptWaiver: vi.fn() }));
+
+// Tapping Join on the popup opens the join modal; the join itself runs when the
+// user confirms there.
+function confirmJoinInModal() {
+  const dialog = screen.getByRole("dialog");
+  fireEvent.click(within(dialog).getByRole("button", { name: /join activity/i }));
+}
 
 const joinOk = () => Promise.resolve({ ok: true, full: false });
 function participant(userId: string) {
@@ -56,7 +74,7 @@ function renderCard({
 }: {
   activity?: ActivityWithParticipants;
   userId?: string | null;
-  onJoin?: () => Promise<{ ok: boolean; full: boolean }>;
+  onJoin?: () => Promise<JoinResult>;
   onLeave?: () => Promise<boolean>;
   onDismiss?: () => void;
 } = {}) {
@@ -64,6 +82,7 @@ function renderCard({
     <MapPreviewCard
       activity={activity}
       userId={userId}
+      participantWaiverAccepted={true}
       onJoin={onJoin}
       onLeave={onLeave}
       onDismiss={onDismiss}
@@ -79,6 +98,8 @@ function expectBefore(first: HTMLElement, second: HTMLElement) {
 
 afterEach(() => {
   vi.clearAllMocks();
+  // The "accepted" answer is shared client state; don't let one test leak it.
+  resetParticipantWaiverOverride();
 });
 
 describe("MapPreviewCard", () => {
@@ -111,6 +132,7 @@ describe("MapPreviewCard", () => {
           participants: [viewerParticipant],
         }}
         userId="viewer-1"
+        participantWaiverAccepted={true}
         onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
@@ -137,6 +159,7 @@ describe("MapPreviewCard", () => {
       <MapPreviewCard
         activity={mockActivity}
         userId="viewer-1"
+        participantWaiverAccepted={true}
         onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
@@ -155,6 +178,7 @@ describe("MapPreviewCard", () => {
           participants: [viewerParticipant],
         }}
         userId="viewer-1"
+        participantWaiverAccepted={true}
         onJoin={vi.fn(joinOk)}
         onLeave={vi.fn().mockResolvedValue(true)}
         onDismiss={vi.fn()}
@@ -205,15 +229,50 @@ describe("MapPreviewCard", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+    confirmJoinInModal();
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /^full$/i })).toBeInTheDocument(),
     );
     // Both the spots line and the button read "Full".
     expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(2);
+    // The modal closes on Full, and the popup no longer offers Join.
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: /join activity/i }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("does not join on tap: it opens the returning join modal when the waiver is accepted", () => {
+    const onJoin = vi.fn(joinOk);
+    renderCard({ onJoin });
+
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+
     expect(
-      screen.queryByRole("button", { name: /join activity/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("heading", { name: `Join ${mockActivity.title}?` }),
+    ).toBeInTheDocument();
+    expect(onJoin).not.toHaveBeenCalled();
+  });
+
+  it("opens the first-time waiver modal when the waiver is not accepted", () => {
+    const onJoin = vi.fn(joinOk);
+    render(
+      <MapPreviewCard
+        activity={mockActivity}
+        userId="viewer-1"
+        participantWaiverAccepted={false}
+        onJoin={onJoin}
+        onLeave={vi.fn()}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+
+    expect(screen.getByText("Before you join")).toBeInTheDocument();
+    expect(onJoin).not.toHaveBeenCalled();
   });
 
   it("refreshes the server snapshot when a join is rejected for capacity", async () => {
@@ -224,6 +283,7 @@ describe("MapPreviewCard", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+    confirmJoinInModal();
 
     // The re-seed is what heals the feed card behind the popup, where the loser
     // tapped Join.
@@ -251,6 +311,7 @@ describe("MapPreviewCard", () => {
 
     // A full-rejected join flips to Full via the override.
     fireEvent.click(screen.getByRole("button", { name: /join activity/i }));
+    confirmJoinInModal();
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: /^full$/i }),
@@ -265,6 +326,7 @@ describe("MapPreviewCard", () => {
           ...full1,
           participants: [participant("other-a"), participant("other-b")],
         }}
+        participantWaiverAccepted={true}
         {...rest}
       />,
     );
@@ -275,12 +337,16 @@ describe("MapPreviewCard", () => {
     rerender(
       <MapPreviewCard
         activity={{ ...full1, participants: [participant("other-a")] }}
+        participantWaiverAccepted={true}
         {...rest}
       />,
     );
-    expect(
-      screen.getByRole("button", { name: /join activity/i }),
-    ).toBeInTheDocument();
+    // The join modal closed on Full and may still be animating out.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /join activity/i }),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("hides Register here and Share to Story for logged-out users", () => {

@@ -7,12 +7,17 @@ import {
   within,
 } from "@testing-library/react";
 import ActivityDetailView from "@/components/activities/activity-detail";
+import { resetParticipantWaiverOverride } from "@/hooks/use-participant-waiver";
 import type { ActivityDetail } from "@/types";
 
 // ── Mock server actions ───────────────────────────────────────────────────────
 vi.mock("@/lib/actions/activities", () => ({
   joinActivity: vi.fn().mockResolvedValue({ error: null }),
   leaveActivity: vi.fn().mockResolvedValue({ error: null }),
+}));
+
+vi.mock("@/lib/actions/waivers", () => ({
+  acceptWaiver: vi.fn().mockResolvedValue({ error: null }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -67,6 +72,7 @@ function renderAsViewer(overrides: Partial<ActivityDetail> = {}) {
   return render(
     <ActivityDetailView
       activity={{ ...mockActivity, ...overrides }}
+      participantWaiverAccepted={true}
       userId="viewer-99"
     />,
   );
@@ -77,6 +83,7 @@ function renderAsHost(overrides: Partial<ActivityDetail> = {}) {
   return render(
     <ActivityDetailView
       activity={{ ...mockActivity, ...overrides }}
+      participantWaiverAccepted={true}
       userId="host-1"
     />,
   );
@@ -102,6 +109,7 @@ function renderAsJoinedViewer() {
           },
         ],
       }}
+      participantWaiverAccepted={true}
       userId="viewer-99"
     />,
   );
@@ -112,6 +120,7 @@ function renderUnauthenticated(overrides: Partial<ActivityDetail> = {}) {
   return render(
     <ActivityDetailView
       activity={{ ...mockActivity, ...overrides }}
+      participantWaiverAccepted={true}
       userId={null}
     />,
   );
@@ -119,6 +128,8 @@ function renderUnauthenticated(overrides: Partial<ActivityDetail> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // The "accepted" answer is shared client state; don't let one test leak it.
+  resetParticipantWaiverOverride();
 });
 
 afterEach(() => {
@@ -301,12 +312,143 @@ describe("ActivityDetailView — join flow", () => {
     expect(joinBtns.length).toBeGreaterThan(0);
   });
 
-  it("calls joinActivity when Join button is clicked", async () => {
+  it("opens the join confirmation instead of joining on tap", () => {
     renderAsViewer();
     fireEvent.click(screen.getAllByRole("button", { name: /join activity/i })[0]);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(joinActivity).not.toHaveBeenCalled();
+  });
+
+  it("opens the first-time waiver modal when the waiver is not accepted", () => {
+    render(
+      <ActivityDetailView
+        activity={mockActivity}
+        userId="viewer-99"
+        participantWaiverAccepted={false}
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /join activity/i })[0]);
+
+    expect(screen.getByText("Before you join")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(joinActivity).not.toHaveBeenCalled();
+  });
+
+  it("re-opens the first-time modal when the server answers waiverRequired", async () => {
+    vi.mocked(joinActivity).mockResolvedValueOnce({
+      ok: false,
+      error: "Waiver required",
+      waiverRequired: true,
+    });
+    renderAsViewer();
+    fireEvent.click(screen.getAllByRole("button", { name: /join activity/i })[0]);
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Join activity",
+      }),
+    );
+
+    expect(await screen.findByText("Before you join")).toBeInTheDocument();
+    // Not joined: still offering Join, never flipped to Going.
+    expect(screen.queryByText("Going ✓")).not.toBeInTheDocument();
+  });
+
+  it("calls joinActivity when the join is confirmed in the modal", async () => {
+    renderAsViewer();
+    fireEvent.click(screen.getAllByRole("button", { name: /join activity/i })[0]);
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Join activity",
+      }),
+    );
     await waitFor(() => {
       expect(joinActivity).toHaveBeenCalledWith("act-1");
     });
+  });
+});
+
+// ── Quick join (?join=true after OAuth) ─────────────────────────────────────
+
+describe("ActivityDetailView — quick join", () => {
+  function renderQuickJoin(
+    overrides: Partial<ActivityDetail> = {},
+    userId = "viewer-99",
+    waiverAccepted = true,
+  ) {
+    return render(
+      <ActivityDetailView
+        activity={{ ...mockActivity, ...overrides }}
+        userId={userId}
+        participantWaiverAccepted={waiverAccepted}
+        autoOpenJoin
+      />,
+    );
+  }
+
+  it("opens the join modal on arrival and does not join silently", () => {
+    renderQuickJoin();
+    expect(
+      screen.getByRole("heading", { name: `Join ${mockActivity.title}?` }),
+    ).toBeInTheDocument();
+    expect(joinActivity).not.toHaveBeenCalled();
+  });
+
+  it("opens the first-time modal on arrival when the waiver is not accepted", () => {
+    renderQuickJoin({}, "viewer-99", false);
+    expect(screen.getByText("Before you join")).toBeInTheDocument();
+    expect(joinActivity).not.toHaveBeenCalled();
+  });
+
+  it("joins only when the user confirms", async () => {
+    renderQuickJoin();
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Join activity",
+      }),
+    );
+    await waitFor(() => expect(joinActivity).toHaveBeenCalledWith("act-1"));
+  });
+
+  it("strips ?join=true from the URL so a refresh does not reopen it", () => {
+    window.history.replaceState({}, "", "/activity/act-1?join=true");
+    renderQuickJoin();
+    expect(window.location.search).toBe("");
+  });
+
+  it("does not open for the host, an existing participant, a full or a cancelled activity", () => {
+    const { unmount } = renderQuickJoin({}, "host-1");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    unmount();
+
+    const joinedUnmount = renderQuickJoin({
+      participants: [
+        ...mockActivity.participants,
+        {
+          id: "p-2",
+          user_id: "viewer-99",
+          profiles: {
+            full_name: "Wallace Palmer",
+            avatar_url: null,
+            instagram_handle: null,
+            username: "wallacepalmer",
+          },
+        },
+      ],
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    joinedUnmount.unmount();
+
+    const fullUnmount = renderQuickJoin({ max_participants: 1 });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fullUnmount.unmount();
+
+    renderQuickJoin({ status: "cancelled" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("does not open without the quick-join flag", () => {
+    renderAsViewer();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
 

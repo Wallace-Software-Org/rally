@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import type { ActivityWithParticipants } from "@/types";
+import type { ActivityWithParticipants, JoinResult } from "@/types";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import { spotsLeftText } from "@/lib/utils/activity-participants";
@@ -276,6 +276,7 @@ export function CalendarDesktop({
   selectedId,
   onSelectActivity,
   onJoin,
+  participantWaiverAccepted,
   locationBar,
   locationActivities = null,
 }: {
@@ -290,7 +291,8 @@ export function CalendarDesktop({
   joining: Set<string>;
   selectedId: string | null;
   onSelectActivity: (id: string) => void;
-  onJoin: (id: string) => Promise<{ ok: boolean; full: boolean }>;
+  onJoin: (id: string) => Promise<JoinResult>;
+  participantWaiverAccepted: boolean;
   // A grouped map pin was tapped: the panel lists that place's activities
   // instead of the day's, and this bar names the place and clears the filter.
   locationBar?: ReactNode;
@@ -407,6 +409,7 @@ export function CalendarDesktop({
                 isJoining={joining.has(a.id)}
                 onSelect={() => onSelectActivity(a.id)}
                 onJoin={() => onJoin(a.id)}
+                participantWaiverAccepted={participantWaiverAccepted}
               />
             ))}
           </div>

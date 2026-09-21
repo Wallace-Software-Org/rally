@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getHostByUsername } from "@/lib/queries/profiles";
 import { getActivitiesByUser } from "@/lib/queries/activities";
+import { hasAcceptedWaiver } from "@/lib/queries/waivers";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import AppNav from "@/components/nav/app-nav";
 import PersonalFeed from "@/components/activities/personal-feed";
@@ -59,17 +60,21 @@ export default async function PersonalFeedPage({
 
   // The page is a public read; only fetch the viewer's own profile (for the
   // normal header) when signed in.
-  const [activities, viewerProfile] = await Promise.all([
-    getActivitiesByUser(host.id),
-    user
-      ? supabase
-          .from("profiles")
-          .select("avatar_url, full_name, city, username, instagram_handle")
-          .eq("id", user.id)
-          .single()
-          .then((r) => r.data)
-      : Promise.resolve(null),
-  ]);
+  const [activities, viewerProfile, participantWaiverAccepted] =
+    await Promise.all([
+      getActivitiesByUser(host.id),
+      user
+        ? supabase
+            .from("profiles")
+            .select("avatar_url, full_name, city, username, instagram_handle")
+            .eq("id", user.id)
+            .single()
+            .then((r) => r.data)
+        : Promise.resolve(null),
+      user
+        ? hasAcceptedWaiver(supabase, user.id, "participant")
+        : Promise.resolve(false),
+    ]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-brand-bg overflow-hidden">
@@ -81,6 +86,7 @@ export default async function PersonalFeedPage({
       <PersonalFeed
         activities={activities}
         userId={user?.id ?? null}
+        participantWaiverAccepted={participantWaiverAccepted}
         hostId={host.id}
         host={{
           // Resolved by exact username match, so the route param equals

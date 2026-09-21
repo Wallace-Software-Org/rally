@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivityById } from "@/lib/queries/activities";
 import { getProfileById } from "@/lib/queries/profiles";
-import { joinActivity } from "@/lib/actions/activities";
+import { hasAcceptedWaiver } from "@/lib/queries/waivers";
 import ActivityDetailView from "@/components/activities/activity-detail";
 
 export default async function ActivityPage({
@@ -19,9 +19,6 @@ export default async function ActivityPage({
     ? query.posted[0]
     : query.posted;
   const joinParam = Array.isArray(query.join) ? query.join[0] : query.join;
-  const joinedParam = Array.isArray(query.joined)
-    ? query.joined[0]
-    : query.joined;
   const supabase = await createClient();
 
   const {
@@ -61,25 +58,19 @@ export default async function ActivityPage({
     );
   }
 
-  // Auto-join: triggered when the user lands here after completing OAuth from
-  // a shared activity link. Join server-side, then redirect to strip ?join=true.
-  if (joinParam === "true" && userId) {
-    const isCreator = userId === activity.creator_id;
-    const isParticipant = activity.participants.some(
-      (p) => p.user_id === userId,
-    );
-    if (!isCreator && !isParticipant) {
-      const { error } = await joinActivity(id);
-      redirect(`/activity/${id}${error ? "" : "?joined=true"}`);
-    }
-    redirect(`/activity/${id}`);
-  }
-
-  const ranJoin = joinedParam === "true";
+  // Quick-join: the user just finished OAuth from a shared activity link. They
+  // land here with ?join=true and the join modal opens (the first-time waiver
+  // or the short confirmation). Nothing is joined until they confirm it.
+  const autoOpenJoin = joinParam === "true" && userId !== null;
 
   // Fetch the viewer's profile once when authenticated and reuse it for both
   // the onboarding banner check and the optimistic Who's going avatar.
-  const viewerProfile = userId ? await getProfileById(userId) : null;
+  const [viewerProfile, participantWaiverAccepted] = userId
+    ? await Promise.all([
+        getProfileById(userId),
+        hasAcceptedWaiver(supabase, userId, "participant"),
+      ])
+    : [null, false];
 
   // Only show the onboarding banner to users whose profile still needs setup.
   // Existing users with a complete profile (activities + avatar) skip it.
@@ -93,8 +84,10 @@ export default async function ActivityPage({
     <ActivityDetailView
       activity={activity}
       userId={userId}
+      participantWaiverAccepted={participantWaiverAccepted}
       showPostedBanner={postedParam === "true"}
-      justJoined={ranJoin && !profileIsComplete}
+      autoOpenJoin={autoOpenJoin}
+      needsProfileSetup={!profileIsComplete}
       viewerProfile={
         viewerProfile
           ? {

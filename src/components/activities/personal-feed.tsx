@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import type { ActivityWithParticipants } from "@/types";
+import type { ActivityWithParticipants, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 import MapPreviewCard from "@/components/map/map-preview-card";
@@ -20,11 +20,15 @@ const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
 export default function PersonalFeed({
   activities,
   userId,
+  participantWaiverAccepted,
   hostId,
   host,
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
+  // Whether the viewer has accepted the participant waiver at the current
+  // version. Threaded to every join surface so each opens the right modal.
+  participantWaiverAccepted: boolean;
   hostId: string;
   host: HostSummary;
 }) {
@@ -122,9 +126,7 @@ export default function PersonalFeed({
 
   // Optimistic join/leave, mirroring the main feed: local state flips instantly,
   // the server action reconciles, and a capacity rejection surfaces as `full`.
-  async function handleJoin(
-    activityId: string,
-  ): Promise<{ ok: boolean; full: boolean }> {
+  async function handleJoin(activityId: string): Promise<JoinResult> {
     if (!userId || joined.has(activityId) || joining.has(activityId)) {
       return { ok: false, full: false };
     }
@@ -132,7 +134,7 @@ export default function PersonalFeed({
     setJoining((prev) => new Set(prev).add(activityId));
     setJoined((prev) => new Set(prev).add(activityId));
 
-    const { error } = await joinActivity(activityId);
+    const { error, waiverRequired } = await joinActivity(activityId);
 
     if (error) {
       setJoined((prev) => {
@@ -148,7 +150,12 @@ export default function PersonalFeed({
       return next;
     });
 
-    return { ok: !error, full: error === ACTIVITY_FULL_ERROR };
+    return {
+      ok: !error,
+      full: error === ACTIVITY_FULL_ERROR,
+      waiverRequired,
+      error,
+    };
   }
 
   async function handleLeave(activityId: string): Promise<boolean> {
@@ -229,6 +236,7 @@ export default function PersonalFeed({
                         setSelectedId((prev) => (prev === a.id ? null : a.id))
                       }
                       onJoin={() => handleJoin(a.id)}
+                      participantWaiverAccepted={participantWaiverAccepted}
                       showHostedBy={a.creator_id !== hostId}
                     />
                   </div>
@@ -269,6 +277,7 @@ export default function PersonalFeed({
                           setSelectedId((prev) => (prev === a.id ? null : a.id))
                         }
                         onJoin={() => handleJoin(a.id)}
+                        participantWaiverAccepted={participantWaiverAccepted}
                         showHostedBy={a.creator_id !== hostId}
                       />
                     ))}
@@ -296,6 +305,7 @@ export default function PersonalFeed({
                   activity={selectedActivity}
                   userId={userId}
                   onJoin={() => handleJoin(selectedActivity.id)}
+                  participantWaiverAccepted={participantWaiverAccepted}
                   onLeave={() => handleLeave(selectedActivity.id)}
                   onDismiss={() => setSelectedId(null)}
                 />

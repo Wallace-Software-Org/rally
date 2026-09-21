@@ -166,6 +166,50 @@ export type Database = {
         }
         Relationships: []
       }
+      waiver_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          initials: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+          version: number
+          waiver_text: string
+          waiver_type: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          initials: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+          version: number
+          waiver_text: string
+          waiver_type: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          initials?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+          version?: number
+          waiver_text?: string
+          waiver_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiver_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

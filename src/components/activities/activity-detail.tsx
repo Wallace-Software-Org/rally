@@ -9,7 +9,7 @@ const ActivityMiniMap = dynamic(
   () => import("@/components/map/activity-mini-map"),
   { ssr: false },
 );
-import type { ActivityDetail } from "@/types";
+import type { ActivityDetail, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import { useForcedFull } from "@/hooks/use-forced-full";
@@ -18,6 +18,7 @@ import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import GroupChatModal from "@/components/activities/group-chat-modal";
+import JoinConfirmModal from "@/components/activities/join-confirm-modal";
 import BackButton from "@/components/ui/back-button";
 import Avatar from "@/components/ui/avatar";
 import { EditIcon } from "@/components/ui/icons";
@@ -256,14 +257,24 @@ function LocationButton({
 export default function ActivityDetailView({
   activity,
   userId,
+  participantWaiverAccepted,
   showPostedBanner: initialShowPostedBanner = false,
-  justJoined = false,
+  autoOpenJoin = false,
+  needsProfileSetup = false,
   viewerProfile = null,
 }: {
   activity: ActivityDetail;
   userId: string | null;
+  // Whether the viewer has accepted the participant waiver at the current
+  // version, as the server page saw it. Decides which join modal opens.
+  participantWaiverAccepted: boolean;
   showPostedBanner?: boolean;
-  justJoined?: boolean;
+  // Landed here from the logged-out quick-join OAuth flow (?join=true): open the
+  // join modal instead of joining silently.
+  autoOpenJoin?: boolean;
+  // The viewer's profile still needs setup; after a quick-join the "You're in"
+  // banner nudges them to finish it.
+  needsProfileSetup?: boolean;
   viewerProfile?: {
     id: string;
     full_name: string | null;
@@ -307,7 +318,19 @@ export default function ActivityDetailView({
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
   );
-  const [showJustJoinedBanner, setShowJustJoinedBanner] = useState(justJoined);
+  const [showJustJoinedBanner, setShowJustJoinedBanner] = useState(false);
+  // Quick-join lands here with ?join=true: open the join modal right away, but
+  // only when there is actually something to join.
+  const [showJoinModal, setShowJoinModal] = useState(
+    () =>
+      autoOpenJoin &&
+      userId !== null &&
+      userId !== activity.creator_id &&
+      !initiallyJoined &&
+      activity.status !== "cancelled" &&
+      (activity.max_participants === null ||
+        activity.participants.length < activity.max_participants),
+  );
 
   useEffect(() => {
     if (!leaveConfirm) return;
@@ -339,16 +362,18 @@ export default function ActivityDetailView({
     return () => window.removeEventListener("pagehide", hidePostedBanner);
   }, [initialShowPostedBanner]);
 
+  // Strip ?join=true once it has been acted on, so a refresh or a shared copy of
+  // the URL does not reopen the modal.
   useEffect(() => {
-    if (!justJoined) return;
+    if (!autoOpenJoin) return;
     const url = new URL(window.location.href);
-    url.searchParams.delete("joined");
+    url.searchParams.delete("join");
     window.history.replaceState(
       window.history.state,
       "",
       `${url.pathname}${url.search}${url.hash}`,
     );
-  }, [justJoined]);
+  }, [autoOpenJoin]);
 
   const isHost = userId === activity.creator_id;
   const viewerCanSeeProfiles = isHost || isJoined;
@@ -401,11 +426,16 @@ export default function ActivityDetailView({
     ? activity.skill_level.charAt(0).toUpperCase() +
       activity.skill_level.slice(1)
     : "All levels";
-  async function handleJoin() {
-    if (!userId || joining || isJoined) return;
+  // The join itself, run by the join modal on confirm. Full handling is exactly
+  // what it was before the modal existed.
+  async function handleJoin(): Promise<JoinResult> {
+    if (!userId || joining) return { ok: false, full: false };
+    // Joined elsewhere while the modal was open (realtime): nothing left to do.
+    if (isJoined) return { ok: true, full: false };
     setJoining(true);
-    const { error } = await joinActivity(activity.id);
-    if (error === ACTIVITY_FULL_ERROR) {
+    const { error, waiverRequired } = await joinActivity(activity.id);
+    const full = error === ACTIVITY_FULL_ERROR;
+    if (full) {
       // Lost a simultaneous join: reflect Full at once, then re-seed from the
       // server snapshot (which includes the winner's row).
       setForcedFull(true);
@@ -413,6 +443,8 @@ export default function ActivityDetailView({
     }
     if (!error) {
       setIsJoined(true);
+      // Quick-join users arrive with a bare profile; nudge them to finish it.
+      if (autoOpenJoin && needsProfileSetup) setShowJustJoinedBanner(true);
       // Optimistically add the viewer to "Who's going" so their avatar appears
       // immediately. Prefer their original participant entry if they left this
       // session; otherwise build one from viewerProfile. addParticipant dedupes
@@ -434,6 +466,7 @@ export default function ActivityDetailView({
       }
     }
     setJoining(false);
+    return { ok: !error, full, waiverRequired, error };
   }
 
   async function handleLeave() {
@@ -514,7 +547,7 @@ export default function ActivityDetailView({
     </button>
   ) : (
     <button
-      onClick={handleJoin}
+      onClick={() => setShowJoinModal(true)}
       disabled={joining}
       className="btn-tier-1 cursor-pointer w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active disabled:opacity-60"
     >
@@ -1003,6 +1036,17 @@ export default function ActivityDetailView({
       <AnimatePresence>
         {showShareModal && (
           <ShareStoryModal onClose={() => setShowShareModal(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showJoinModal && (
+          <JoinConfirmModal
+            activity={activity}
+            waiverAccepted={participantWaiverAccepted}
+            onJoin={handleJoin}
+            onClose={() => setShowJoinModal(false)}
+          />
         )}
       </AnimatePresence>
 

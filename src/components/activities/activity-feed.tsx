@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import type { ActivityWithParticipants } from "@/types";
+import type { ActivityWithParticipants, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 import { updateUserLocation } from "@/lib/actions/profiles";
@@ -52,12 +52,16 @@ const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
 export default function ActivityFeed({
   activities,
   userId,
+  participantWaiverAccepted,
   userActivities = [],
   profileLat = null,
   profileLng = null,
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
+  // Whether the viewer has accepted the participant waiver at the current
+  // version. Threaded to every join surface so each opens the right modal.
+  participantWaiverAccepted: boolean;
   userActivities?: string[];
   profileLat?: number | null;
   profileLng?: number | null;
@@ -276,9 +280,7 @@ export default function ActivityFeed({
 
   // Optimistic updates: local state is mutated immediately so the UI responds instantly.
   // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
-  async function handleJoin(
-    activityId: string,
-  ): Promise<{ ok: boolean; full: boolean }> {
+  async function handleJoin(activityId: string): Promise<JoinResult> {
     if (!userId || joined.has(activityId) || joining.has(activityId)) {
       return { ok: false, full: false };
     }
@@ -286,7 +288,7 @@ export default function ActivityFeed({
     setJoining((prev) => new Set(prev).add(activityId));
     setJoined((prev) => new Set(prev).add(activityId));
 
-    const { error } = await joinActivity(activityId);
+    const { error, waiverRequired } = await joinActivity(activityId);
 
     if (error) {
       setJoined((prev) => {
@@ -302,7 +304,12 @@ export default function ActivityFeed({
       return next;
     });
 
-    return { ok: !error, full: error === ACTIVITY_FULL_ERROR };
+    return {
+      ok: !error,
+      full: error === ACTIVITY_FULL_ERROR,
+      waiverRequired,
+      error,
+    };
   }
 
   async function handleLeave(activityId: string): Promise<boolean> {
@@ -443,6 +450,7 @@ export default function ActivityFeed({
                           setSelectedId((prev) => (prev === a.id ? null : a.id))
                         }
                         onJoin={() => handleJoin(a.id)}
+                        participantWaiverAccepted={participantWaiverAccepted}
                       />
                     </div>
                   ))}
@@ -499,6 +507,7 @@ export default function ActivityFeed({
                               )
                             }
                             onJoin={() => handleJoin(a.id)}
+                            participantWaiverAccepted={participantWaiverAccepted}
                           />
                         ))}
                       </div>
@@ -526,6 +535,7 @@ export default function ActivityFeed({
                       activity={selectedActivity}
                       userId={userId}
                       onJoin={() => handleJoin(selectedActivity.id)}
+                      participantWaiverAccepted={participantWaiverAccepted}
                       onLeave={() => handleLeave(selectedActivity.id)}
                       onDismiss={() => setSelectedId(null)}
                     />
@@ -559,6 +569,7 @@ export default function ActivityFeed({
                     setSelectedId((prev) => (prev === id ? null : id))
                   }
                   onJoin={handleJoin}
+                  participantWaiverAccepted={participantWaiverAccepted}
                   locationBar={locationBar}
                   locationActivities={activeLocation?.activities ?? null}
                 />
@@ -584,6 +595,7 @@ export default function ActivityFeed({
                       activity={selectedActivity}
                       userId={userId}
                       onJoin={() => handleJoin(selectedActivity.id)}
+                      participantWaiverAccepted={participantWaiverAccepted}
                       onLeave={() => handleLeave(selectedActivity.id)}
                       onDismiss={() => setSelectedId(null)}
                     />

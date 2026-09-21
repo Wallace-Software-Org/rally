@@ -1,4 +1,6 @@
+import { createClient } from "@/lib/supabase/server";
 import { createActivity } from "@/lib/actions/activities";
+import { hasAcceptedWaiver } from "@/lib/queries/waivers";
 import ActivityForm, {
   type ActivityFormInitialData,
   type ActivityFormSubmitData,
@@ -43,13 +45,23 @@ export default async function NewActivityPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
+  // Whether the poster has already accepted the host waiver; if not, submitting
+  // the form opens the host modal first. A signed-out visitor just reads as not
+  // accepted (createActivity requires a user regardless).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const hostWaiverAccepted = user
+    ? await hasAcceptedWaiver(supabase, user.id, "host")
+    : false;
   const initialData = buildInitialData(params);
 
   async function handleSubmit(data: ActivityFormSubmitData) {
     "use server";
 
-    const { error } = await createActivity(data);
-    if (error) return { error };
+    const { error, waiverRequired } = await createActivity(data);
+    if (error) return { error, waiverRequired };
   }
 
   return (
@@ -58,6 +70,7 @@ export default async function NewActivityPage({
       <ActivityForm
         mode="new"
         initialData={initialData}
+        hostWaiverAccepted={hostWaiverAccepted}
         onSubmit={handleSubmit}
       />
     </>
