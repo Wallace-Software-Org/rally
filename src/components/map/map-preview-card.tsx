@@ -295,7 +295,7 @@ export default function MapPreviewCard({
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showJoinModal && (
+        {showJoinModal && !isJoined && (
           <JoinConfirmModal
             activity={activity}
             waiverAccepted={participantWaiverAccepted}

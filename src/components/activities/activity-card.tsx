@@ -381,7 +381,7 @@ export function ActivityCardDesktop({
   // div, and clicks or Enter inside the modal must not reach its handlers.
   const joinModal = (
     <AnimatePresence>
-      {showJoinModal && (
+      {showJoinModal && !isJoinedLive && (
         <JoinConfirmModal
           activity={activity}
           waiverAccepted={participantWaiverAccepted}

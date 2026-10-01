@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import type { ActivityWithParticipants, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
@@ -32,6 +33,7 @@ export default function PersonalFeed({
   hostId: string;
   host: HostSummary;
 }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Coordinate key of the place whose grouped pin was tapped, or null. A host's
   // repeat series shares a venue, so this is the common case here.
@@ -142,6 +144,8 @@ export default function PersonalFeed({
         next.delete(activityId);
         return next;
       });
+    } else {
+      router.refresh();
     }
 
     setJoining((prev) => {
@@ -171,6 +175,8 @@ export default function PersonalFeed({
 
     if (error) {
       setJoined((prev) => new Set(prev).add(activityId));
+    } else {
+      router.refresh();
     }
 
     return !error;

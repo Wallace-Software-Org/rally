@@ -287,8 +287,11 @@ export default function ActivityDetailView({
     (p) => p.user_id === userId,
   );
   const router = useRouter();
-  const [isJoined, setIsJoined] = useState(initiallyJoined);
-  // Live participant list drives both the "Who's going" avatars and the count.
+  // Live participant list drives the "Who's going" avatars, the count, AND the
+  // CTA's joined state (below), so the two can never disagree. It re-seeds from
+  // the server whenever the seed's membership changes (a router.refresh, or a
+  // page restored from the client cache and then refreshed), which is exactly
+  // when a useState copy of "joined" taken at mount would go stale.
   // Remote joins/leaves stream in via realtime; the acting user's own join or
   // leave is applied optimistically through the returned mutators (deduped by
   // user_id so the realtime echo of their own change does not double-add).
@@ -302,6 +305,8 @@ export default function ActivityDetailView({
     initialParticipants: activity.participants,
     profileColumns: "full_name, avatar_url, instagram_handle, username",
   });
+  const isJoined =
+    userId !== null && participants.some((p) => p.user_id === userId);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
@@ -442,7 +447,6 @@ export default function ActivityDetailView({
       router.refresh();
     }
     if (!error) {
-      setIsJoined(true);
       // Quick-join users arrive with a bare profile; nudge them to finish it.
       if (autoOpenJoin && needsProfileSetup) setShowJustJoinedBanner(true);
       // Optimistically add the viewer to "Who's going" so their avatar appears
@@ -452,18 +456,25 @@ export default function ActivityDetailView({
       const original = activity.participants.find((p) => p.user_id === userId);
       if (original) {
         addParticipant(original);
-      } else if (viewerProfile) {
+      } else {
+        // The CTA derives from this list, so the viewer must always be added
+        // here, profile or not; the refresh below fills in the canonical row.
         addParticipant({
           id: `viewer-${userId}`,
           user_id: userId,
-          profiles: {
-            full_name: viewerProfile.full_name ?? "",
-            avatar_url: viewerProfile.avatar_url,
-            instagram_handle: null,
-            username: viewerProfile.username,
-          },
+          profiles: viewerProfile
+            ? {
+                full_name: viewerProfile.full_name ?? "",
+                avatar_url: viewerProfile.avatar_url,
+                instagram_handle: null,
+                username: viewerProfile.username,
+              }
+            : null,
         });
       }
+      // Re-seed from the server so this page, and the cache entry a back
+      // navigation would reuse, reflect the join.
+      router.refresh();
     }
     setJoining(false);
     return { ok: !error, full, waiverRequired, error };
@@ -474,8 +485,8 @@ export default function ActivityDetailView({
     setLeaving(true);
     const { error } = await leaveActivity(activity.id);
     if (!error) {
-      setIsJoined(false);
       removeParticipantByUserId(userId);
+      router.refresh();
     }
     setLeaving(false);
     setLeaveConfirm(false);
@@ -1039,8 +1050,10 @@ export default function ActivityDetailView({
         )}
       </AnimatePresence>
 
+      {/* Never offered to someone already going (the live list is the source of
+          truth), whether opened by the button, autoOpenJoin, or a stale ?join=true. */}
       <AnimatePresence>
-        {showJoinModal && (
+        {showJoinModal && !isJoined && !isHost && (
           <JoinConfirmModal
             activity={activity}
             waiverAccepted={participantWaiverAccepted}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ActivityWithParticipants, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
@@ -79,6 +79,7 @@ export default function ActivityFeed({
   // URL mirroring: seed view + Activities from the query string on first client
   // render (lazy, so params paint immediately with no default-state flash), then
   // state is the single source of truth. Only these two are mirrored back below.
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [urlSeed] = useState(() =>
@@ -278,8 +279,10 @@ export default function ActivityFeed({
     el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selectedId]);
 
-  // Optimistic updates: local state is mutated immediately so the UI responds instantly.
-  // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
+  // Optimistic updates: local state is mutated immediately so the UI responds
+  // instantly, then a successful join or leave refreshes the route so the server
+  // snapshot (and the router cache entry a back navigation would reuse) catches
+  // up. The refresh re-seeds props only; the local joined/joining sets persist.
   async function handleJoin(activityId: string): Promise<JoinResult> {
     if (!userId || joined.has(activityId) || joining.has(activityId)) {
       return { ok: false, full: false };
@@ -296,6 +299,8 @@ export default function ActivityFeed({
         next.delete(activityId);
         return next;
       });
+    } else {
+      router.refresh();
     }
 
     setJoining((prev) => {
@@ -325,6 +330,8 @@ export default function ActivityFeed({
 
     if (error) {
       setJoined((prev) => new Set(prev).add(activityId));
+    } else {
+      router.refresh();
     }
 
     return !error;

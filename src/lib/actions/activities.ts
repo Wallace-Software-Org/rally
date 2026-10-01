@@ -45,6 +45,18 @@ function normalizeSport(sport: string): string {
   return key;
 }
 
+// Joining or leaving changes joined state everywhere it is shown, and a stale
+// client router cache (staleTimes, and back/forward which reuses cached pages
+// outright) would otherwise replay the pre-change page. Invalidate the detail
+// page plus every listing that shows the viewer's joined state: the feed, profile
+// hosting/attending, and personal feeds.
+function revalidateJoinedState(activityId: string) {
+  revalidatePath("/");
+  revalidatePath(`/activity/${activityId}`);
+  revalidatePath("/profile/[username]", "page");
+  revalidatePath("/feed/[username]", "page");
+}
+
 export async function joinActivity(activityId: string): Promise<{
   ok: boolean;
   error: string | null;
@@ -80,6 +92,7 @@ export async function joinActivity(activityId: string): Promise<{
           console.error("[email] join notification failed", err);
         }
       });
+      revalidateJoinedState(activityId);
       return { ok: true, error: null };
     case "full":
       return { ok: false, error: ACTIVITY_FULL_ERROR };
@@ -119,6 +132,8 @@ export async function leaveActivity(
       }
     });
   }
+
+  if (!error) revalidateJoinedState(activityId);
 
   return { error: error?.message ?? null };
 }

@@ -60,8 +60,14 @@ export default async function ActivityPage({
 
   // Quick-join: the user just finished OAuth from a shared activity link. They
   // land here with ?join=true and the join modal opens (the first-time waiver
-  // or the short confirmation). Nothing is joined until they confirm it.
-  const autoOpenJoin = joinParam === "true" && userId !== null;
+  // or the short confirmation). Nothing is joined until they confirm it. Never
+  // for someone already going (or hosting): a stale ?join=true in history must
+  // not reopen a join they have already done.
+  const alreadyGoing =
+    userId !== null &&
+    (userId === activity.creator_id ||
+      activity.participants.some((p) => p.user_id === userId));
+  const autoOpenJoin = joinParam === "true" && userId !== null && !alreadyGoing;
 
   // Fetch the viewer's profile once when authenticated and reuse it for both
   // the onboarding banner check and the optimistic Who's going avatar.

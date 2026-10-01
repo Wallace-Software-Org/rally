@@ -105,6 +105,9 @@ Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets c
 - Full rejections return ACTIVITY_FULL_ERROR. Every join surface (feed card, map popup, detail page) consumes the { ok, full } result: flip to Full via useForcedFull and call router.refresh() so all clients re-seed and converge.
 - useForcedFull (src/hooks/use-forced-full.ts): bridge, not latch. Render-time clear once the live count reaches max; a later leave then reopens naturally. Use it for any new join surface.
 - useRealtimeParticipants: syncs on seed user_id membership, dedupes by user_id, realtime INSERT replaces the optimistic entry. Dedupe with the shared dedupeByUserId anywhere a participant list renders.
+- joinActivity and leaveActivity call revalidatePath on success (detail, feed, profile, personal feed), and clients call router.refresh() after a successful join or leave. Required: browser back/forward reuses cached pages regardless of staleTimes, so without it back navigation replays the pre-join page.
+- Joined state on a surface derives from the live participant list (current user id present), never from a useState copy of the server seed taken at mount. Otherwise a fresh seed after mount updates Who's going but not the CTA.
+- The join modal never opens for someone already going: the page's autoOpenJoin excludes participants and the host, and the view only renders the modal while the live list does not include the viewer.
 
 ## Waivers (conventions)
 

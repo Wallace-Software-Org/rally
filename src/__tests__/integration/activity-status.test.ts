@@ -30,6 +30,7 @@ vi.mock("next/server", () => ({ after: vi.fn() }));
 
 import {
   joinActivity,
+  leaveActivity,
   createActivity,
   updateActivity,
   cancelActivity,
@@ -118,6 +119,71 @@ describe("joinActivity (atomic capacity RPC)", () => {
     const res = await joinActivity("a1");
     expect(res.error).toBe("Not authenticated");
     expect(mockRpc).not.toHaveBeenCalled();
+  });
+});
+
+// The client router cache (and back/forward, which reuses cached pages) would
+// replay a pre-join page unless the action invalidates it.
+describe("joinActivity and leaveActivity invalidate joined state", () => {
+  const paths = () => revalidatePath.mock.calls.map((c) => c.join("|"));
+  const expectedPaths = [
+    "/",
+    "/activity/a1",
+    "/profile/[username]|page",
+    "/feed/[username]|page",
+  ];
+
+  it("revalidates the detail page and every listing after a successful join", async () => {
+    withAcceptedWaivers("participant");
+    mockRpc.mockResolvedValue({ data: "ok", error: null });
+
+    await joinActivity("a1");
+
+    expect(paths()).toEqual(expect.arrayContaining(expectedPaths));
+  });
+
+  it.each([
+    ["full", { data: "full", error: null }],
+    ["closed", { data: "closed", error: null }],
+    ["an rpc error", { data: null, error: { message: "boom" } }],
+  ])("does not revalidate when the join fails (%s)", async (_label, rpc) => {
+    withAcceptedWaivers("participant");
+    mockRpc.mockResolvedValue(rpc);
+
+    await joinActivity("a1");
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("does not revalidate when the waiver blocks the join", async () => {
+    withAcceptedWaivers();
+    await joinActivity("a1");
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  function mockLeave(result: { data: unknown; error: unknown }) {
+    const select = vi.fn(() => Promise.resolve(result));
+    mockFrom.mockReturnValue({
+      delete: () => ({ eq: () => ({ eq: () => ({ select }) }) }),
+    });
+  }
+
+  it("revalidates the detail page and every listing after a successful leave", async () => {
+    mockLeave({ data: [{ id: "row-1" }], error: null });
+
+    const res = await leaveActivity("a1");
+
+    expect(res.error).toBeNull();
+    expect(paths()).toEqual(expect.arrayContaining(expectedPaths));
+  });
+
+  it("does not revalidate when the leave fails", async () => {
+    mockLeave({ data: null, error: { message: "boom" } });
+
+    const res = await leaveActivity("a1");
+
+    expect(res.error).toBe("boom");
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });
 
