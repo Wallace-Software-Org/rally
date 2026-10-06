@@ -72,7 +72,8 @@ function getAvatarParticipants(
 
 // ── CardAction ────────────────────────────────────────────────────────────────
 // Shared CTA pill used by both card variants. Priority order:
-//   logged-out → Sign in  |  host → null  |  joined → Going ✓  |  full → Full  |  → Join
+//   logged-out → Join (starts sign in via Google, then opens the join modal)  |
+//   host → null  |  joined → Going ✓  |  full → Full  |  → Join
 
 function CardAction({
   activity,
@@ -108,7 +109,7 @@ function CardAction({
         }}
         className={`${pill} border border-brand-border text-brand-muted hover:border-brand-teal hover:text-brand-teal transition-colors duration-200`}
       >
-        Sign in
+        Join
       </button>
     );
   }

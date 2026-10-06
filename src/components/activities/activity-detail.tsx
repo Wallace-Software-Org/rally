@@ -543,10 +543,10 @@ export default function ActivityDetailView({
         href={quickJoinLoginHref(activity.id)}
         className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
       >
-        Sign in to join
+        Join activity
       </Link>
       <p className="text-xs text-center text-brand-muted">
-        Sign in with Google to join.
+        You will log in with Google.
       </p>
     </div>
   ) : isFull ? (

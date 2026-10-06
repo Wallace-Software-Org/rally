@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActivityById } from "@/lib/queries/activities";
 import { getProfileById } from "@/lib/queries/profiles";
 import { hasAcceptedWaiver } from "@/lib/queries/waivers";
+import { activityLoginHref } from "@/lib/utils/activity-participants";
 import ActivityDetailView from "@/components/activities/activity-detail";
 
 export default async function ActivityPage({
@@ -33,23 +34,24 @@ export default async function ActivityPage({
   if (activity === "private") {
     // Private is unlisted, not invite-only: any authenticated user with the link
     // can view. getActivityById only returns this sentinel for logged-out
-    // visitors, so the gate is purely a prompt to log in and then view.
+    // visitors, so the gate is purely a prompt to log in and then view. Both
+    // links carry the activity as the login return path (the same helper the
+    // quick-join flow uses) so OAuth lands back here, not on the feed.
+    const loginHref = activityLoginHref(id);
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center gap-3">
         <p className="text-base font-medium text-brand-text">
           This activity is private.
         </p>
-        <p className="text-sm text-brand-muted">
-          Log in to see if you have access.
-        </p>
+        <p className="text-sm text-brand-muted">Log in to view it.</p>
         <Link
-          href="/login"
+          href={loginHref}
           className="mt-1 inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
         >
           Log in
         </Link>
         <Link
-          href="/login"
+          href={loginHref}
           className="text-sm text-brand-muted hover:text-brand-text transition-colors duration-200"
         >
           New here? Sign up

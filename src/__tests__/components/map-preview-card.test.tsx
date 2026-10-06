@@ -358,8 +358,8 @@ describe("MapPreviewCard", () => {
       userId: null,
     });
 
-    expect(screen.getByRole("link", { name: /sign in to join/i })).toBeInTheDocument();
-    expect(screen.getByText("Sign in with Google to join.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /join activity/i })).toBeInTheDocument();
+    expect(screen.getByText("You will log in with Google.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /view details/i })).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /share to story/i }),

@@ -89,11 +89,13 @@ export default function WaiverAgreement({
         </p>
         <WaiverText text={waiver.text} />
       </div>
-      {!hasReadToBottom && (
-        <p className="-mt-1 text-xs text-brand-muted">
-          Scroll to read the full agreement.
-        </p>
-      )}
+      {/* Same element either way (not conditionally rendered), so the text swap
+          never shrinks the modal or shifts the layout below it. */}
+      <p className="-mt-1 text-xs text-brand-muted">
+        {hasReadToBottom
+          ? "You have read the full agreement."
+          : "Scroll to read the full agreement."}
+      </p>
 
       <label
         className={`flex items-start gap-3 ${hasReadToBottom ? "cursor-pointer" : "cursor-not-allowed"}`}

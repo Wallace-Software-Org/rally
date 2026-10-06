@@ -4,7 +4,8 @@ import WaiverAgreement from "@/components/activities/waiver-agreement";
 import { WAIVERS } from "@/lib/waivers";
 
 const waiver = WAIVERS.participant;
-const HINT = "Scroll to read the full agreement.";
+const GATED_HINT = "Scroll to read the full agreement.";
+const READ_HINT = "You have read the full agreement.";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -46,6 +47,7 @@ function renderAgreement() {
     box: screen.getByRole("region", { name: waiver.title }),
     checkbox: () => screen.getByRole("checkbox"),
     initials: () => screen.getByLabelText(/sign with initials/i),
+    hint: () => screen.getByText(/agreement\.$/),
   };
 }
 
@@ -60,49 +62,54 @@ describe("WaiverAgreement scroll gate", () => {
 
     expect(checkbox()).toBeDisabled();
     expect(initials()).toBeDisabled();
-    expect(screen.getByText(HINT)).toBeInTheDocument();
+    expect(screen.getByText(GATED_HINT)).toBeInTheDocument();
 
     // Not yet at the bottom (60px short, tolerance is a few px).
     scrollTo(box, 140);
     expect(checkbox()).toBeDisabled();
     expect(initials()).toBeDisabled();
-    expect(screen.getByText(HINT)).toBeInTheDocument();
+    expect(screen.getByText(GATED_HINT)).toBeInTheDocument();
   });
 
-  it("enables both controls and removes the hint once scrolled to the bottom (within tolerance)", () => {
+  it("enables both controls and swaps the hint to the read state once scrolled to the bottom (within tolerance)", () => {
     withScrollGeometry({ scrollHeight: 400, clientHeight: 200 });
-    const { box, checkbox, initials } = renderAgreement();
+    const { box, checkbox, initials, hint } = renderAgreement();
+    const hintEl = hint();
 
     // 2px short of the exact bottom: within the tolerance.
     scrollTo(box, 198);
 
     expect(checkbox()).toBeEnabled();
     expect(initials()).toBeEnabled();
-    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    // Same element, text swapped, not removed and replaced.
+    expect(hint()).toBe(hintEl);
+    expect(hintEl).toHaveTextContent(READ_HINT);
+    expect(screen.queryByText(GATED_HINT)).not.toBeInTheDocument();
   });
 
-  it("enables both controls immediately on mount when the text does not overflow the box", () => {
+  it("enables both controls immediately on mount when the text does not overflow the box, showing the read hint from the start", () => {
     withScrollGeometry({ scrollHeight: 200, clientHeight: 200 });
-    const { checkbox, initials } = renderAgreement();
+    const { checkbox, initials, hint } = renderAgreement();
 
     // No scroll ever happened, yet nothing is gated.
     expect(checkbox()).toBeEnabled();
     expect(initials()).toBeEnabled();
-    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    expect(hint()).toHaveTextContent(READ_HINT);
+    expect(screen.queryByText(GATED_HINT)).not.toBeInTheDocument();
   });
 
   it("enables immediately on mount with jsdom's default (unmocked) zero-size box", () => {
     // No withScrollGeometry at all: scrollHeight/clientHeight/scrollTop all read 0,
     // which is indistinguishable from "already at the bottom".
-    const { checkbox, initials } = renderAgreement();
+    const { checkbox, initials, hint } = renderAgreement();
     expect(checkbox()).toBeEnabled();
     expect(initials()).toBeEnabled();
-    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    expect(hint()).toHaveTextContent(READ_HINT);
   });
 
-  it("stays enabled after scrolling back up to the top", () => {
+  it("stays enabled after scrolling back up to the top, hint staying in the read state", () => {
     withScrollGeometry({ scrollHeight: 500, clientHeight: 200 });
-    const { box, checkbox, initials } = renderAgreement();
+    const { box, checkbox, initials, hint } = renderAgreement();
 
     scrollTo(box, 300); // exactly at the bottom
     expect(checkbox()).toBeEnabled();
@@ -110,7 +117,8 @@ describe("WaiverAgreement scroll gate", () => {
     scrollTo(box, 0); // back to the top
     expect(checkbox()).toBeEnabled();
     expect(initials()).toBeEnabled();
-    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    expect(hint()).toHaveTextContent(READ_HINT);
+    expect(screen.queryByText(GATED_HINT)).not.toBeInTheDocument();
   });
 
   it("does not re-lock once checked and filled in, even after scrolling back up", () => {
@@ -138,7 +146,23 @@ describe("WaiverAgreement scroll gate", () => {
 
     expect(checkbox()).toBeEnabled();
     expect(initials()).toBeEnabled();
-    expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    expect(screen.queryByText(GATED_HINT)).not.toBeInTheDocument();
+  });
+
+  it("keeps the hint as one element across the gate, swapping only its text (no layout shift)", () => {
+    withScrollGeometry({ scrollHeight: 400, clientHeight: 200 });
+    const { box, hint } = renderAgreement();
+    const hintEl = hint();
+    const originalClassName = hintEl.className;
+
+    expect(hintEl).toHaveTextContent(GATED_HINT);
+
+    scrollTo(box, 200);
+
+    // Same node, same classes (and so the same height), different text.
+    expect(hint()).toBe(hintEl);
+    expect(hintEl.className).toBe(originalClassName);
+    expect(hintEl).toHaveTextContent(READ_HINT);
   });
 
   it("keeps the Confirm button disabled while the scroll gate has not opened, even if checked and signed", () => {

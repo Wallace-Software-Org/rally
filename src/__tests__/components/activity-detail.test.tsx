@@ -271,13 +271,13 @@ describe("ActivityDetailView — rendering", () => {
 // ── Unauthenticated ───────────────────────────────────────────────────────────
 
 describe("ActivityDetailView — unauthenticated", () => {
-  it('shows "Sign in to join" link instead of a Join button', () => {
+  it('shows a "Join activity" link, not a Join button, when logged out', () => {
     renderUnauthenticated();
-    const links = screen.getAllByRole("link", { name: /sign in to join/i });
+    const links = screen.getAllByRole("link", { name: /join activity/i });
     expect(links.length).toBeGreaterThan(0);
   });
 
-  it("does not show Join button when userId is null", () => {
+  it("does not show a Join button (it's a link, pre-auth) when userId is null", () => {
     renderUnauthenticated();
     expect(screen.queryByRole("button", { name: /join activity/i })).not.toBeInTheDocument();
   });
@@ -286,9 +286,9 @@ describe("ActivityDetailView — unauthenticated", () => {
     renderUnauthenticated({ external_link: "https://example.com/register" });
 
     expect(
-      screen.getAllByRole("link", { name: /sign in to join/i }).length,
+      screen.getAllByRole("link", { name: /join activity/i }).length,
     ).toBeGreaterThan(0);
-    expect(screen.getAllByText("Sign in with Google to join.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("You will log in with Google.").length).toBeGreaterThan(0);
     expect(
       screen.queryByRole("link", { name: /register here/i }),
     ).not.toBeInTheDocument();

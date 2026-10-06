@@ -30,7 +30,14 @@ export async function GET(request: NextRequest) {
           .eq('id', user.id)
           .maybeSingle()
 
-        const isQuickJoin = join === 'true' && typeof next === 'string' && next.startsWith('/activity/')
+        // `next` is only ever trusted when it points at an activity (set by
+        // activityLoginHref, src/lib/utils/activity-participants.ts): the
+        // quick-join flow (join=true, auto-opens the join modal) and the
+        // private-activity gate (plain view) both set it this way, so this is
+        // the one check that returns either flow to the right activity instead
+        // of the feed.
+        const isActivityReturn = typeof next === 'string' && next.startsWith('/activity/')
+        const isQuickJoin = join === 'true' && isActivityReturn
 
         if (!profile) {
           if (isQuickJoin) {
@@ -52,11 +59,18 @@ export async function GET(request: NextRequest) {
             })
             return NextResponse.redirect(new URL(`${next}?join=true`, origin))
           }
+          // A brand new user from a plain activity return (e.g. the private
+          // gate) still completes onboarding first; there is no activity to
+          // return to yet without a profile.
           return NextResponse.redirect(new URL('/onboarding', origin))
         }
 
         if (isQuickJoin) {
           return NextResponse.redirect(new URL(`${next}?join=true`, origin))
+        }
+
+        if (isActivityReturn) {
+          return NextResponse.redirect(new URL(next as string, origin))
         }
       }
 
