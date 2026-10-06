@@ -8,6 +8,8 @@ import { nextWeeklyOccurrence } from "@/lib/utils/next-occurrence";
 import { validateActivityInput } from "@/lib/utils/activity-validation";
 import { requireUser } from "@/lib/actions/require-user";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
+import { hasAcceptedWaiver } from "@/lib/queries/waivers";
+import { WAIVER_REQUIRED_ERROR } from "@/lib/waivers";
 import {
   notifyActivityCancelled,
   notifyParticipantJoined,
@@ -43,18 +45,40 @@ function normalizeSport(sport: string): string {
   return key;
 }
 
-export async function joinActivity(
-  activityId: string,
-): Promise<{ error: string | null }> {
+// Joining or leaving changes joined state everywhere it is shown, and a stale
+// client router cache (staleTimes, and back/forward which reuses cached pages
+// outright) would otherwise replay the pre-change page. Invalidate the detail
+// page plus every listing that shows the viewer's joined state: the feed, profile
+// hosting/attending, and personal feeds.
+function revalidateJoinedState(activityId: string) {
+  revalidatePath("/");
+  revalidatePath(`/activity/${activityId}`);
+  revalidatePath("/profile/[username]", "page");
+  revalidatePath("/feed/[username]", "page");
+}
+
+export async function joinActivity(activityId: string): Promise<{
+  ok: boolean;
+  error: string | null;
+  waiverRequired?: boolean;
+}> {
   const { supabase, user, error: authError } = await requireUser();
-  if (authError) return { error: authError };
+  if (authError) return { ok: false, error: authError };
+
+  // The participant waiver gates every join, checked here (not just in the UI) so
+  // a stale client or a direct call cannot skip it. Checked against the current
+  // version, so a version bump sends everyone back through the first-time modal.
+  const accepted = await hasAcceptedWaiver(supabase, user.id, "participant");
+  if (!accepted) {
+    return { ok: false, error: WAIVER_REQUIRED_ERROR, waiverRequired: true };
+  }
 
   // Atomic capacity + status check server-side (see join_activity RPC). The
   // function locks the activity row so concurrent joins can't exceed the cap.
   const { data, error } = await supabase.rpc("join_activity", {
     p_activity_id: activityId,
   });
-  if (error) return { error: error.message };
+  if (error) return { ok: false, error: error.message };
 
   switch (data) {
     case "ok":
@@ -68,15 +92,16 @@ export async function joinActivity(
           console.error("[email] join notification failed", err);
         }
       });
-      return { error: null };
+      revalidateJoinedState(activityId);
+      return { ok: true, error: null };
     case "full":
-      return { error: ACTIVITY_FULL_ERROR };
+      return { ok: false, error: ACTIVITY_FULL_ERROR };
     case "closed":
-      return { error: "This activity is no longer open" };
+      return { ok: false, error: "This activity is no longer open" };
     case "not_found":
-      return { error: "Activity not found" };
+      return { ok: false, error: "Activity not found" };
     default:
-      return { error: "Could not join this activity" };
+      return { ok: false, error: "Could not join this activity" };
   }
 }
 
@@ -108,6 +133,8 @@ export async function leaveActivity(
     });
   }
 
+  if (!error) revalidateJoinedState(activityId);
+
   return { error: error?.message ?? null };
 }
 
@@ -124,12 +151,21 @@ export async function createActivity(data: {
   location_name: string;
   lat: number | null;
   lng: number | null;
-}): Promise<{ error: string | null }> {
+}): Promise<{ error: string | null; waiverRequired?: boolean }> {
   const { supabase, user, error: authError } = await requireUser();
   if (authError) return { error: authError };
 
   const validationError = validateActivityInput(data, { requireFuture: true });
   if (validationError) return { error: validationError };
+
+  // The host waiver gates posting, against the current version. This covers the
+  // duplicate and repeat flows too, which post through this same action. The
+  // host's own auto-join below is a direct participants insert and deliberately
+  // does NOT require the participant waiver: the host waiver covers the host.
+  const hostAccepted = await hasAcceptedWaiver(supabase, user.id, "host");
+  if (!hostAccepted) {
+    return { error: WAIVER_REQUIRED_ERROR, waiverRequired: true };
+  }
 
   let externalLink: string | null;
   let sport: string;

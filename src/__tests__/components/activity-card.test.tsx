@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
+import { resetParticipantWaiverOverride } from "@/hooks/use-participant-waiver";
 import type { ActivityWithParticipants } from "@/types";
 
 const { refresh } = vi.hoisted(() => ({ refresh: vi.fn() }));
@@ -9,6 +16,17 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh }),
   usePathname: () => "/",
 }));
+
+// The join modal imports this server action; nothing here reaches it because the
+// waiver is treated as already accepted.
+vi.mock("@/lib/actions/waivers", () => ({ acceptWaiver: vi.fn() }));
+
+// Tapping Join on the card opens the join modal; the join itself runs when the
+// user confirms there.
+function confirmJoinInModal() {
+  const dialog = screen.getByRole("dialog");
+  fireEvent.click(within(dialog).getByRole("button", { name: "Join activity" }));
+}
 
 const mockActivity: ActivityWithParticipants = {
   id: "act-1",
@@ -33,6 +51,7 @@ const mockActivity: ActivityWithParticipants = {
 const base = {
   activity: mockActivity,
   userId: "user-123",
+  participantWaiverAccepted: true,
   isActive: false,
   showDetails: true,
   isJoined: false,
@@ -44,13 +63,18 @@ const base = {
 };
 
 describe("ActivityCardDesktop", () => {
-  beforeEach(() => refresh.mockClear());
+  beforeEach(() => {
+    refresh.mockClear();
+    // The "accepted" answer is shared client state; don't let one test leak it.
+    resetParticipantWaiverOverride();
+  });
 
   it("flips to Full when a join is rejected for capacity", async () => {
     const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
     render(<ActivityCardDesktop {...base} onJoin={onJoin} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
+    confirmJoinInModal();
 
     await waitFor(() =>
       expect(screen.getAllByText("Full").length).toBeGreaterThanOrEqual(1),
@@ -60,11 +84,41 @@ describe("ActivityCardDesktop", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not join on tap: it opens the join modal first", () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: true, full: false }));
+    render(<ActivityCardDesktop {...base} onJoin={onJoin} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    expect(
+      screen.getByRole("heading", { name: `Join ${mockActivity.title}?` }),
+    ).toBeInTheDocument();
+    expect(onJoin).not.toHaveBeenCalled();
+  });
+
+  it("opens the first-time waiver modal when the waiver is not accepted", () => {
+    const onJoin = vi.fn(() => Promise.resolve({ ok: true, full: false }));
+    render(
+      <ActivityCardDesktop
+        {...base}
+        participantWaiverAccepted={false}
+        onJoin={onJoin}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
+
+    expect(screen.getByText("Before you join")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(onJoin).not.toHaveBeenCalled();
+  });
+
   it("calls router.refresh on a full-rejected join", async () => {
     const onJoin = vi.fn(() => Promise.resolve({ ok: false, full: true }));
     render(<ActivityCardDesktop {...base} onJoin={onJoin} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
+    confirmJoinInModal();
 
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
@@ -90,6 +144,7 @@ describe("ActivityCardDesktop", () => {
 
     // A full-rejected join flips to Full via the override, before live catches up.
     fireEvent.click(screen.getByRole("button", { name: "Join" }));
+    confirmJoinInModal();
     await waitFor(() =>
       expect(
         screen.queryByRole("button", { name: "Join" }),
@@ -165,10 +220,10 @@ describe("ActivityCardDesktop", () => {
     expect(screen.queryByRole("link", { name: "Details" })).not.toBeInTheDocument();
   });
 
-  it("clicking Details link does not propagate to onSelect", () => {
+  it("clicking the logged-out Join button does not propagate to onSelect", () => {
     const onSelect = vi.fn();
     render(<ActivityCardDesktop {...base} showDetails={true} onSelect={onSelect} userId={null} />);
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join" }));
     expect(onSelect).not.toHaveBeenCalled();
   });
 
@@ -197,10 +252,10 @@ describe("ActivityCardDesktop", () => {
 
   // ── Shared ────────────────────────────────────────────────────────────────
 
-  it('shows "Sign in" link when userId is null', () => {
+  it('shows a "Join" button (not "Sign in") when userId is null', () => {
     render(<ActivityCardDesktop {...base} userId={null} />);
     expect(
-      screen.getByRole("button", { name: "Sign in" }),
+      screen.getByRole("button", { name: "Join" }),
     ).toBeInTheDocument();
   });
 

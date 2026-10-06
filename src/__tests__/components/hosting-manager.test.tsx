@@ -75,18 +75,31 @@ afterEach(() => {
 });
 
 describe("HostingManager action row", () => {
-  it("renders Edit, Copy link, Group chat, and Share to Story", () => {
+  it("renders Edit, Copy link, and Share to Story", () => {
     render(<HostingManager activities={[hosted({})]} isOwner hostId="host-1" />);
     expect(screen.getByRole("link", { name: "Edit" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy link" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Group chat" }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("button", { name: "Share to Story" }),
     ).toBeInTheDocument();
+  });
+
+  // Group chat setup is a one-time action and lives on the activity detail page.
+  it("does not render a Group chat action", () => {
+    render(<HostingManager activities={[hosted({})]} isOwner hostId="host-1" />);
+    expect(
+      screen.queryByRole("button", { name: "Group chat" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // Labels are visible text at every width now, not icon-only below md.
+  it("shows the action labels as text", () => {
+    render(<HostingManager activities={[hosted({})]} isOwner hostId="host-1" />);
+    expect(screen.getByText("Edit")).toBeInTheDocument();
+    expect(screen.getByText("Copy link")).toBeInTheDocument();
+    expect(screen.getByText("Share to Story")).toBeInTheDocument();
   });
 
   it("does not render any Cancel control on the card", () => {
@@ -155,7 +168,7 @@ describe("HostingManager copy feedback", () => {
 });
 
 describe("HostingManager md threshold", () => {
-  it("gates button labels and the description behind md (icon-only below md)", () => {
+  it("gates the description behind md, but not the button labels", () => {
     render(
       <HostingManager
         activities={[hosted({ description: "Canal loop, easy pace" })]}
@@ -168,12 +181,11 @@ describe("HostingManager md threshold", () => {
     const desc = screen.getByText("Canal loop, easy pace");
     expect(desc).toHaveClass("hidden", "md:block");
 
-    // The button's visible label is gated to md; below md the aria-label
-    // (icon-only) carries the name.
+    // Three actions fit labelled on mobile, so the row is no longer icon-only
+    // below md: the label is plain visible text on the button.
     const copy = screen.getByRole("button", { name: "Copy link" });
-    const label = copy.querySelector("span");
-    expect(label).not.toBeNull();
-    expect(label).toHaveTextContent("Copy link");
-    expect(label).toHaveClass("hidden", "md:inline");
+    expect(copy).toHaveTextContent("Copy link");
+    expect(copy.querySelector(".md\\:inline")).toBeNull();
+    expect(copy.className).not.toContain("w-10");
   });
 });

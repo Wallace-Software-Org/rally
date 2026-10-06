@@ -105,6 +105,20 @@ Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets c
 - Full rejections return ACTIVITY_FULL_ERROR. Every join surface (feed card, map popup, detail page) consumes the { ok, full } result: flip to Full via useForcedFull and call router.refresh() so all clients re-seed and converge.
 - useForcedFull (src/hooks/use-forced-full.ts): bridge, not latch. Render-time clear once the live count reaches max; a later leave then reopens naturally. Use it for any new join surface.
 - useRealtimeParticipants: syncs on seed user_id membership, dedupes by user_id, realtime INSERT replaces the optimistic entry. Dedupe with the shared dedupeByUserId anywhere a participant list renders.
+- joinActivity and leaveActivity call revalidatePath on success (detail, feed, profile, personal feed), and clients call router.refresh() after a successful join or leave. Required: browser back/forward reuses cached pages regardless of staleTimes, so without it back navigation replays the pre-join page.
+- Joined state on a surface derives from the live participant list (current user id present), never from a useState copy of the server seed taken at mount. Otherwise a fresh seed after mount updates Who's going but not the CTA.
+- The join modal never opens for someone already going: the page's autoOpenJoin excludes participants and the host, and the view only renders the modal while the live list does not include the viewer.
+
+## Waivers (conventions)
+
+- waiver_acceptances is append-only and server-trusted: authenticated users can only select their own rows; no client role can insert, update, or delete. Inserts happen only through the admin client (insertWaiverAcceptance in src/lib/queries/waivers.ts, never in a "use server" file since it takes a whole row including user_id), called from acceptWaiver after requireUser(). user_id comes from the session and the stored text and version come from src/lib/waivers.ts, never from input.
+- Waiver text and versions live in src/lib/waivers.ts (participant and host, both v1). Accepted means a row exists with version >= current, so bumping a version there forces every user to re-accept on their next join or post. Edit the text and the version together.
+- joinActivity (participant waiver) and createActivity (host waiver) enforce this server-side and return waiverRequired when it is missing. Never rely on the UI check alone.
+- The host auto-join inside createActivity is exempt from the participant waiver; the host waiver covers the host. Edit never asks for the host waiver.
+- Every join surface (feed card, map popup, detail page) opens the shared JoinConfirmModal (src/components/activities/): first-time waiver or the short confirmation, chosen by the participantWaiverAccepted prop the server page passes down. Never fork it per surface and never call joinActivity from a Join button directly. A waiverRequired answer flips the modal to first-time. useParticipantWaiver shares an in-session acceptance across surfaces.
+- The create form opens HostWaiverModal on submit (new, duplicate, repeat) when hostWaiverAccepted is false.
+- Quick join (?join=true after OAuth) never joins silently: the detail page passes autoOpenJoin and the modal opens; the join happens only on confirm.
+- /waiver is a public page rendering both waivers from src/lib/waivers.ts (listed in proxy.ts PUBLIC_PATHS).
 
 ## Breakpoints
 
@@ -112,6 +126,7 @@ Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets c
 - lg: allowed only for card grid column density.
 - md: allowed only for content density within a component (button labels vs icon-only, clamped description visibility), never structure.
 - Desktop layout must never change when making mobile-only adjustments.
+- Documented exception: the profile identity card (IdentityCard in profile-view.tsx) branches on xl: for alignment and stacking inside one component (mobile left-justified and compact, xl centered). It is one tree with xl: utilities, not a forked layout, so it does not violate the rule above. Do not copy the pattern into a second component without the same justification: mobile screen budget, one shared tree.
 
 ## Next.js 16 + React 19 conventions
 
@@ -140,13 +155,14 @@ Disabled buttons: hover rules scoped &:hover:not(:disabled), and disabled sets c
 - TypeScript types → src/types/index.ts
 - Never inline utility logic if a util file already exists
 
-## Schema (3 tables)
+## Schema (4 tables)
 
 profiles: id (FK auth.users), username (unique, NOT NULL), full_name, avatar_url, bio, lat, lng, city, sports text[], instagram_handle, created_at
 activities: id, creator_id (FK profiles, NOT NULL), title, sport, description, lat, lng, location_name (NOT NULL), starts_at, ends_at (nullable, defaults starts_at + 1hr server-side), max_participants, skill_level, status ('open'/'cancelled', NOT NULL default 'open', check constraint), community_tag, external_link, visibility ('public'/'private', NOT NULL default public, check constraint), created_at
 participants: id, activity_id (FK activities, NOT NULL), user_id (FK profiles, NOT NULL), status, joined_at, unique (activity_id, user_id)
+waiver_acceptances: id, user_id (FK profiles, on delete cascade), waiver_type ('participant'/'host', check constraint), version, initials, waiver_text, ip_address, user_agent, accepted_at, unique (user_id, waiver_type, version). Select-own RLS only; insert is service_role only (see Waivers).
 
-FKs: profiles.id → auth.users; activities.creator_id → profiles; participants.activity_id → activities; participants.user_id → profiles.
+FKs: profiles.id → auth.users; activities.creator_id → profiles; participants.activity_id → activities; participants.user_id → profiles; waiver_acceptances.user_id → profiles.
 RLS policies exist on all tables. Storage: avatars bucket (public), own-folder policies (INSERT/UPDATE/SELECT on {uid}/ path).
 participants has REPLICA IDENTITY FULL (required so realtime DELETE events carry activity_id). Applied on prod and staging.
 join_activity(uuid) function: SECURITY DEFINER, locks the activity row, checks status + capacity, inserts with ON CONFLICT DO NOTHING. Applied on prod and staging.
@@ -176,7 +192,7 @@ join_activity(uuid) function: SECURITY DEFINER, locks the activity row, checks s
 - Profile header: identity stack is avatar, name, username, bio, then stacked full-width action buttons: Instagram (teal border, all viewers with handle set) above Edit profile (btn-tier-2, owner only).
 - Timezones: starts_at is a UTC instant; in-app rendering is viewer-local; the OG share card is intentionally pinned to America/Phoenix (activity-local). Multi-market support is backlogged.
 - external_link: when set, Join becomes Register (opens external), Rally members shown separately
-- Email notifications use a dedicated secret-key Supabase client (src/lib/email/client.ts, SUPABASE_SECRET_KEY, service_role). It exists solely to call get_notification_recipient, which reads auth.users for the recipient address. That function is granted to service_role only, never authenticated: user ids are already visible via participant lists, so an authenticated grant would be a working email-enumeration path. The client is server-only (server-only import + runtime window guard) and never used for any other query; the publishable-key clients in src/lib/supabase/ are untouched.
+- Service-role access goes through one server-only admin client, getAdminClient() in src/lib/supabase/admin.ts (SUPABASE_SECRET_KEY, service_role, bypasses RLS; server-only import + runtime window guard). Use it only for reads and writes that deliberately need to bypass RLS, behind narrow purpose-built functions; never hand the client out or use it for a query the publishable-key clients in src/lib/supabase/ can do. Current uses: (1) email notifications' recipient lookup, getNotificationRecipient in src/lib/email/client.ts, which calls get_notification_recipient to read auth.users for the address. That function is granted to service_role only, never authenticated: user ids are already visible via participant lists, so an authenticated grant would be a working email-enumeration path. (2) waiver acceptance inserts (see Waivers).
 
 ## Working style
 

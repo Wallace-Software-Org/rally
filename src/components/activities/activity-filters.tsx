@@ -15,14 +15,15 @@ import {
   DISTANCE_FILTER_OPTIONS,
 } from "@/lib/utils/distance";
 import type { GeoStatus } from "@/hooks/use-location";
-import { MapIcon, CalendarIcon } from "@/components/ui/icons";
+import { ListIcon, CalendarIcon } from "@/components/ui/icons";
 
 const SPORT_ITEMS = SPORTS_LIST.filter((s) => s !== "All");
 
 export type FeedView = "map" | "calendar";
 
-// Icon-only segmented control for the right end of the filter pill row: map
-// (default) and calendar. The active segment is a solid teal circle.
+// Icon-only segmented control for the right end of the filter pill row: list
+// (default) and calendar. Both keep the persistent map at xl; the toggle only
+// swaps the left panel. The active segment is a solid teal circle.
 export function ViewToggle({
   value,
   onChange,
@@ -33,11 +34,11 @@ export function ViewToggle({
   return (
     <div className="flex-none flex items-center gap-0.5 rounded-full border border-brand-border p-0.5">
       <ViewToggleButton
-        label="Map view"
+        label="List view"
         active={value === "map"}
         onClick={() => onChange("map")}
       >
-        <MapIcon size={15} />
+        <ListIcon size={15} />
       </ViewToggleButton>
       <ViewToggleButton
         label="Calendar view"

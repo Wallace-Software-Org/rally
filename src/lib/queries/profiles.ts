@@ -74,8 +74,12 @@ export const getHostByUsername = cache(async (username: string) => {
   return data;
 });
 
+// `viewerId` is the signed-in user, or null. Attending is owner-only, so the
+// list is fetched only when the viewer owns the profile: hiding the tab in the
+// UI alone would still ship a stranger's joined activities in the page payload.
 export async function getProfileByUsername(
   username: string,
+  viewerId: string | null = null,
 ): Promise<ProfilePage | null> {
   const supabase = await createClient();
 
@@ -86,6 +90,8 @@ export async function getProfileByUsername(
     .single();
 
   if (!profile) return null;
+
+  const isOwnerView = viewerId != null && viewerId === profile.id;
 
   const [
     { count: hostedCount },
@@ -117,10 +123,13 @@ export async function getProfileByUsername(
       )
       .eq("creator_id", profile.id)
       .order("starts_at", { ascending: true }),
-    supabase
-      .from("participants")
-      .select("activity_id")
-      .eq("user_id", profile.id),
+    // Owner only, per above. A visitor gets no rows, so `going` stays empty.
+    isOwnerView
+      ? supabase
+          .from("participants")
+          .select("activity_id")
+          .eq("user_id", profile.id)
+      : Promise.resolve({ data: null }),
   ]);
 
   // Attending is a read-only hub mirroring Hosting: include past and cancelled

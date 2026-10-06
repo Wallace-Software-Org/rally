@@ -22,10 +22,24 @@ export function dedupeByUserId<T extends { user_id: string }>(list: T[]): T[] {
   });
 }
 
+// Shared base for every "log in, then come back to this activity" link: sets
+// `next` to the activity so the OAuth callback (src/app/auth/callback/route.ts)
+// returns the user there instead of the feed. `join` additionally auto-opens
+// the join modal on arrival (quick-join); omit it for a plain return, such as
+// the private-activity gate, which only needs the user back on the page to
+// view it.
+export function activityLoginHref(
+  activityId: string,
+  options: { join?: boolean } = {},
+): string {
+  const next = `/activity/${activityId}`;
+  return options.join ? `/login?next=${next}&join=true` : `/login?next=${next}`;
+}
+
 // Quick-join login link for logged-out viewers. After Google OAuth the user
 // returns to the activity and auto-joins via the next and join params.
 export function quickJoinLoginHref(activityId: string): string {
-  return `/login?next=/activity/${activityId}&join=true`;
+  return activityLoginHref(activityId, { join: true });
 }
 
 // Availability label for an activity's capacity. Singular/plural aware:

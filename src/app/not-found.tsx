@@ -15,7 +15,7 @@ export default function NotFound() {
           Nothing to see here.
         </h1>
 
-        <Link href="/" className="mt-2 text-sm hover:underline text-brand-teal">
+        <Link href="/" className="link-action mt-2 text-sm">
           Find something new
         </Link>
       </section>

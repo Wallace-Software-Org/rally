@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActivityById } from "@/lib/queries/activities";
 import { getProfileById } from "@/lib/queries/profiles";
-import { joinActivity } from "@/lib/actions/activities";
+import { hasAcceptedWaiver } from "@/lib/queries/waivers";
+import { activityLoginHref } from "@/lib/utils/activity-participants";
 import ActivityDetailView from "@/components/activities/activity-detail";
 
 export default async function ActivityPage({
@@ -19,9 +20,6 @@ export default async function ActivityPage({
     ? query.posted[0]
     : query.posted;
   const joinParam = Array.isArray(query.join) ? query.join[0] : query.join;
-  const joinedParam = Array.isArray(query.joined)
-    ? query.joined[0]
-    : query.joined;
   const supabase = await createClient();
 
   const {
@@ -36,23 +34,24 @@ export default async function ActivityPage({
   if (activity === "private") {
     // Private is unlisted, not invite-only: any authenticated user with the link
     // can view. getActivityById only returns this sentinel for logged-out
-    // visitors, so the gate is purely a prompt to log in and then view.
+    // visitors, so the gate is purely a prompt to log in and then view. Both
+    // links carry the activity as the login return path (the same helper the
+    // quick-join flow uses) so OAuth lands back here, not on the feed.
+    const loginHref = activityLoginHref(id);
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center gap-3">
         <p className="text-base font-medium text-brand-text">
           This activity is private.
         </p>
-        <p className="text-sm text-brand-muted">
-          Log in to see if you have access.
-        </p>
+        <p className="text-sm text-brand-muted">Log in to view it.</p>
         <Link
-          href="/login"
+          href={loginHref}
           className="mt-1 inline-flex items-center justify-center rounded-xl bg-brand-teal px-6 py-3 text-sm font-semibold text-white hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
         >
           Log in
         </Link>
         <Link
-          href="/login"
+          href={loginHref}
           className="text-sm text-brand-muted hover:text-brand-text transition-colors duration-200"
         >
           New here? Sign up
@@ -61,25 +60,25 @@ export default async function ActivityPage({
     );
   }
 
-  // Auto-join: triggered when the user lands here after completing OAuth from
-  // a shared activity link. Join server-side, then redirect to strip ?join=true.
-  if (joinParam === "true" && userId) {
-    const isCreator = userId === activity.creator_id;
-    const isParticipant = activity.participants.some(
-      (p) => p.user_id === userId,
-    );
-    if (!isCreator && !isParticipant) {
-      const { error } = await joinActivity(id);
-      redirect(`/activity/${id}${error ? "" : "?joined=true"}`);
-    }
-    redirect(`/activity/${id}`);
-  }
-
-  const ranJoin = joinedParam === "true";
+  // Quick-join: the user just finished OAuth from a shared activity link. They
+  // land here with ?join=true and the join modal opens (the first-time waiver
+  // or the short confirmation). Nothing is joined until they confirm it. Never
+  // for someone already going (or hosting): a stale ?join=true in history must
+  // not reopen a join they have already done.
+  const alreadyGoing =
+    userId !== null &&
+    (userId === activity.creator_id ||
+      activity.participants.some((p) => p.user_id === userId));
+  const autoOpenJoin = joinParam === "true" && userId !== null && !alreadyGoing;
 
   // Fetch the viewer's profile once when authenticated and reuse it for both
   // the onboarding banner check and the optimistic Who's going avatar.
-  const viewerProfile = userId ? await getProfileById(userId) : null;
+  const [viewerProfile, participantWaiverAccepted] = userId
+    ? await Promise.all([
+        getProfileById(userId),
+        hasAcceptedWaiver(supabase, userId, "participant"),
+      ])
+    : [null, false];
 
   // Only show the onboarding banner to users whose profile still needs setup.
   // Existing users with a complete profile (activities + avatar) skip it.
@@ -93,8 +92,10 @@ export default async function ActivityPage({
     <ActivityDetailView
       activity={activity}
       userId={userId}
+      participantWaiverAccepted={participantWaiverAccepted}
       showPostedBanner={postedParam === "true"}
-      justJoined={ranJoin && !profileIsComplete}
+      autoOpenJoin={autoOpenJoin}
+      needsProfileSetup={!profileIsComplete}
       viewerProfile={
         viewerProfile
           ? {

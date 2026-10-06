@@ -4,10 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import type { ActivityWithParticipants, ParticipantProfile } from "@/types";
+import type {
+  ActivityWithParticipants,
+  JoinResult,
+  ParticipantProfile,
+} from "@/types";
 import { formatActivityTime } from "@/lib/utils/format-time";
 import ActivityPill from "@/components/ui/activity-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
+import JoinConfirmModal from "@/components/activities/join-confirm-modal";
 import { isIOSDevice } from "@/lib/utils/platform";
 import {
   quickJoinLoginHref,
@@ -20,7 +25,10 @@ import { useForcedFull } from "@/hooks/use-forced-full";
 type MapPreviewCardProps = {
   activity: ActivityWithParticipants;
   userId: string | null;
-  onJoin: () => Promise<{ ok: boolean; full: boolean }>;
+  // Whether the viewer has accepted the participant waiver at the current
+  // version, as the server page saw it. Decides which join modal opens.
+  participantWaiverAccepted: boolean;
+  onJoin: () => Promise<JoinResult>;
   onLeave: () => Promise<boolean>;
   onDismiss: () => void;
 };
@@ -28,11 +36,13 @@ type MapPreviewCardProps = {
 export default function MapPreviewCard({
   activity,
   userId,
+  participantWaiverAccepted,
   onJoin,
   onLeave,
   onDismiss,
 }: MapPreviewCardProps) {
   const router = useRouter();
+  const [showJoinModal, setShowJoinModal] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -71,8 +81,12 @@ export default function MapPreviewCard({
     return () => document.removeEventListener("mousedown", onOutside);
   }, [confirming]);
 
-  async function handleJoin() {
-    if (!userId || isJoining || isJoined) return;
+  // The join itself, run by the join modal on confirm. Full handling is exactly
+  // what it was before the modal existed.
+  async function handleJoin(): Promise<JoinResult> {
+    if (!userId || isJoining) return { ok: false, full: false };
+    // Joined elsewhere while the modal was open (realtime): nothing left to do.
+    if (isJoined) return { ok: true, full: false };
     setIsJoining(true);
     const result = await onJoin();
     if (result.full) {
@@ -83,6 +97,7 @@ export default function MapPreviewCard({
       router.refresh();
     }
     setIsJoining(false);
+    return result;
   }
 
   async function handleLeave() {
@@ -139,10 +154,10 @@ export default function MapPreviewCard({
         href={quickJoinLoginHref(activity.id)}
         className="w-full flex items-center justify-center rounded-xl border border-transparent bg-brand-teal text-white text-sm font-semibold py-3 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
       >
-        Sign in to join
+        Join activity
       </Link>
       <p className="text-[11px] text-center text-brand-muted">
-        Sign in with Google to join.
+        You will log in with Google.
       </p>
     </div>
   ) : isLeaving ? (
@@ -174,7 +189,7 @@ export default function MapPreviewCard({
     </button>
   ) : !isFull ? (
     <button
-      onClick={handleJoin}
+      onClick={() => setShowJoinModal(true)}
       disabled={isJoining}
       className="btn-tier-1 cursor-pointer w-full flex items-center justify-center active:bg-brand-teal-active disabled:opacity-50"
     >
@@ -277,6 +292,16 @@ export default function MapPreviewCard({
       <AnimatePresence>
         {showShareModal && (
           <ShareStoryModal onClose={() => setShowShareModal(false)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showJoinModal && !isJoined && (
+          <JoinConfirmModal
+            activity={activity}
+            waiverAccepted={participantWaiverAccepted}
+            onJoin={handleJoin}
+            onClose={() => setShowJoinModal(false)}
+          />
         )}
       </AnimatePresence>
     </>

@@ -165,3 +165,15 @@ export type ActivityDetail = {
   host: HostProfile;
   hosted_count: number;
 };
+
+// Outcome of a join attempt as every join surface sees it (feed card, map popup,
+// detail page). `full` flips the surface to Full; `waiverRequired` means the
+// server refused because the participant waiver is not accepted at the current
+// version, so the first-time modal must open. `error` is a user-facing message
+// for any other failure.
+export type JoinResult = {
+  ok: boolean;
+  full: boolean;
+  waiverRequired?: boolean;
+  error?: string | null;
+};

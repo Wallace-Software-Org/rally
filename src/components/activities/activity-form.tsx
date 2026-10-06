@@ -11,6 +11,7 @@ import TimePicker from "@/components/ui/time-picker";
 import Select from "@/components/ui/select";
 import Toggle from "@/components/ui/toggle";
 import Stepper from "@/components/ui/stepper";
+import HostWaiverModal from "@/components/activities/host-waiver-modal";
 
 const SearchBox = dynamic(
   () => import("@mapbox/search-js-react").then((m) => m.SearchBox),
@@ -92,9 +93,15 @@ export type ActivityFormSubmitData = {
 type ActivityFormProps = {
   initialData?: ActivityFormInitialData;
   mode: ActivityFormMode;
+  // Whether the poster has accepted the host waiver at the current version, as
+  // the server page saw it. Only new and duplicate (which includes repeat) post
+  // through this form and can open the host modal; edit never does.
+  hostWaiverAccepted?: boolean;
+  // waiverRequired means the server refused because the host waiver is not
+  // accepted at the current version, so the host modal must open.
   onSubmit: (
     data: ActivityFormSubmitData,
-  ) => Promise<{ error: string | null } | void>;
+  ) => Promise<{ error: string | null; waiverRequired?: boolean } | void>;
 };
 
 type TouchedField =
@@ -183,6 +190,7 @@ function normalizeSkillLevel(value: string | null | undefined): string {
 export default function ActivityForm({
   initialData = {},
   mode,
+  hostWaiverAccepted: initialHostWaiverAccepted = false,
   onSubmit,
 }: ActivityFormProps) {
   const router = useRouter();
@@ -231,6 +239,10 @@ export default function ActivityForm({
   const [submitting, setSubmitting] = useState(false);
   const [touched, setTouched] = useState<TouchedFields>(initialTouchedFields);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [hostWaiverAccepted, setHostWaiverAccepted] = useState(
+    initialHostWaiverAccepted,
+  );
+  const [showHostWaiver, setShowHostWaiver] = useState(false);
   const [externalLinkOpen, setExternalLinkOpen] = useState(
     Boolean(initialData.external_link),
   );
@@ -315,7 +327,18 @@ export default function ActivityForm({
     setCancelling(false);
   }
 
-  async function handleSubmit() {
+  // Submit button. Posting (new, duplicate, repeat) needs the host waiver first;
+  // edit never does. Everything else about submitting is unchanged.
+  function handleSubmit() {
+    if (!canSubmit || !startsAtIso() || submitting) return;
+    if (mode !== "edit" && !hostWaiverAccepted) {
+      setShowHostWaiver(true);
+      return;
+    }
+    void submitForm();
+  }
+
+  async function submitForm() {
     const starts = startsAtIso();
     if (!canSubmit || !starts || submitting) return;
 
@@ -337,9 +360,24 @@ export default function ActivityForm({
     });
     setSubmitting(false);
 
+    if (result?.waiverRequired) {
+      // The server does not see an acceptance at the current version (a bump
+      // landed, or the page's answer was stale): ask again.
+      setHostWaiverAccepted(false);
+      setShowHostWaiver(true);
+      return;
+    }
+
     if (result?.error) {
       setSubmitError(result.error);
     }
+  }
+
+  // The host modal recorded the acceptance: close it and post as usual.
+  function handleHostWaiverAccepted() {
+    setHostWaiverAccepted(true);
+    setShowHostWaiver(false);
+    void submitForm();
   }
 
   const externalLinkValue = normalizeExternalLink(externalLink);
@@ -823,6 +861,15 @@ export default function ActivityForm({
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showHostWaiver && (
+          <HostWaiverModal
+            onAccepted={handleHostWaiverAccepted}
+            onClose={() => setShowHostWaiver(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

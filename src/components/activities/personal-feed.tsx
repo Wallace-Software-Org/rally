@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import type { ActivityWithParticipants } from "@/types";
+import { useRouter } from "next/navigation";
+import type { ActivityWithParticipants, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 import MapPreviewCard from "@/components/map/map-preview-card";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
 import HostStrip, { type HostSummary } from "@/components/activities/host-strip";
+import LocationFilterBar from "@/components/activities/location-filter-bar";
+import { type ActivityGroup, isAtCoordKey } from "@/lib/utils/map-groups";
 
 const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
   ssr: false,
@@ -18,15 +21,23 @@ const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
 export default function PersonalFeed({
   activities,
   userId,
+  participantWaiverAccepted,
   hostId,
   host,
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
+  // Whether the viewer has accepted the participant waiver at the current
+  // version. Threaded to every join surface so each opens the right modal.
+  participantWaiverAccepted: boolean;
   hostId: string;
   host: HostSummary;
 }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Coordinate key of the place whose grouped pin was tapped, or null. A host's
+  // repeat series shares a venue, so this is the common case here.
+  const [locationKey, setLocationKey] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
       new Set(
@@ -72,6 +83,43 @@ export default function PersonalFeed({
 
   const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
 
+  // Panel filter set by tapping a grouped pin, derived so it tracks the live
+  // list and clears itself if the place empties out.
+  const locationActivities = locationKey
+    ? visible.filter((a) => isAtCoordKey(a, locationKey))
+    : [];
+  const activeLocation =
+    locationKey && locationActivities.length > 0
+      ? {
+          key: locationKey,
+          name: locationActivities[0].location_name,
+          activities: locationActivities,
+        }
+      : null;
+  const listActivities = activeLocation ? activeLocation.activities : visible;
+
+  function selectLocation(group: ActivityGroup) {
+    // No single activity to preview, so the panel does the showing.
+    setSelectedId(null);
+    setLocationKey(group.key);
+  }
+
+  // Picking a pin drops any location filter, so the popup can't preview an
+  // activity the filtered panel isn't listing. Card clicks keep the filter:
+  // those cards are the filter.
+  function selectActivityFromPin(id: string) {
+    setLocationKey(null);
+    setSelectedId((prev) => (prev === id ? null : id));
+  }
+
+  const locationBar = activeLocation ? (
+    <LocationFilterBar
+      name={activeLocation.name}
+      count={activeLocation.activities.length}
+      onClear={() => setLocationKey(null)}
+    />
+  ) : null;
+
   useEffect(() => {
     if (!selectedId) return;
     const el = cardRefs.current.get(selectedId);
@@ -80,9 +128,7 @@ export default function PersonalFeed({
 
   // Optimistic join/leave, mirroring the main feed: local state flips instantly,
   // the server action reconciles, and a capacity rejection surfaces as `full`.
-  async function handleJoin(
-    activityId: string,
-  ): Promise<{ ok: boolean; full: boolean }> {
+  async function handleJoin(activityId: string): Promise<JoinResult> {
     if (!userId || joined.has(activityId) || joining.has(activityId)) {
       return { ok: false, full: false };
     }
@@ -90,7 +136,7 @@ export default function PersonalFeed({
     setJoining((prev) => new Set(prev).add(activityId));
     setJoined((prev) => new Set(prev).add(activityId));
 
-    const { error } = await joinActivity(activityId);
+    const { error, waiverRequired } = await joinActivity(activityId);
 
     if (error) {
       setJoined((prev) => {
@@ -98,6 +144,8 @@ export default function PersonalFeed({
         next.delete(activityId);
         return next;
       });
+    } else {
+      router.refresh();
     }
 
     setJoining((prev) => {
@@ -106,7 +154,12 @@ export default function PersonalFeed({
       return next;
     });
 
-    return { ok: !error, full: error === ACTIVITY_FULL_ERROR };
+    return {
+      ok: !error,
+      full: error === ACTIVITY_FULL_ERROR,
+      waiverRequired,
+      error,
+    };
   }
 
   async function handleLeave(activityId: string): Promise<boolean> {
@@ -122,6 +175,8 @@ export default function PersonalFeed({
 
     if (error) {
       setJoined((prev) => new Set(prev).add(activityId));
+    } else {
+      router.refresh();
     }
 
     return !error;
@@ -145,9 +200,9 @@ export default function PersonalFeed({
           variant="strip"
           selectedId={selectedId}
           fitToPins
-          onDotClick={(id) =>
-            setSelectedId((prev) => (prev === id ? null : id))
-          }
+          onDotClick={selectActivityFromPin}
+          onGroupClick={selectLocation}
+          activeGroupKey={activeLocation?.key ?? null}
         />
       </div>
 
@@ -161,11 +216,13 @@ export default function PersonalFeed({
         {/* Mobile + md + lg (< xl): single scrollable card grid */}
         <div className="xl:hidden flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-4">
-            {visible.length === 0 ? (
+            {locationBar && <div className="pt-4">{locationBar}</div>}
+
+            {listActivities.length === 0 ? (
               emptyPanel
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
-                {visible.map((a) => (
+                {listActivities.map((a) => (
                   <div
                     key={a.id}
                     className="h-full"
@@ -185,6 +242,7 @@ export default function PersonalFeed({
                         setSelectedId((prev) => (prev === a.id ? null : a.id))
                       }
                       onJoin={() => handleJoin(a.id)}
+                      participantWaiverAccepted={participantWaiverAccepted}
                       showHostedBy={a.creator_id !== hostId}
                     />
                   </div>
@@ -206,11 +264,13 @@ export default function PersonalFeed({
             {/* Scrollable card area */}
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-4">
-                {visible.length === 0 ? (
+                {locationBar && <div className="mb-3">{locationBar}</div>}
+
+                {listActivities.length === 0 ? (
                   emptyPanel
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    {visible.map((a) => (
+                    {listActivities.map((a) => (
                       <ActivityCardDesktop
                         key={a.id}
                         activity={a}
@@ -223,6 +283,7 @@ export default function PersonalFeed({
                           setSelectedId((prev) => (prev === a.id ? null : a.id))
                         }
                         onJoin={() => handleJoin(a.id)}
+                        participantWaiverAccepted={participantWaiverAccepted}
                         showHostedBy={a.creator_id !== hostId}
                       />
                     ))}
@@ -240,9 +301,9 @@ export default function PersonalFeed({
               variant="full"
               selectedId={selectedId}
               fitToPins
-              onDotClick={(id) =>
-                setSelectedId((prev) => (prev === id ? null : id))
-              }
+              onDotClick={selectActivityFromPin}
+              onGroupClick={selectLocation}
+              activeGroupKey={activeLocation?.key ?? null}
             >
               {selectedActivity && (
                 <MapPreviewCard
@@ -250,6 +311,7 @@ export default function PersonalFeed({
                   activity={selectedActivity}
                   userId={userId}
                   onJoin={() => handleJoin(selectedActivity.id)}
+                  participantWaiverAccepted={participantWaiverAccepted}
                   onLeave={() => handleLeave(selectedActivity.id)}
                   onDismiss={() => setSelectedId(null)}
                 />

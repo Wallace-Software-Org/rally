@@ -27,7 +27,8 @@ import {
   capacityLine,
 } from "@/lib/utils/hosting";
 
-const PARTICIPANT_COLUMNS = "full_name, avatar_url, username, instagram_handle";
+// Mirrors the hosting card: avatar strip only, no instagram_handle.
+const PARTICIPANT_COLUMNS = "full_name, avatar_url, username";
 
 // ── Host line ─────────────────────────────────────────────────────────────────
 

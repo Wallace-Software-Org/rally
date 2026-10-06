@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getActivities } from '@/lib/queries/activities'
+import { hasAcceptedWaiver } from '@/lib/queries/waivers'
 import ActivityFeed from '@/components/activities/activity-feed'
 
 export default async function HomePage() {
@@ -10,7 +11,7 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const [activities, profileResult] = await Promise.all([
+  const [activities, profileResult, participantWaiverAccepted] = await Promise.all([
     getActivities(),
     user
       ? supabase
@@ -19,6 +20,7 @@ export default async function HomePage() {
           .eq('id', user.id)
           .single()
       : Promise.resolve({ data: null }),
+    user ? hasAcceptedWaiver(supabase, user.id, 'participant') : Promise.resolve(false),
   ])
 
   // ActivityFeed reads useSearchParams to seed its filter/view state. Wrap it in
@@ -29,6 +31,7 @@ export default async function HomePage() {
       <ActivityFeed
         activities={activities}
         userId={user?.id ?? null}
+        participantWaiverAccepted={participantWaiverAccepted}
         userActivities={(profileResult.data?.sports as string[]) ?? []}
         profileLat={(profileResult.data?.lat as number | null) ?? null}
         profileLng={(profileResult.data?.lng as number | null) ?? null}

@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import type { ActivityWithParticipants } from "@/types";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { ActivityWithParticipants, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { ACTIVITY_FULL_ERROR } from "@/lib/utils/activity-participants";
 import { updateUserLocation } from "@/lib/actions/profiles";
@@ -19,10 +19,22 @@ import {
   type FeedView,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
-import CalendarView from "@/components/activities/calendar-view";
+import CalendarView, {
+  CalendarDesktop,
+} from "@/components/activities/calendar-view";
+import LocationFilterBar from "@/components/activities/location-filter-bar";
+import {
+  type ActivityGroup,
+  isAtCoordKey,
+} from "@/lib/utils/map-groups";
 import { useLocation } from "@/hooks/use-location";
 import { type DateFilter, matchesDateFilter } from "@/lib/utils/date-filters";
-import { type YearMonth, currentYearMonth } from "@/lib/utils/calendar";
+import {
+  type YearMonth,
+  currentYearMonth,
+  localDayKey,
+  keyToDate,
+} from "@/lib/utils/calendar";
 import {
   parseFeedParams,
   serializeFeedParams,
@@ -40,12 +52,16 @@ const MapPanel = dynamic(() => import("@/components/map/map-panel"), {
 export default function ActivityFeed({
   activities,
   userId,
+  participantWaiverAccepted,
   userActivities = [],
   profileLat = null,
   profileLng = null,
 }: {
   activities: ActivityWithParticipants[];
   userId: string | null;
+  // Whether the viewer has accepted the participant waiver at the current
+  // version. Threaded to every join surface so each opens the right modal.
+  participantWaiverAccepted: boolean;
   userActivities?: string[];
   profileLat?: number | null;
   profileLng?: number | null;
@@ -63,6 +79,7 @@ export default function ActivityFeed({
   // URL mirroring: seed view + Activities from the query string on first client
   // render (lazy, so params paint immediately with no default-state flash), then
   // state is the single source of truth. Only these two are mirrored back below.
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [urlSeed] = useState(() =>
@@ -84,6 +101,10 @@ export default function ActivityFeed({
   );
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Coordinate key of the place whose grouped pin was tapped, or null. Only the
+  // key is held: the activities are re-derived, so realtime and filter changes
+  // flow through instead of freezing at tap time.
+  const [locationKey, setLocationKey] = useState<string | null>(null);
   const [joined, setJoined] = useState<Set<string>>(
     () =>
       new Set(
@@ -176,6 +197,70 @@ export default function ActivityFeed({
     matchesDateFilter(a.starts_at, dateFilter),
   );
 
+  // Every map on the page draws from this list, so a grouped pin's count always
+  // matches the cards the panel shows for it. Calendar view feeds the map the
+  // full set: its time filter is the grid, not the Time pill.
+  const mapActivities = view === "calendar" ? baseFiltered : visible;
+
+  // Panel filter set by tapping a grouped pin. Derived rather than stored, so
+  // it tracks the current filters, and drops itself when the place no longer
+  // has anything to show (a filter change, say) rather than stranding the bar.
+  const locationActivities = locationKey
+    ? mapActivities.filter((a) => isAtCoordKey(a, locationKey))
+    : [];
+  const activeLocation =
+    locationKey && locationActivities.length > 0
+      ? {
+          key: locationKey,
+          name: locationActivities[0].location_name,
+          activities: locationActivities,
+        }
+      : null;
+
+  function selectLocation(group: ActivityGroup) {
+    // A grouped pin stands for several activities, so there is no one activity
+    // to preview: close any open popup and let the panel do the showing.
+    setSelectedId(null);
+    setLocationKey(group.key);
+  }
+
+  // Picking a pin drops any location filter, so the popup can't preview an
+  // activity the filtered panel isn't listing. Card clicks keep the filter:
+  // those cards are the filter.
+  function selectActivityFromPin(id: string) {
+    setLocationKey(null);
+    setSelectedId((prev) => (prev === id ? null : id));
+  }
+
+  // The toggle swaps the panel out from under the bar, and the mobile calendar
+  // has no map to set a location filter from, so drop it on the way across.
+  function changeView(next: FeedView) {
+    setLocationKey(null);
+    setView(next);
+  }
+
+  // Calendar view: the day the desktop grid highlights and lists activities for.
+  // Defaults to today until the user picks one; the shared selectedDay stays
+  // null so the mobile calendar (which starts with no selection) is unaffected.
+  const calendarDay = selectedDay ?? localDayKey(now);
+
+  // Desktop day selection also snaps the grid to that day's month, so choosing a
+  // day from another month (the empty-day "next up" link) brings the grid along.
+  // Mobile keeps plain setSelectedDay (its days are always in the displayed
+  // month, and the mobile calendar has no map).
+  //
+  // Moving to a different day drops the map selection, so the popup can never
+  // show an activity from a day the panel isn't listing. Re-picking the day
+  // already selected is a no-op, which leaves a pin click on that day standing.
+  // Picking any day also leaves a location filter: the day is what the user
+  // asked for now, and the bar is the other way back.
+  function selectCalendarDay(key: string) {
+    if (key !== calendarDay) setSelectedId(null);
+    setLocationKey(null);
+    setSelectedDay(key);
+    setCalendarMonth(currentYearMonth(keyToDate(key)));
+  }
+
   const emptyMessage =
     show === "hosting"
       ? "You are not hosting any activities."
@@ -183,7 +268,10 @@ export default function ActivityFeed({
         ? "You are not attending any activities."
         : "No open activities";
 
-  const selectedActivity = visible.find((a) => a.id === selectedId) ?? null;
+  // Search baseFiltered (superset of visible) so the map popup resolves in
+  // calendar view too, where the Time pill is off and cards come from baseFiltered.
+  const selectedActivity =
+    baseFiltered.find((a) => a.id === selectedId) ?? null;
 
   useEffect(() => {
     if (!selectedId) return;
@@ -191,11 +279,11 @@ export default function ActivityFeed({
     el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selectedId]);
 
-  // Optimistic updates: local state is mutated immediately so the UI responds instantly.
-  // We deliberately skip revalidatePath to avoid a full server round-trip that would flash the list.
-  async function handleJoin(
-    activityId: string,
-  ): Promise<{ ok: boolean; full: boolean }> {
+  // Optimistic updates: local state is mutated immediately so the UI responds
+  // instantly, then a successful join or leave refreshes the route so the server
+  // snapshot (and the router cache entry a back navigation would reuse) catches
+  // up. The refresh re-seeds props only; the local joined/joining sets persist.
+  async function handleJoin(activityId: string): Promise<JoinResult> {
     if (!userId || joined.has(activityId) || joining.has(activityId)) {
       return { ok: false, full: false };
     }
@@ -203,7 +291,7 @@ export default function ActivityFeed({
     setJoining((prev) => new Set(prev).add(activityId));
     setJoined((prev) => new Set(prev).add(activityId));
 
-    const { error } = await joinActivity(activityId);
+    const { error, waiverRequired } = await joinActivity(activityId);
 
     if (error) {
       setJoined((prev) => {
@@ -211,6 +299,8 @@ export default function ActivityFeed({
         next.delete(activityId);
         return next;
       });
+    } else {
+      router.refresh();
     }
 
     setJoining((prev) => {
@@ -219,7 +309,12 @@ export default function ActivityFeed({
       return next;
     });
 
-    return { ok: !error, full: error === ACTIVITY_FULL_ERROR };
+    return {
+      ok: !error,
+      full: error === ACTIVITY_FULL_ERROR,
+      waiverRequired,
+      error,
+    };
   }
 
   async function handleLeave(activityId: string): Promise<boolean> {
@@ -235,6 +330,8 @@ export default function ActivityFeed({
 
     if (error) {
       setJoined((prev) => new Set(prev).add(activityId));
+    } else {
+      router.refresh();
     }
 
     return !error;
@@ -264,7 +361,19 @@ export default function ActivityFeed({
     </>
   );
 
-  const calendar = (variant: "stack" | "split") => (
+  // Location filter, shared by every panel: the same bar and the same cards on
+  // mobile and desktop, differing only in the width they sit in.
+  const locationBar = activeLocation ? (
+    <LocationFilterBar
+      name={activeLocation.name}
+      count={activeLocation.activities.length}
+      onClear={() => setLocationKey(null)}
+    />
+  ) : null;
+  const listActivities = activeLocation ? activeLocation.activities : visible;
+
+  // Mobile calendar (stack). Desktop uses CalendarDesktop below.
+  const mobileCalendar = (
     <CalendarView
       activities={baseFiltered}
       now={now}
@@ -272,7 +381,6 @@ export default function ActivityFeed({
       onMonthChange={setCalendarMonth}
       selectedKey={selectedDay}
       onSelectDay={setSelectedDay}
-      variant={variant}
     />
   );
 
@@ -282,13 +390,13 @@ export default function ActivityFeed({
       {view === "map" && (
         <div className="xl:hidden flex-none">
           <MapPanel
-            activities={visible}
+            activities={mapActivities}
             userId={userId}
             variant="strip"
             selectedId={selectedId}
-            onDotClick={(id) =>
-              setSelectedId((prev) => (prev === id ? null : id))
-            }
+            onDotClick={selectActivityFromPin}
+            onGroupClick={selectLocation}
+            activeGroupKey={activeLocation?.key ?? null}
           />
         </div>
       )}
@@ -299,7 +407,7 @@ export default function ActivityFeed({
         <div className="flex flex-nowrap items-center gap-2.5 px-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {filterPills}
           <div className="ml-auto flex-none pl-1">
-            <ViewToggle value={view} onChange={setView} />
+            <ViewToggle value={view} onChange={changeView} />
           </div>
         </div>
       </div>
@@ -310,24 +418,26 @@ export default function ActivityFeed({
             card grid (scrolling list) */}
         {view === "calendar" ? (
           <div className="xl:hidden flex-1 min-w-0 min-h-0 flex flex-col">
-            {calendar("stack")}
+            {mobileCalendar}
           </div>
         ) : (
           <div className="xl:hidden flex-1 overflow-y-auto">
             <div className="max-w-5xl mx-auto px-4">
+              {locationBar && <div className="pt-4">{locationBar}</div>}
+
               {!userId && (
                 <div className="mt-3 mb-1 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                   Join to see who&apos;s going and save your spot
                 </div>
               )}
 
-              {visible.length === 0 ? (
+              {listActivities.length === 0 ? (
                 <p className="py-20 text-center text-sm text-brand-muted">
                   {emptyMessage}
                 </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
-                  {visible.map((a) => (
+                  {listActivities.map((a) => (
                     <div
                       key={a.id}
                       className="h-full"
@@ -347,6 +457,7 @@ export default function ActivityFeed({
                           setSelectedId((prev) => (prev === a.id ? null : a.id))
                         }
                         onJoin={() => handleJoin(a.id)}
+                        participantWaiverAccepted={participantWaiverAccepted}
                       />
                     </div>
                   ))}
@@ -367,26 +478,28 @@ export default function ActivityFeed({
                 <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
                   {filterPills}
                   <div className="ml-auto">
-                    <ViewToggle value={view} onChange={setView} />
+                    <ViewToggle value={view} onChange={changeView} />
                   </div>
                 </div>
 
                 {/* Scrollable card area */}
                 <div className="flex-1 overflow-y-auto">
                   <div className="px-6 py-4">
+                    {locationBar && <div className="mb-3">{locationBar}</div>}
+
                     {!userId && (
                       <div className="mb-3 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                         Join to see who&apos;s going and save your spot
                       </div>
                     )}
 
-                    {visible.length === 0 ? (
+                    {listActivities.length === 0 ? (
                       <p className="py-20 text-center text-sm text-brand-muted">
                         No open activities
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-3">
-                        {visible.map((a) => (
+                        {listActivities.map((a) => (
                           <ActivityCardDesktop
                             key={a.id}
                             activity={a}
@@ -401,6 +514,7 @@ export default function ActivityFeed({
                               )
                             }
                             onJoin={() => handleJoin(a.id)}
+                            participantWaiverAccepted={participantWaiverAccepted}
                           />
                         ))}
                       </div>
@@ -412,13 +526,13 @@ export default function ActivityFeed({
               {/* Map panel — fills remaining space, always visible at xl */}
               <div className="flex-1 overflow-hidden flex flex-col">
                 <MapPanel
-                  activities={visible}
+                  activities={mapActivities}
                   userId={userId}
                   variant="full"
                   selectedId={selectedId}
-                  onDotClick={(id) =>
-                    setSelectedId((prev) => (prev === id ? null : id))
-                  }
+                  onDotClick={selectActivityFromPin}
+                  onGroupClick={selectLocation}
+                  activeGroupKey={activeLocation?.key ?? null}
                   userLat={coords?.lat ?? null}
                   userLng={coords?.lng ?? null}
                 >
@@ -428,6 +542,7 @@ export default function ActivityFeed({
                       activity={selectedActivity}
                       userId={userId}
                       onJoin={() => handleJoin(selectedActivity.id)}
+                      participantWaiverAccepted={participantWaiverAccepted}
                       onLeave={() => handleLeave(selectedActivity.id)}
                       onDismiss={() => setSelectedId(null)}
                     />
@@ -436,16 +551,65 @@ export default function ActivityFeed({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Filter bar — full width above the calendar */}
-              <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
-                {filterPills}
-                <div className="ml-auto">
-                  <ViewToggle value={view} onChange={setView} />
+            <>
+              {/* Left panel — same 720px width as list view: filter bar, then
+                  the month grid pinned over the selected day's activities */}
+              <div className="w-180 flex-none flex flex-col border-r border-brand-border">
+                <div className="flex-none relative z-10 border-b border-brand-border px-6 flex flex-wrap items-center gap-2 py-3">
+                  {filterPills}
+                  <div className="ml-auto">
+                    <ViewToggle value={view} onChange={changeView} />
+                  </div>
                 </div>
+                <CalendarDesktop
+                  activities={baseFiltered}
+                  now={now}
+                  month={calendarMonth}
+                  onMonthChange={setCalendarMonth}
+                  selectedKey={calendarDay}
+                  onSelectDay={selectCalendarDay}
+                  userId={userId}
+                  joined={joined}
+                  joining={joining}
+                  selectedId={selectedId}
+                  onSelectActivity={(id) =>
+                    setSelectedId((prev) => (prev === id ? null : id))
+                  }
+                  onJoin={handleJoin}
+                  participantWaiverAccepted={participantWaiverAccepted}
+                  locationBar={locationBar}
+                  locationActivities={activeLocation?.activities ?? null}
+                />
               </div>
-              <div className="flex-1 overflow-y-auto">{calendar("split")}</div>
-            </div>
+
+              {/* Map — identical to list view: same pins, same selection
+                  (click a pin or a card to fly + pop up) */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <MapPanel
+                  activities={mapActivities}
+                  userId={userId}
+                  variant="full"
+                  selectedId={selectedId}
+                  onDotClick={selectActivityFromPin}
+                  onGroupClick={selectLocation}
+                  activeGroupKey={activeLocation?.key ?? null}
+                  userLat={coords?.lat ?? null}
+                  userLng={coords?.lng ?? null}
+                >
+                  {selectedActivity && (
+                    <MapPreviewCard
+                      key={selectedActivity.id}
+                      activity={selectedActivity}
+                      userId={userId}
+                      onJoin={() => handleJoin(selectedActivity.id)}
+                      participantWaiverAccepted={participantWaiverAccepted}
+                      onLeave={() => handleLeave(selectedActivity.id)}
+                      onDismiss={() => setSelectedId(null)}
+                    />
+                  )}
+                </MapPanel>
+              </div>
+            </>
           )}
         </div>
       </div>

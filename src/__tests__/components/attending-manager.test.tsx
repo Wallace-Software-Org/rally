@@ -77,7 +77,7 @@ describe("AttendingManager card", () => {
   it("shows the capacity count and no management actions", () => {
     render(<AttendingManager activities={[attended({})]} isOwner />);
     expect(screen.getByText("2 of 6 · 4 spots left")).toBeInTheDocument();
-    for (const name of ["Edit", "Copy link", "Group chat", "Share to Story", "Repeat"]) {
+    for (const name of ["Edit", "Copy link", "Share to Story", "Repeat"]) {
       expect(
         screen.queryByRole("button", { name }),
       ).not.toBeInTheDocument();

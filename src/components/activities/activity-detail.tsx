@@ -9,8 +9,7 @@ const ActivityMiniMap = dynamic(
   () => import("@/components/map/activity-mini-map"),
   { ssr: false },
 );
-import Image from "next/image";
-import type { ActivityDetail } from "@/types";
+import type { ActivityDetail, JoinResult } from "@/types";
 import { joinActivity, leaveActivity } from "@/lib/actions/activities";
 import { useRealtimeParticipants } from "@/hooks/use-realtime-participants";
 import { useForcedFull } from "@/hooks/use-forced-full";
@@ -19,14 +18,17 @@ import ActivityPill from "@/components/ui/activity-pill";
 import MetaPill from "@/components/ui/meta-pill";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import GroupChatModal from "@/components/activities/group-chat-modal";
+import JoinConfirmModal from "@/components/activities/join-confirm-modal";
 import BackButton from "@/components/ui/back-button";
+import Avatar from "@/components/ui/avatar";
+import { EditIcon } from "@/components/ui/icons";
 import {
   ACTIVITY_FULL_ERROR,
   getParticipantsWithHostFirst,
   quickJoinLoginHref,
   spotsLeftText,
 } from "@/lib/utils/activity-participants";
-import { getInitials, shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
+import { shouldBlurAvatarForViewer } from "@/lib/utils/avatar";
 import { isIOSDevice } from "@/lib/utils/platform";
 import { COPY_FEEDBACK_MS } from "@/lib/brand";
 
@@ -43,32 +45,6 @@ function formatDetailDate(startsAt: string): string {
     hour12: true,
   });
   return `${date} · ${time}`;
-}
-
-function Avatar({
-  url,
-  name,
-  size,
-}: {
-  url: string | null;
-  // Nullable: full_name has no NOT NULL constraint. getInitials renders "?".
-  name: string | null;
-  size: "sm" | "md";
-}) {
-  const dim = size === "sm" ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm";
-  return (
-    <div
-      className={`${dim} relative rounded-full flex-none overflow-hidden bg-brand-avatar-bg flex items-center justify-center`}
-    >
-      {url ? (
-        <Image src={url} alt="" fill className="object-cover" />
-      ) : (
-        <span className="font-semibold text-brand-avatar-text">
-          {getInitials(name)}
-        </span>
-      )}
-    </div>
-  );
 }
 
 function Divider() {
@@ -102,11 +78,22 @@ function ExternalLinkIcon() {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+// `action` puts a control on the header row, right aligned against the label.
+// Without one the row renders exactly as the plain label always did.
+function SectionLabel({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted mb-3">
-      {children}
-    </p>
+    <div className="mb-3 flex items-center gap-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-brand-muted">
+        {children}
+      </p>
+      {action}
+    </div>
   );
 }
 
@@ -169,7 +156,7 @@ function LocationButton({
         <span className="text-brand-muted/50 select-none">·</span>
         <button
           onClick={() => setOpen((p) => !p)}
-          className="text-brand-teal hover:underline cursor-pointer"
+          className="link-action cursor-pointer"
         >
           Get directions
         </button>
@@ -270,14 +257,24 @@ function LocationButton({
 export default function ActivityDetailView({
   activity,
   userId,
+  participantWaiverAccepted,
   showPostedBanner: initialShowPostedBanner = false,
-  justJoined = false,
+  autoOpenJoin = false,
+  needsProfileSetup = false,
   viewerProfile = null,
 }: {
   activity: ActivityDetail;
   userId: string | null;
+  // Whether the viewer has accepted the participant waiver at the current
+  // version, as the server page saw it. Decides which join modal opens.
+  participantWaiverAccepted: boolean;
   showPostedBanner?: boolean;
-  justJoined?: boolean;
+  // Landed here from the logged-out quick-join OAuth flow (?join=true): open the
+  // join modal instead of joining silently.
+  autoOpenJoin?: boolean;
+  // The viewer's profile still needs setup; after a quick-join the "You're in"
+  // banner nudges them to finish it.
+  needsProfileSetup?: boolean;
   viewerProfile?: {
     id: string;
     full_name: string | null;
@@ -290,8 +287,11 @@ export default function ActivityDetailView({
     (p) => p.user_id === userId,
   );
   const router = useRouter();
-  const [isJoined, setIsJoined] = useState(initiallyJoined);
-  // Live participant list drives both the "Who's going" avatars and the count.
+  // Live participant list drives the "Who's going" avatars, the count, AND the
+  // CTA's joined state (below), so the two can never disagree. It re-seeds from
+  // the server whenever the seed's membership changes (a router.refresh, or a
+  // page restored from the client cache and then refreshed), which is exactly
+  // when a useState copy of "joined" taken at mount would go stale.
   // Remote joins/leaves stream in via realtime; the acting user's own join or
   // leave is applied optimistically through the returned mutators (deduped by
   // user_id so the realtime echo of their own change does not double-add).
@@ -305,6 +305,8 @@ export default function ActivityDetailView({
     initialParticipants: activity.participants,
     profileColumns: "full_name, avatar_url, instagram_handle, username",
   });
+  const isJoined =
+    userId !== null && participants.some((p) => p.user_id === userId);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
@@ -321,7 +323,19 @@ export default function ActivityDetailView({
   const [showPostedBanner, setShowPostedBanner] = useState(
     initialShowPostedBanner,
   );
-  const [showJustJoinedBanner, setShowJustJoinedBanner] = useState(justJoined);
+  const [showJustJoinedBanner, setShowJustJoinedBanner] = useState(false);
+  // Quick-join lands here with ?join=true: open the join modal right away, but
+  // only when there is actually something to join.
+  const [showJoinModal, setShowJoinModal] = useState(
+    () =>
+      autoOpenJoin &&
+      userId !== null &&
+      userId !== activity.creator_id &&
+      !initiallyJoined &&
+      activity.status !== "cancelled" &&
+      (activity.max_participants === null ||
+        activity.participants.length < activity.max_participants),
+  );
 
   useEffect(() => {
     if (!leaveConfirm) return;
@@ -353,16 +367,18 @@ export default function ActivityDetailView({
     return () => window.removeEventListener("pagehide", hidePostedBanner);
   }, [initialShowPostedBanner]);
 
+  // Strip ?join=true once it has been acted on, so a refresh or a shared copy of
+  // the URL does not reopen the modal.
   useEffect(() => {
-    if (!justJoined) return;
+    if (!autoOpenJoin) return;
     const url = new URL(window.location.href);
-    url.searchParams.delete("joined");
+    url.searchParams.delete("join");
     window.history.replaceState(
       window.history.state,
       "",
       `${url.pathname}${url.search}${url.hash}`,
     );
-  }, [justJoined]);
+  }, [autoOpenJoin]);
 
   const isHost = userId === activity.creator_id;
   const viewerCanSeeProfiles = isHost || isJoined;
@@ -386,16 +402,26 @@ export default function ActivityDetailView({
       profiles: profile,
     }),
   });
-  // Group-chat roster: confirmed participants only, host excluded.
-  const groupChatRoster = participants
-    .filter((p) => p.user_id !== activity.creator_id)
-    .map((p) => ({
-      id: p.id,
-      full_name: p.profiles?.full_name ?? "",
-      username: p.profiles?.username ?? null,
-      avatar_url: p.profiles?.avatar_url ?? null,
-      instagram_handle: p.profiles?.instagram_handle ?? null,
-    }));
+  // Group-chat roster: everyone going, host included, host first. The host is
+  // part of the chat, so they count toward the total and their own handle goes
+  // in the copied list. A host with no handle still counts in the denominator;
+  // the modal only copies handles that exist.
+  const groupChatRoster = goingParticipants.map((p) => ({
+    id: p.id,
+    full_name: p.profiles?.full_name ?? "",
+    username: p.profiles?.username ?? null,
+    avatar_url: p.profiles?.avatar_url ?? null,
+    instagram_handle: p.profiles?.instagram_handle ?? null,
+  }));
+  // The button is pointless with no one to invite, so it only appears once a
+  // joiner other than the host has a handle set.
+  const canInviteToGroupChat =
+    isHost &&
+    participants.some(
+      (p) =>
+        p.user_id !== activity.creator_id &&
+        Boolean(p.profiles?.instagram_handle?.trim()),
+    );
   const isFull = forcedFull || (spotsLeft !== null && spotsLeft <= 0);
   const displayCount =
     isFull && activity.max_participants !== null
@@ -405,18 +431,24 @@ export default function ActivityDetailView({
     ? activity.skill_level.charAt(0).toUpperCase() +
       activity.skill_level.slice(1)
     : "All levels";
-  async function handleJoin() {
-    if (!userId || joining || isJoined) return;
+  // The join itself, run by the join modal on confirm. Full handling is exactly
+  // what it was before the modal existed.
+  async function handleJoin(): Promise<JoinResult> {
+    if (!userId || joining) return { ok: false, full: false };
+    // Joined elsewhere while the modal was open (realtime): nothing left to do.
+    if (isJoined) return { ok: true, full: false };
     setJoining(true);
-    const { error } = await joinActivity(activity.id);
-    if (error === ACTIVITY_FULL_ERROR) {
+    const { error, waiverRequired } = await joinActivity(activity.id);
+    const full = error === ACTIVITY_FULL_ERROR;
+    if (full) {
       // Lost a simultaneous join: reflect Full at once, then re-seed from the
       // server snapshot (which includes the winner's row).
       setForcedFull(true);
       router.refresh();
     }
     if (!error) {
-      setIsJoined(true);
+      // Quick-join users arrive with a bare profile; nudge them to finish it.
+      if (autoOpenJoin && needsProfileSetup) setShowJustJoinedBanner(true);
       // Optimistically add the viewer to "Who's going" so their avatar appears
       // immediately. Prefer their original participant entry if they left this
       // session; otherwise build one from viewerProfile. addParticipant dedupes
@@ -424,20 +456,28 @@ export default function ActivityDetailView({
       const original = activity.participants.find((p) => p.user_id === userId);
       if (original) {
         addParticipant(original);
-      } else if (viewerProfile) {
+      } else {
+        // The CTA derives from this list, so the viewer must always be added
+        // here, profile or not; the refresh below fills in the canonical row.
         addParticipant({
           id: `viewer-${userId}`,
           user_id: userId,
-          profiles: {
-            full_name: viewerProfile.full_name ?? "",
-            avatar_url: viewerProfile.avatar_url,
-            instagram_handle: null,
-            username: viewerProfile.username,
-          },
+          profiles: viewerProfile
+            ? {
+                full_name: viewerProfile.full_name ?? "",
+                avatar_url: viewerProfile.avatar_url,
+                instagram_handle: null,
+                username: viewerProfile.username,
+              }
+            : null,
         });
       }
+      // Re-seed from the server so this page, and the cache entry a back
+      // navigation would reuse, reflect the join.
+      router.refresh();
     }
     setJoining(false);
+    return { ok: !error, full, waiverRequired, error };
   }
 
   async function handleLeave() {
@@ -445,8 +485,8 @@ export default function ActivityDetailView({
     setLeaving(true);
     const { error } = await leaveActivity(activity.id);
     if (!error) {
-      setIsJoined(false);
       removeParticipantByUserId(userId);
+      router.refresh();
     }
     setLeaving(false);
     setLeaveConfirm(false);
@@ -482,15 +522,10 @@ export default function ActivityDetailView({
     setShowShareModal(true);
   }
 
-  // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl)
-  const ctaButton = isHost ? (
-    <Link
-      href={`/activity/${activity.id}/edit`}
-      className="btn-tier-1 w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active"
-    >
-      Edit
-    </Link>
-  ) : isJoined ? (
+  // ── CTA — rendered in bottom bar (mobile), inline (md/lg), right panel (xl).
+  // Viewer-side only: the host's primary action is Share to Story, and Edit is
+  // a ghost button on the tag row, so neither call site renders this for a host.
+  const ctaButton = isJoined ? (
     <button
       data-leave-btn
       onClick={() => (leaveConfirm ? handleLeave() : setLeaveConfirm(true))}
@@ -508,10 +543,10 @@ export default function ActivityDetailView({
         href={quickJoinLoginHref(activity.id)}
         className="w-full flex items-center justify-center rounded-xl bg-brand-teal text-white text-sm font-semibold py-3.5 hover:bg-brand-teal-hover active:bg-brand-teal-active transition-colors duration-200"
       >
-        Sign in to join
+        Join activity
       </Link>
       <p className="text-xs text-center text-brand-muted">
-        Sign in with Google to join.
+        You will log in with Google.
       </p>
     </div>
   ) : isFull ? (
@@ -523,7 +558,7 @@ export default function ActivityDetailView({
     </button>
   ) : (
     <button
-      onClick={handleJoin}
+      onClick={() => setShowJoinModal(true)}
       disabled={joining}
       className="btn-tier-1 cursor-pointer w-full max-w-156 flex items-center justify-center active:bg-brand-teal-active disabled:opacity-60"
     >
@@ -556,30 +591,32 @@ export default function ActivityDetailView({
       </button>
     ) : null;
 
-  const groupChatBtn = (tier: string) =>
-    isHost ? (
-      <button
-        onClick={() => setShowGroupChatModal(true)}
-        className={`${tier} cursor-pointer w-full max-w-156 flex items-center justify-center gap-1.5 transition-colors duration-200`}
+  // Teal text action on the Who's going header row, not in the action rail:
+  // setting up the chat is a one-time job, not a primary action. Sized to the
+  // label it sits beside.
+  const groupChatBtn = canInviteToGroupChat ? (
+    <button
+      onClick={() => setShowGroupChatModal(true)}
+      className="link-action inline-flex items-center gap-1.5 flex-none cursor-pointer text-xs whitespace-nowrap"
+    >
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
       >
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 19v-1a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v1M16.5 9.5a2.5 2.5 0 1 0 0-5M17 14h.5a4 4 0 0 1 4 4v.5"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        Invite to group chat
-      </button>
-    ) : null;
+        <path
+          d="M8.5 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 19v-1a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v1M16.5 9.5a2.5 2.5 0 1 0 0-5M17 14h.5a4 4 0 0 1 4 4v.5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      Group chat
+    </button>
+  ) : null;
 
   // Host-only, shown on all activities (public and private) so any host can
   // grab a shareable link. Uses a neutral tier to match the sibling actions.
@@ -710,9 +747,22 @@ export default function ActivityDetailView({
             {/* 1. Header */}
             <div className="flex flex-col gap-3">
               <ActivityPill sport={activity.sport} />
-              <h1 className="text-2xl font-medium text-brand-text leading-snug">
-                {activity.title}
-              </h1>
+              {/* Edit reads as a text action beside the title it edits, sitting
+                  on the title's first baseline. Same row at every width. */}
+              <div className="flex items-baseline gap-2.5">
+                <h1 className="text-2xl font-medium text-brand-text leading-snug">
+                  {activity.title}
+                </h1>
+                {isHost && (
+                  <Link
+                    href={`/activity/${activity.id}/edit`}
+                    className="link-action inline-flex items-center gap-1 flex-none text-sm"
+                  >
+                    <EditIcon size={13} />
+                    Edit
+                  </Link>
+                )}
+              </div>
               <p className="flex items-center gap-2 text-sm text-brand-muted">
                 <svg
                   width="14"
@@ -763,16 +813,20 @@ export default function ActivityDetailView({
                 {activity.host.username ? (
                   <Link href={`/profile/${activity.host.username}`}>
                     <Avatar
-                      url={activity.host.avatar_url}
+                      src={activity.host.avatar_url}
                       name={activity.host.full_name}
-                      size="md"
+                      dimension={40}
+                      className="w-10 h-10 flex-none"
+                      initialsClassName="text-sm"
                     />
                   </Link>
                 ) : (
                   <Avatar
-                    url={activity.host.avatar_url}
+                    src={activity.host.avatar_url}
                     name={activity.host.full_name}
-                    size="md"
+                    dimension={40}
+                    className="w-10 h-10 flex-none"
+                    initialsClassName="text-sm"
                   />
                 )}
                 <div className="flex flex-col gap-1 min-w-0">
@@ -837,7 +891,7 @@ export default function ActivityDetailView({
 
             {/* 5. Who's going */}
             <div>
-              <SectionLabel>Who&apos;s going</SectionLabel>
+              <SectionLabel action={groupChatBtn}>Who&apos;s going</SectionLabel>
               {goingParticipants.length === 0 ? (
                 <p className="text-sm text-brand-muted">
                   No one yet — be the first
@@ -858,26 +912,14 @@ export default function ActivityDetailView({
                           p.user_id === activity.creator_id,
                         );
                         const avatarEl = (
-                          <div className="relative w-11 h-11 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
-                            {p.profiles?.avatar_url ? (
-                              <Image
-                                src={p.profiles.avatar_url}
-                                alt=""
-                                fill
-                                className={`object-cover${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              />
-                            ) : (
-                              <span
-                                className={`text-xs font-semibold text-brand-avatar-text${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              >
-                                {getInitials(name)}
-                              </span>
-                            )}
-                          </div>
+                          <Avatar
+                            src={p.profiles?.avatar_url ?? null}
+                            name={name}
+                            dimension={44}
+                            blur={shouldBlurAvatar}
+                            className="w-11 h-11"
+                            initialsClassName="text-xs"
+                          />
                         );
                         return (
                           <div
@@ -917,26 +959,14 @@ export default function ActivityDetailView({
                           p.user_id === activity.creator_id,
                         );
                         const avatarEl = (
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-brand-avatar-bg">
-                            {p.profiles?.avatar_url ? (
-                              <Image
-                                src={p.profiles.avatar_url}
-                                alt=""
-                                fill
-                                className={`object-cover${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              />
-                            ) : (
-                              <span
-                                className={`text-xs font-semibold text-brand-avatar-text${
-                                  shouldBlurAvatar ? " blur-sm" : ""
-                                }`}
-                              >
-                                {getInitials(name)}
-                              </span>
-                            )}
-                          </div>
+                          <Avatar
+                            src={p.profiles?.avatar_url ?? null}
+                            name={name}
+                            dimension={40}
+                            blur={shouldBlurAvatar}
+                            className="w-10 h-10"
+                            initialsClassName="text-xs"
+                          />
                         );
                         return (
                           <div
@@ -965,14 +995,14 @@ export default function ActivityDetailView({
               )}
             </div>
 
-            {/* 6. Secondary actions — mobile/tablet only; xl keeps them in the right panel */}
+            {/* 6. Secondary actions — mobile/tablet only; xl keeps them in the
+                right panel. The host's Share to Story moves to the sticky bar,
+                so Copy invite link takes the slot Share holds for a viewer. */}
             {userId && (
               <div className="xl:hidden flex flex-col items-center gap-3">
                 {instagramNudge}
-                {copyLinkBtn("btn-tier-2")}
                 {registerBtn("btn-tier-2")}
-                {shareBtn("btn-tier-2")}
-                {groupChatBtn("btn-tier-2")}
+                {isHost ? copyLinkBtn("btn-tier-2") : shareBtn("btn-tier-2")}
               </div>
             )}
           </div>
@@ -992,25 +1022,44 @@ export default function ActivityDetailView({
               </div>
             )}
             <div className="flex flex-col gap-3">
-              {ctaButton}
-              {copyLinkBtn("btn-tier-2")}
+              {isHost ? (
+                <>
+                  {shareBtn("btn-tier-1")}
+                  {copyLinkBtn("btn-tier-2")}
+                </>
+              ) : (
+                ctaButton
+              )}
               {registerBtn("btn-tier-2")}
-              {shareBtn("btn-tier-2")}
-              {groupChatBtn("btn-tier-2")}
+              {!isHost && shareBtn("btn-tier-2")}
               {instagramNudge}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Bottom CTA bar — mobile/tablet only ────────────────────────────────────── */}
+      {/* ── Bottom CTA bar — mobile/tablet only. The host has nothing to join,
+          so their primary action here is Share to Story. ─────────────────────── */}
       <div className="xl:hidden flex-none border-t border-brand-border bg-brand-bg p-3 flex flex-col items-center gap-2">
-        {ctaButton}
+        {isHost ? shareBtn("btn-tier-1") : ctaButton}
       </div>
 
       <AnimatePresence>
         {showShareModal && (
           <ShareStoryModal onClose={() => setShowShareModal(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Never offered to someone already going (the live list is the source of
+          truth), whether opened by the button, autoOpenJoin, or a stale ?join=true. */}
+      <AnimatePresence>
+        {showJoinModal && !isJoined && !isHost && (
+          <JoinConfirmModal
+            activity={activity}
+            waiverAccepted={participantWaiverAccepted}
+            onJoin={handleJoin}
+            onClose={() => setShowJoinModal(false)}
+          />
         )}
       </AnimatePresence>
 
