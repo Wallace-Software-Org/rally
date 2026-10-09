@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -5,7 +6,97 @@ import { getActivityById } from "@/lib/queries/activities";
 import { getProfileById } from "@/lib/queries/profiles";
 import { hasAcceptedWaiver } from "@/lib/queries/waivers";
 import { activityLoginHref } from "@/lib/utils/activity-participants";
+import { getSportLabel } from "@/lib/utils/sport-config";
+import { SHARE_CARD } from "@/lib/brand";
 import ActivityDetailView from "@/components/activities/activity-detail";
+import type { ActivityDetail } from "@/types";
+
+const DESCRIPTION_MAX_LEN = 160;
+// The share card is cut for an Instagram story (1080x1920, portrait), not a
+// landscape OG card, but it's the only per-activity image Rally generates —
+// explicit width/height so platforms that honor them don't guess a crop.
+const APP_TIME_ZONE = "America/Phoenix";
+
+function truncateDescription(text: string): string {
+  if (text.length <= DESCRIPTION_MAX_LEN) return text;
+  const clipped = text.slice(0, DESCRIPTION_MAX_LEN);
+  const lastSpace = clipped.lastIndexOf(" ");
+  const cut = lastSpace > 40 ? clipped.slice(0, lastSpace) : clipped;
+  return `${cut.trimEnd()}...`;
+}
+
+// No description on the activity: fall back to sport, location, and date
+// rather than an empty preview. Phoenix-pinned like the share card itself —
+// this renders server-side for crawlers with no viewer timezone to localize
+// to, and unlike the in-app "Today" labels, a crawler's cached preview can
+// outlive the day it was fetched.
+function fallbackDescription(activity: ActivityDetail): string {
+  const sportLabel = getSportLabel(activity.sport);
+  if (!activity.starts_at) {
+    return `${sportLabel} in ${activity.location_name}`;
+  }
+  const date = new Date(activity.starts_at).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: APP_TIME_ZONE,
+  });
+  return `${sportLabel} in ${activity.location_name}, ${date}`;
+}
+
+function buildDescription(activity: ActivityDetail): string {
+  const description = activity.description?.trim();
+  return description
+    ? truncateDescription(description)
+    : fallbackDescription(activity);
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const activity = await getActivityById(id, user?.id ?? null);
+
+  if (activity === null) return {};
+
+  // Private activities must never leak title, description, or image into
+  // page metadata: it lands in the HTML <head> regardless of who the current
+  // requester is. An anonymous crawler unfurling the link always hits the
+  // "private" sentinel below; an authenticated viewer who's allowed to see
+  // the activity still gets a full ActivityDetail with visibility "private",
+  // so that's checked too, rather than varying the rule by requester.
+  if (activity === "private" || activity.visibility === "private") {
+    return {};
+  }
+
+  const description = buildDescription(activity);
+
+  return {
+    title: activity.title,
+    description,
+    openGraph: {
+      title: activity.title,
+      description,
+      images: [
+        {
+          url: `/api/activity/${activity.id}/card`,
+          width: SHARE_CARD.width,
+          height: SHARE_CARD.height,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
+  };
+}
 
 export default async function ActivityPage({
   params,

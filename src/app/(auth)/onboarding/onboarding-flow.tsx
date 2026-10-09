@@ -6,6 +6,7 @@ import { SPORTS_LIST, getSportLabel } from "@/lib/utils/sport-config";
 import { createProfile } from "./actions";
 import { checkUsername } from "@/lib/actions/profiles";
 import { USERNAME_RE, usernameHint } from "@/lib/utils/username";
+import { Logo } from "@/components/ui/logo";
 import type { UsernameStatus } from "@/types";
 
 const ACTIVITY_ITEMS = SPORTS_LIST.filter((s) => s !== "All" && s !== "Other");
@@ -108,7 +109,7 @@ export default function OnboardingFlow({
       <header className="flex-none bg-brand-bg">
         <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center">
           <div className="flex items-center gap-2 flex-none">
-            <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
+            <Logo size={20} />
             <span className="text-base font-semibold tracking-tight text-brand-text">
               Rally
             </span>

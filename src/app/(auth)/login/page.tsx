@@ -2,6 +2,7 @@
 
 // 'use client' is required here: we use window.location and a click handler
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/ui/logo";
 
 export default function LoginPage() {
   async function handleGoogleSignIn() {
@@ -26,15 +27,12 @@ export default function LoginPage() {
       <div className="flex flex-col items-center w-full max-w-xs gap-10">
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-2.5">
-            <span
-              className="block w-3 h-3 rounded-full bg-brand-teal"
-              aria-hidden="true"
-            />
+            <Logo size={24} />
             <span className="text-2xl font-bold tracking-tight text-brand-text">
               Rally
             </span>
           </div>
-          <p className="text-sm text-brand-muted">Active people, real plans</p>
+          <p className="text-sm text-brand-muted">Better with people</p>
         </div>
 
         <button

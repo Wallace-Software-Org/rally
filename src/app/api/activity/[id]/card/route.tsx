@@ -39,6 +39,7 @@ function getHeadlineFontSize(phrase: string): number {
 type ActivityCardData = {
   sport: string;
   starts_at: string;
+  visibility: string;
 };
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -74,7 +75,7 @@ async function getActivityCardData(
 
   const { data: activity, error } = await supabase
     .from("activities")
-    .select("sport, starts_at")
+    .select("sport, starts_at, visibility")
     .eq("id", id)
     .maybeSingle();
 
@@ -94,6 +95,22 @@ export async function GET(
     const cardData = await getActivityCardData(id);
     if (!cardData) {
       return new Response("Activity not found", { status: 404 });
+    }
+
+    // Private is unlisted, not invite-only: any authenticated user may still
+    // generate the card (hosts share private activities to their own story),
+    // but an anonymous caller — the proxy now lets this route through
+    // unauthenticated so OG crawlers can fetch public activity cards — must
+    // not get a private activity's details this way. 404 reads the same as
+    // "no such activity" rather than confirming the id exists but is private.
+    if (cardData.visibility === "private") {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        return new Response("Activity not found", { status: 404 });
+      }
     }
 
     const phrase = getInvitePhrase(cardData.sport);
@@ -156,7 +173,10 @@ export async function GET(
             </div>
           </div>
 
-          {/* Rally wordmark — bottom right, cream dot */}
+          {/* Rally wordmark — bottom right, three-ring mark. The card
+              background is brand teal, so the bands are inverted from the
+              standard mark (cream outer, teal middle, cream centre) instead
+              of teal outer, or the outer band would disappear into the card. */}
           <div
             style={{
               display: "flex",
@@ -165,17 +185,16 @@ export async function GET(
               flexShrink: 0,
             }}
           >
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 999,
-                backgroundColor: CREAM,
-                opacity: 0.6,
-                marginRight: 20,
-                flexShrink: 0,
-              }}
-            />
+            <svg
+              width={52}
+              height={52}
+              viewBox="0 0 100 100"
+              style={{ marginRight: 20, flexShrink: 0, opacity: 0.6 }}
+            >
+              <circle cx="50" cy="50" r="50" fill={CREAM} />
+              <circle cx="50" cy="50" r="38.5" fill={BG} />
+              <circle cx="50" cy="50" r="27" fill={CREAM} />
+            </svg>
             <div
               style={{
                 display: "flex",

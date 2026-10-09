@@ -8,6 +8,7 @@ import { hasAcceptedWaiver } from "@/lib/queries/waivers";
 import { getSiteUrl } from "@/lib/utils/site-url";
 import AppNav from "@/components/nav/app-nav";
 import PersonalFeed from "@/components/activities/personal-feed";
+import { Logo } from "@/components/ui/logo";
 
 export async function generateMetadata({
   params,
@@ -19,7 +20,9 @@ export async function generateMetadata({
   if (!host) return {};
 
   return {
-    title: `${host.full_name} on Rally`,
+    // absolute bypasses the root layout's "%s | Rally" template, since this
+    // title already ends in "on Rally".
+    title: { absolute: `${host.full_name} on Rally` },
     description: `Upcoming activities hosted by ${host.full_name}`,
     alternates: { canonical: `${getSiteUrl()}/feed/${host.username}` },
   };
@@ -31,7 +34,7 @@ function WordmarkHeader() {
     <header className="flex-none border-b border-brand-border bg-brand-bg">
       <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center">
         <Link href="/" className="flex items-center gap-2 flex-none">
-          <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
+          <Logo size={20} />
           <span className="text-base font-semibold tracking-tight text-brand-text">
             Rally
           </span>
