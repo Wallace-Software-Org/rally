@@ -35,13 +35,73 @@ const COLOR_SCHEME_CSS = `
 :root { color-scheme: light; supported-color-schemes: light; }
 @media (prefers-color-scheme: dark) {
   .email-card { background-color: ${EMAIL_PALETTE.input} !important; border-color: ${EMAIL_PALETTE.border} !important; }
-  .email-dot { background-color: ${EMAIL_PALETTE.teal} !important; }
+  .email-mark-teal { background-color: ${EMAIL_PALETTE.teal} !important; }
+  .email-mark-ring { background-color: ${EMAIL_PALETTE.input} !important; }
   .email-text { color: ${EMAIL_PALETTE.text} !important; }
   .email-footer { color: ${EMAIL_PALETTE.muted} !important; }
   .email-link { color: ${EMAIL_PALETTE.muted} !important; }
   .email-button { background-color: ${EMAIL_PALETTE.teal} !important; color: ${EMAIL_PALETTE.buttonText} !important; }
 }
 `;
+
+// Three-band brand mark for the email header: nested divs, not inline SVG
+// (unreliable across mail clients) and not an image (round-trips through image
+// blocking). Ratios as fractions of the outer diameter: outer 1.0, ring 0.77,
+// centre 0.54 — mirrors the in-app Logo component and logo-mark.svg.
+//
+// Centered via padding, not absolute positioning or box-sizing: border-box.
+// Each div's declared width/height is its CONTENT box; padding brings the
+// rendered total up to the next size out, so the child fills the parent's
+// content area exactly with no box-sizing dependency. Padding and nested
+// div width/height are supported everywhere HTML email is rendered,
+// including the Word-engine Outlook builds that ignore flexbox and
+// position: absolute. border-radius is the one piece that isn't universal
+// (Windows desktop Outlook ignores it and renders squares) — same exposure
+// the single dot already had, just applied three times instead of once.
+const MARK_SIZE = 20;
+const MARK_RING_SIZE = MARK_SIZE * 0.77;
+const MARK_CENTER_SIZE = MARK_SIZE * 0.54;
+const MARK_OUTER_PAD = (MARK_SIZE - MARK_RING_SIZE) / 2;
+const MARK_RING_PAD = (MARK_RING_SIZE - MARK_CENTER_SIZE) / 2;
+
+function EmailLogoMark() {
+  return (
+    <div
+      className="email-mark-teal"
+      style={{
+        boxSizing: "content-box",
+        width: MARK_RING_SIZE,
+        height: MARK_RING_SIZE,
+        padding: MARK_OUTER_PAD,
+        borderRadius: "50%",
+        backgroundColor: EMAIL_PALETTE.teal,
+      }}
+    >
+      <div
+        className="email-mark-ring"
+        style={{
+          boxSizing: "content-box",
+          width: MARK_CENTER_SIZE,
+          height: MARK_CENTER_SIZE,
+          padding: MARK_RING_PAD,
+          borderRadius: "50%",
+          backgroundColor: EMAIL_PALETTE.input,
+        }}
+      >
+        <div
+          className="email-mark-teal"
+          style={{
+            boxSizing: "content-box",
+            width: MARK_CENTER_SIZE,
+            height: MARK_CENTER_SIZE,
+            borderRadius: "50%",
+            backgroundColor: EMAIL_PALETTE.teal,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 const headingStyle = {
   fontSize: "18px",
@@ -84,19 +144,11 @@ export function EmailLayout({
         }}
       >
         <Container style={{ maxWidth: "600px", margin: "0 auto", padding: "0 16px" }}>
-          {/* Brand mark: teal dot + wordmark. The dot is a styled table cell,
-              not an image, so it survives image blocking. */}
+          {/* Brand mark: three-band mark + wordmark. Styled table cells, not
+              an image, so it survives image blocking. */}
           <Row style={{ marginBottom: "16px" }}>
-            <Column style={{ width: "10px", verticalAlign: "middle" }}>
-              <div
-                className="email-dot"
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "9999px",
-                  backgroundColor: EMAIL_PALETTE.teal,
-                }}
-              />
+            <Column style={{ width: MARK_SIZE, verticalAlign: "middle" }}>
+              <EmailLogoMark />
             </Column>
             <Column style={{ verticalAlign: "middle", paddingLeft: "8px" }}>
               <Text
