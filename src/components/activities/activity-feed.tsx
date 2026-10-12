@@ -468,7 +468,7 @@ export default function ActivityFeed({
             <div className="max-w-5xl mx-auto px-4">
               {locationBar && <div className="pt-4">{locationBar}</div>}
 
-              {!userId && (
+              {!userId && !feedEmptyState && (
                 <div className="mt-3 mb-1 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                   Join to see who&apos;s going and save your spot
                 </div>
@@ -532,7 +532,7 @@ export default function ActivityFeed({
                   <div className="px-6 py-4">
                     {locationBar && <div className="mb-3">{locationBar}</div>}
 
-                    {!userId && (
+                    {!userId && !feedEmptyState && (
                       <div className="mb-3 rounded-xl bg-brand-teal-muted px-4 py-2.5 text-xs text-brand-teal-text font-medium">
                         Join to see who&apos;s going and save your spot
                       </div>
