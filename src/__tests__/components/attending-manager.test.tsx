@@ -119,7 +119,16 @@ describe("AttendingManager card", () => {
   it("shows the empty state for the owner with no attended activities", () => {
     render(<AttendingManager activities={[]} isOwner />);
     expect(
-      screen.getByText(/You aren't attending anything yet/i),
+      screen.getByText("You have not joined an activity yet."),
     ).toBeInTheDocument();
+    const link = screen.getByText("Find one");
+    expect(link).toBeInTheDocument();
+    expect(link.closest("a")).toHaveAttribute("href", "/");
+  });
+
+  it("shows the generic visitor empty state with no action", () => {
+    render(<AttendingManager activities={[]} isOwner={false} />);
+    expect(screen.getByText("Nothing posted yet.")).toBeInTheDocument();
+    expect(screen.queryByText("Find one")).not.toBeInTheDocument();
   });
 });

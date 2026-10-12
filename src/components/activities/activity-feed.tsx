@@ -19,6 +19,7 @@ import {
   type FeedView,
 } from "@/components/activities/activity-filters";
 import { ActivityCardDesktop } from "@/components/activities/activity-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import CalendarView, {
   CalendarDesktop,
 } from "@/components/activities/calendar-view";
@@ -261,12 +262,14 @@ export default function ActivityFeed({
     setCalendarMonth(currentYearMonth(keyToDate(key)));
   }
 
-  const emptyMessage =
-    show === "hosting"
-      ? "You are not hosting any activities."
-      : show === "attending"
-        ? "You are not attending any activities."
-        : "No open activities";
+  // Resets every filter pill to its default. Used by the "Clear filters" action
+  // in the filters-exclude-everything empty state.
+  function clearFilters() {
+    setSports([]);
+    setDateFilter("all");
+    setDistance(DEFAULT_DISTANCE_FILTER);
+    setShow("all");
+  }
 
   // Search baseFiltered (superset of visible) so the map popup resolves in
   // calendar view too, where the Time pill is off and cards come from baseFiltered.
@@ -372,6 +375,46 @@ export default function ActivityFeed({
   ) : null;
   const listActivities = activeLocation ? activeLocation.activities : visible;
 
+  // Two distinct empty cases, not one: nothing posted (activities, the
+  // unfiltered set the server sent, is itself empty) vs filters excluding an
+  // otherwise non-empty feed. The second can only happen once some filter
+  // departs from its default, since every filter passes everything through
+  // at its default value, so no separate "filters active" check is needed
+  // beyond activities being non-empty while the filtered list is.
+  const feedEmptyState =
+    listActivities.length > 0
+      ? null
+      : activities.length === 0
+        ? userId
+          ? {
+              heading: "Nothing posted yet",
+              body: "Post what you are doing this week and see who comes along.",
+              action: (
+                <Link
+                  href="/activity/new"
+                  className="btn-tier-1 px-6 inline-flex items-center justify-center"
+                >
+                  Post activity
+                </Link>
+              ),
+            }
+          : {
+              heading: "Nothing posted yet",
+              body: "Rally is where people post what they are doing and see who comes along. Check back soon.",
+            }
+        : {
+            heading: "No activities match your filters",
+            body: "Try widening the distance or picking a later date.",
+            action: (
+              <button
+                onClick={clearFilters}
+                className="link-action text-sm cursor-pointer"
+              >
+                Clear filters
+              </button>
+            ),
+          };
+
   // Mobile calendar (stack). Desktop uses CalendarDesktop below.
   const mobileCalendar = (
     <CalendarView
@@ -431,10 +474,12 @@ export default function ActivityFeed({
                 </div>
               )}
 
-              {listActivities.length === 0 ? (
-                <p className="py-20 text-center text-sm text-brand-muted">
-                  {emptyMessage}
-                </p>
+              {feedEmptyState ? (
+                <EmptyState
+                  heading={feedEmptyState.heading}
+                  body={feedEmptyState.body}
+                  action={feedEmptyState.action}
+                />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 py-4">
                   {listActivities.map((a) => (
@@ -493,10 +538,12 @@ export default function ActivityFeed({
                       </div>
                     )}
 
-                    {listActivities.length === 0 ? (
-                      <p className="py-20 text-center text-sm text-brand-muted">
-                        No open activities
-                      </p>
+                    {feedEmptyState ? (
+                      <EmptyState
+                        heading={feedEmptyState.heading}
+                        body={feedEmptyState.body}
+                        action={feedEmptyState.action}
+                      />
                     ) : (
                       <div className="grid grid-cols-2 gap-3">
                         {listActivities.map((a) => (

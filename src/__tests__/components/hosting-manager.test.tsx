@@ -136,6 +136,26 @@ describe("HostingManager action row", () => {
   });
 });
 
+describe("HostingManager empty state", () => {
+  it("shows the owner empty state with a link to post one", () => {
+    render(<HostingManager activities={[]} isOwner hostId="host-1" />);
+    expect(
+      screen.getByText("You have not posted an activity yet."),
+    ).toBeInTheDocument();
+    const link = screen.getByText("Post your first one");
+    expect(link).toBeInTheDocument();
+    expect(link.closest("a")).toHaveAttribute("href", "/activity/new");
+  });
+
+  it("shows the generic visitor empty state with no action", () => {
+    render(
+      <HostingManager activities={[]} isOwner={false} hostId="host-1" />,
+    );
+    expect(screen.getByText("Nothing posted yet.")).toBeInTheDocument();
+    expect(screen.queryByText("Post your first one")).not.toBeInTheDocument();
+  });
+});
+
 describe("HostingManager copy feedback", () => {
   it("swaps Copy link to a confirmed 'Copied' state and reverts after ~2s", async () => {
     vi.useFakeTimers();

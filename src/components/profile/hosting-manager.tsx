@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence } from "framer-motion";
 import type { HostedActivity, HostParticipantProfile } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
+import { EmptyState } from "@/components/ui/empty-state";
 import ShareStoryModal from "@/components/ui/share-story-modal";
 import {
   EditIcon,
@@ -303,22 +304,17 @@ export default function HostingManager({
   const { upcoming, past } = splitActivitiesByTime(visible);
 
   if (upcoming.length === 0 && past.length === 0) {
-    return (
-      <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
-        {isOwner ? (
-          <>
-            You haven&apos;t hosted anything yet.{" "}
-            <Link
-              href="/activity/new"
-              className="text-brand-teal hover:underline"
-            >
-              Post an activity.
-            </Link>
-          </>
-        ) : (
-          "No activities hosted yet."
-        )}
-      </p>
+    return isOwner ? (
+      <EmptyState
+        heading="You have not posted an activity yet."
+        action={
+          <Link href="/activity/new" className="link-action text-sm">
+            Post your first one
+          </Link>
+        }
+      />
+    ) : (
+      <EmptyState heading="Nothing posted yet." />
     );
   }
 
