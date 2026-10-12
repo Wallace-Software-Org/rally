@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 
 export default function NotFound() {
   return (
@@ -21,10 +22,7 @@ export default function NotFound() {
       </section>
 
       <div className="absolute bottom-8 flex items-center gap-2">
-        <span
-          className="block h-2.5 w-2.5 rounded-full bg-brand-teal"
-          aria-hidden="true"
-        />
+        <Logo size={20} />
         <span className="text-base font-semibold tracking-tight text-brand-text">
           Rally
         </span>

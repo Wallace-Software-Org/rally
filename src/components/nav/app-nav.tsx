@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import type { Profile } from "@/types";
 
 function initials(name: string): string {
@@ -22,7 +23,7 @@ export default function AppNav({
 }) {
   const logo = (
     <Link href="/" className="flex items-center gap-2 flex-none">
-      <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
+      <Logo size={20} />
       <span className="text-base font-semibold tracking-tight text-brand-text">
         Rally
       </span>

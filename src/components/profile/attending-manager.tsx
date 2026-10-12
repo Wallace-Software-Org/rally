@@ -10,6 +10,7 @@ import type {
   HostParticipantProfile,
 } from "@/types";
 import ActivityPill from "@/components/ui/activity-pill";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   AvatarStrip,
   CardShell,
@@ -235,19 +236,17 @@ export default function AttendingManager({
   const { upcoming, past } = splitActivitiesByTime(visible);
 
   if (upcoming.length === 0 && past.length === 0) {
-    return (
-      <p className="py-10 text-sm text-brand-muted text-center leading-relaxed">
-        {isOwner ? (
-          <>
-            You aren&apos;t attending anything yet.{" "}
-            <Link href="/" className="text-brand-teal hover:underline">
-              Find something on the feed.
-            </Link>
-          </>
-        ) : (
-          "Not attending anything yet."
-        )}
-      </p>
+    return isOwner ? (
+      <EmptyState
+        heading="You have not joined an activity yet."
+        action={
+          <Link href="/" className="link-action text-sm">
+            Find one
+          </Link>
+        }
+      />
+    ) : (
+      <EmptyState heading="Nothing posted yet." />
     );
   }
 

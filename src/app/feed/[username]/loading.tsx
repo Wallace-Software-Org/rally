@@ -2,6 +2,7 @@
 // trees: a map block where the map sits and two card outlines in the list
 // column, at the same proportions as personal-feed.tsx.
 
+import { Logo } from "@/components/ui/logo";
 function HostStripSkeleton() {
   return (
     <div className="flex items-center gap-3 animate-pulse">
@@ -32,7 +33,7 @@ export default function Loading() {
           real header mounts ── */}
       <header className="flex-none border-b border-brand-border bg-brand-bg">
         <div className="max-w-5xl xl:max-w-none mx-auto px-4 xl:px-6 h-14 flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-brand-teal block" />
+          <Logo size={20} />
           <span className="text-base font-semibold tracking-tight text-brand-text">
             Rally
           </span>
