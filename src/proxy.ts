@@ -7,12 +7,17 @@ import { NextResponse, type NextRequest } from 'next/server'
 // serve with no file extension in the URL, so the matcher's extension-based
 // static-file exclusion below doesn't catch them. Without this they 307 to
 // /login for anonymous requests, breaking link-preview crawlers and PWA installs.
+// /feed/[username] is a personal feed built for anonymous viewing (its own
+// WordmarkHeader for a signed-out visitor, and getActivitiesByUser only ever
+// selects visibility "public" rows — no private activity reaches this page
+// for anyone, owner included), matching /activity's public-read pattern.
 const PUBLIC_PATHS = [
   '/login',
   '/auth',
   '/',
   '/activity',
   '/waiver',
+  '/feed',
   '/opengraph-image',
   '/manifest.webmanifest',
 ]
@@ -74,7 +79,17 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (!user && !isPublic(pathname)) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    // getUser() may have just refreshed the session (setAll above), writing the
+    // new cookies onto `response`. A redirect built fresh here would ship with
+    // none of that — the browser keeps the old, now-rotated-and-invalid refresh
+    // token, so the user isn't just bounced to login, they're signed out
+    // everywhere. Carry response's cookies onto the redirect so a refresh (or a
+    // refresh attempt's cleanup) always reaches the browser, redirect or not.
+    const redirectResponse = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie)
+    })
+    return redirectResponse
   }
 
   return response
