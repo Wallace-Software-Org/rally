@@ -390,10 +390,7 @@ export default function ActivityFeed({
               heading: "Nothing posted yet",
               body: "Post what you are doing this week and see who comes along.",
               action: (
-                <Link
-                  href="/activity/new"
-                  className="btn-tier-1 px-6 inline-flex items-center justify-center"
-                >
+                <Link href="/activity/new" className="link-action text-sm">
                   Post activity
                 </Link>
               ),
