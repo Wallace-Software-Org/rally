@@ -22,15 +22,37 @@ import {
 
 type DB = SupabaseClient<Database>;
 
+// Goes through get_activity_for_viewer(), not a plain select: the activities
+// table policy now only allows a plain select to the creator and current
+// participants (see restrict_activities_visibility), but notifyParticipantLeft
+// calls this with the LEAVING user's client after their participant row is
+// already deleted — for a private activity they are neither creator nor
+// still a participant, so a plain select would come back empty and the
+// host's "someone left" email would silently never send. The RPC is keyed on
+// the id alone, which this caller already has. Not yet in the generated
+// types (that migration hasn't been applied); same temporary cast as
+// elsewhere, same removal plan once it has been and types are regenerated.
 async function loadActivity(
   supabase: DB,
   activityId: string,
 ): Promise<(ActivityInfo & { creatorId: string }) | null> {
-  const { data } = await supabase
-    .from("activities")
-    .select("id, title, starts_at, creator_id, max_participants")
-    .eq("id", activityId)
-    .single();
+  const { data: rows } = await (
+    supabase.rpc as unknown as (
+      fn: "get_activity_for_viewer",
+      args: { p_activity_id: string },
+    ) => PromiseLike<{
+      data:
+        | {
+            id: string;
+            title: string;
+            starts_at: string;
+            creator_id: string;
+            max_participants: number | null;
+          }[]
+        | null;
+    }>
+  )("get_activity_for_viewer", { p_activity_id: activityId });
+  const data = rows?.[0];
   if (!data || !data.creator_id) return null;
 
   // Live count so the join/leave notices show the same "N spots left" as the

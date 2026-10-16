@@ -142,11 +142,20 @@ export async function updateUserLocation(
   const clampedLat = Math.min(90, Math.max(-90, lat));
   const clampedLng = Math.min(180, Math.max(-180, lng));
 
+  // Rounded here, server-side, after clamping — never in the client, which
+  // must not be the thing deciding how precise a stored coordinate is. Two
+  // decimal places is roughly a kilometer: the Distance filter only buckets
+  // at 10/20/50/100 miles (src/lib/utils/distance.ts), so nothing the filter
+  // does changes. Full GPS precision was never needed for this and amounts
+  // to storing a user's address.
+  const roundedLat = Math.round(clampedLat * 100) / 100;
+  const roundedLng = Math.round(clampedLng * 100) / 100;
+
   // RLS restricts writes to the user's own row (auth.uid() = id); the
   // .eq("id", user.id) makes that explicit and scopes the update.
   const { error } = await supabase
     .from("profiles")
-    .update({ lat: clampedLat, lng: clampedLng })
+    .update({ lat: roundedLat, lng: roundedLng })
     .eq("id", user.id);
 
   return { error: error?.message ?? null };
