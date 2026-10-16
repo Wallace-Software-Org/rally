@@ -167,27 +167,65 @@ function normalizeRelation<T>(value: unknown): T | null {
   return (normalized ?? null) as T | null;
 }
 
+// Row shape returned by get_activity_for_viewer() (see
+// restrict_activities_visibility). Not yet in the generated types: that
+// migration isn't reflected in src/types/supabase.ts until it's regenerated,
+// so the cast below is temporary — once regenerated, this type and the cast
+// can go and the call becomes a plain
+// `supabase.rpc("get_activity_for_viewer", ...)`.
+type ActivityCoreRow = {
+  id: string;
+  title: string;
+  sport: string;
+  description: string | null;
+  external_link: string | null;
+  location_name: string;
+  starts_at: string | null;
+  max_participants: number | null;
+  skill_level: string | null;
+  lat: number | null;
+  lng: number | null;
+  status: string;
+  creator_id: string;
+  visibility: string;
+};
+
 export async function getActivityById(
   id: string,
   requesterId: string | null = null,
 ): Promise<ActivityDetail | "private" | null> {
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("activities")
-    .select(
-      `
-      id, title, sport, description, external_link, location_name, starts_at,
-      max_participants, skill_level, lat, lng, status, creator_id, visibility,
-      participants (
-        id, user_id,
-        profiles ( full_name, avatar_url, instagram_handle, username )
+  // activities' policy now hides a private row from anyone but its creator
+  // and current participants (see restrict_activities_visibility), so a
+  // plain select here would 404 an anonymous visitor with a private link
+  // instead of showing the "this is private, log in" gate below.
+  // get_activity_for_viewer() is keyed on the id alone — the application,
+  // not the function, still decides what an anonymous caller sees with it.
+  //
+  // participants is still a plain select: its own policy
+  // (restrict_participants_visibility) only admits the creator, current
+  // participants, or anyone viewing a public activity — there is no
+  // id-is-the-credential exception for participants the way there is for
+  // activities, so an invite-link viewer who hasn't joined yet currently
+  // gets an empty list here even though the activity itself now resolves.
+  // See the PR notes for why and what closing it would take.
+  const [{ data: rows }, { data: participantRows }] = await Promise.all([
+    (
+      supabase.rpc as unknown as (
+        fn: "get_activity_for_viewer",
+        args: { p_activity_id: string },
+      ) => PromiseLike<{ data: ActivityCoreRow[] | null }>
+    )("get_activity_for_viewer", { p_activity_id: id }),
+    supabase
+      .from("participants")
+      .select(
+        "id, user_id, profiles ( full_name, avatar_url, instagram_handle, username )",
       )
-    `,
-    )
-    .eq("id", id)
-    .single();
+      .eq("activity_id", id),
+  ]);
 
+  const data = rows?.[0] ?? null;
   if (!data) return null;
 
   // Private means unlisted, not invite-only: any authenticated user who has the
@@ -202,6 +240,12 @@ export async function getActivityById(
   // row as not found.
   if (!data.creator_id) return null;
 
+  // hosted_count now reflects what this specific viewer is allowed to see
+  // under the activities policy, not the host's true total: a viewer who is
+  // neither the host nor a participant on the host's OTHER private
+  // activities no longer sees those counted. Deliberate side effect of
+  // closing the visibility gap, not a bug — a public tally that included
+  // hidden private activities would itself leak their existence.
   const [{ data: host }, { count: hostedCount }] = await Promise.all([
     supabase
       .from("profiles")
@@ -221,7 +265,7 @@ export async function getActivityById(
   return {
     ...data,
     visibility: toVisibility(data.visibility),
-    participants: data.participants.map((p) => ({
+    participants: (participantRows ?? []).map((p) => ({
       ...p,
       profiles: normalizeRelation<DetailParticipantProfile>(p.profiles),
     })),

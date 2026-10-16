@@ -68,18 +68,31 @@ function formatInviteDate(startsAt: string): string {
   return `${datePart}, ${time}`;
 }
 
+// "Any authenticated user may still generate the card" (see the visibility
+// check below) means this route has to resolve a private activity for a
+// signed-in viewer who is neither its creator nor a participant yet — the
+// activities table policy no longer allows that via a plain select (see
+// restrict_activities_visibility), so this goes through the same
+// get_activity_for_viewer() RPC as getActivityById. Not yet in the generated
+// types (src/types/supabase.ts hasn't been regenerated since that migration
+// landed); same temporary cast, same removal plan once it has been.
 async function getActivityCardData(
   id: string,
 ): Promise<ActivityCardData | null> {
   const supabase = await createClient();
 
-  const { data: activity, error } = await supabase
-    .from("activities")
-    .select("sport, starts_at, visibility")
-    .eq("id", id)
-    .maybeSingle();
+  const { data, error } = await (
+    supabase.rpc as unknown as (
+      fn: "get_activity_for_viewer",
+      args: { p_activity_id: string },
+    ) => PromiseLike<{
+      data: { sport: string; starts_at: string; visibility: string }[] | null;
+      error: { message: string } | null;
+    }>
+  )("get_activity_for_viewer", { p_activity_id: id });
 
   if (error) throw error;
+  const activity = data?.[0];
   if (!activity) return null;
 
   return activity;

@@ -22,19 +22,51 @@ import {
 
 type DB = SupabaseClient<Database>;
 
+// Goes through get_activity_for_viewer(), not a plain select: the activities
+// table policy now only allows a plain select to the creator and current
+// participants (see restrict_activities_visibility), but notifyParticipantLeft
+// calls this with the LEAVING user's client after their participant row is
+// already deleted — for a private activity they are neither creator nor
+// still a participant, so a plain select would come back empty and the
+// host's "someone left" email would silently never send. The RPC is keyed on
+// the id alone, which this caller already has. Not yet in the generated
+// types (src/types/supabase.ts hasn't been regenerated since that migration
+// landed); same temporary cast as elsewhere, same removal plan once it has.
 async function loadActivity(
   supabase: DB,
   activityId: string,
 ): Promise<(ActivityInfo & { creatorId: string }) | null> {
-  const { data } = await supabase
-    .from("activities")
-    .select("id, title, starts_at, creator_id, max_participants")
-    .eq("id", activityId)
-    .single();
+  const { data: rows } = await (
+    supabase.rpc as unknown as (
+      fn: "get_activity_for_viewer",
+      args: { p_activity_id: string },
+    ) => PromiseLike<{
+      data:
+        | {
+            id: string;
+            title: string;
+            starts_at: string;
+            creator_id: string;
+            max_participants: number | null;
+          }[]
+        | null;
+    }>
+  )("get_activity_for_viewer", { p_activity_id: activityId });
+  const data = rows?.[0];
   if (!data || !data.creator_id) return null;
 
   // Live count so the join/leave notices show the same "N spots left" as the
   // app, as of the moment the notice is sent.
+  //
+  // KNOWN GAP for a private activity specifically, same caller: this is
+  // still a plain select, still subject to participants' own restrictive
+  // policy (restrict_participants_visibility), which has no id-is-the-
+  // credential exception the way get_activity_for_viewer does. For
+  // notifyParticipantLeft the caller just stopped being a participant, so on
+  // a private activity this count likely comes back 0, undercounting the
+  // notice. Left as-is pending a decision on a participants-side equivalent
+  // of get_activity_for_viewer (see the PR notes) rather than worked around
+  // here on its own.
   const { count } = await supabase
     .from("participants")
     .select("id", { count: "exact", head: true })
