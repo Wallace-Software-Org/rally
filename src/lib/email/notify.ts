@@ -56,21 +56,20 @@ async function loadActivity(
   if (!data || !data.creator_id) return null;
 
   // Live count so the join/leave notices show the same "N spots left" as the
-  // app, as of the moment the notice is sent.
-  //
-  // KNOWN GAP for a private activity specifically, same caller: this is
-  // still a plain select, still subject to participants' own restrictive
-  // policy (restrict_participants_visibility), which has no id-is-the-
-  // credential exception the way get_activity_for_viewer does. For
-  // notifyParticipantLeft the caller just stopped being a participant, so on
-  // a private activity this count likely comes back 0, undercounting the
-  // notice. Left as-is pending a decision on a participants-side equivalent
-  // of get_activity_for_viewer (see the PR notes) rather than worked around
-  // here on its own.
-  const { count } = await supabase
-    .from("participants")
-    .select("id", { count: "exact", head: true })
-    .eq("activity_id", activityId);
+  // app, as of the moment the notice is sent. Goes through
+  // get_participants_for_viewer(), not a plain select, for the same reason
+  // loadActivity above does: notifyParticipantLeft calls this with the
+  // leaving user's client after their participant row is already deleted,
+  // so on a private activity a plain select would see 0 (participants' own
+  // policy has no id-is-the-credential exception the way activities does),
+  // undercounting the notice.
+  const { data: participantRows } = await (
+    supabase.rpc as unknown as (
+      fn: "get_participants_for_viewer",
+      args: { p_activity_id: string },
+    ) => PromiseLike<{ data: { id: string; user_id: string }[] | null }>
+  )("get_participants_for_viewer", { p_activity_id: activityId });
+  const count = participantRows?.length ?? 0;
 
   return {
     id: data.id,

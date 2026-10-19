@@ -203,13 +203,15 @@ export async function getActivityById(
   // get_activity_for_viewer() is keyed on the id alone — the application,
   // not the function, still decides what an anonymous caller sees with it.
   //
-  // participants is still a plain select: its own policy
-  // (restrict_participants_visibility) only admits the creator, current
-  // participants, or anyone viewing a public activity — there is no
-  // id-is-the-credential exception for participants the way there is for
-  // activities, so an invite-link viewer who hasn't joined yet currently
-  // gets an empty list here even though the activity itself now resolves.
-  // See the PR notes for why and what closing it would take.
+  // participants goes through the same kind of function for the same
+  // reason: its own policy (restrict_participants_visibility) only admits
+  // the creator, current participants, or anyone viewing a public activity,
+  // with no id-is-the-credential exception of its own, so an invite-link
+  // viewer who hasn't joined yet would otherwise see the activity but an
+  // empty participant list. get_participants_for_viewer() returns only
+  // (id, user_id), not an embedded profiles relation — PostgREST's relation
+  // embedding isn't dependable through an RPC call the way it is on a plain
+  // table select, so profiles are fetched separately below instead.
   const [{ data: rows }, { data: participantRows }] = await Promise.all([
     (
       supabase.rpc as unknown as (
@@ -217,16 +219,33 @@ export async function getActivityById(
         args: { p_activity_id: string },
       ) => PromiseLike<{ data: ActivityCoreRow[] | null }>
     )("get_activity_for_viewer", { p_activity_id: id }),
-    supabase
-      .from("participants")
-      .select(
-        "id, user_id, profiles ( full_name, avatar_url, instagram_handle, username )",
-      )
-      .eq("activity_id", id),
+    (
+      supabase.rpc as unknown as (
+        fn: "get_participants_for_viewer",
+        args: { p_activity_id: string },
+      ) => PromiseLike<{ data: { id: string; user_id: string }[] | null }>
+    )("get_participants_for_viewer", { p_activity_id: id }),
   ]);
 
   const data = rows?.[0] ?? null;
   if (!data) return null;
+
+  // profiles' own policy is unrestricted for these columns (only lat/lng are
+  // column-revoked, see restrict_profile_coordinates), so a plain bulk
+  // select works regardless of who the viewer is.
+  const participantUserIds = [
+    ...new Set((participantRows ?? []).map((p) => p.user_id)),
+  ];
+  const participantProfiles: ({ id: string } & DetailParticipantProfile)[] =
+    participantUserIds.length > 0
+      ? ((
+          await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url, instagram_handle, username")
+            .in("id", participantUserIds)
+        ).data ?? [])
+      : [];
+  const profileById = new Map(participantProfiles.map((p) => [p.id, p]));
 
   // Private means unlisted, not invite-only: any authenticated user who has the
   // direct link can view and join. Only logged-out visitors hit the gate, so
@@ -266,8 +285,9 @@ export async function getActivityById(
     ...data,
     visibility: toVisibility(data.visibility),
     participants: (participantRows ?? []).map((p) => ({
-      ...p,
-      profiles: normalizeRelation<DetailParticipantProfile>(p.profiles),
+      id: p.id,
+      user_id: p.user_id,
+      profiles: profileById.get(p.user_id) ?? null,
     })),
     host,
     hosted_count: hostedCount ?? 0,
