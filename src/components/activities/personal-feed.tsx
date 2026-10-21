@@ -182,12 +182,18 @@ export default function PersonalFeed({
     return !error;
   }
 
+  // A section-level empty line, not a page-level empty state: it sits under the
+  // host strip in an otherwise-populated page, so it aligns to the same content
+  // edge as the strip above and takes the vertical offset the first activity
+  // card would have. Deliberately not the shared EmptyState, which is the
+  // centred, generously-padded treatment for a whole empty screen; this matches
+  // the "Nothing coming up." line in the profile hosting/attending sections.
+  //
+  // The two layout trees differ in where that offset comes from: below xl the
+  // parent is px-4 with no vertical padding (the card grid supplies its own
+  // py-4), while at xl the parent's px-6 py-4 already covers both branches.
   const emptyPanel = (
-    <div className="py-16 flex items-center justify-center">
-      <div className="w-full rounded-xl bg-brand-surface border border-brand-border px-6 py-16 text-center text-sm text-brand-muted">
-        {emptyMessage}
-      </div>
-    </div>
+    <p className="py-4 xl:py-0 text-sm text-brand-muted">{emptyMessage}</p>
   );
 
   return (
