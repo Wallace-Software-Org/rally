@@ -11,8 +11,18 @@ async function loadFonts() {
     readFile(join(process.cwd(), "public/fonts/Quicksand-Medium.ttf")),
   ]);
   return [
-    { name: "Quicksand", data: bold.buffer as ArrayBuffer, weight: 700 as const, style: "normal" as const },
-    { name: "Quicksand", data: medium.buffer as ArrayBuffer, weight: 500 as const, style: "normal" as const },
+    {
+      name: "Quicksand",
+      data: bold.buffer as ArrayBuffer,
+      weight: 700 as const,
+      style: "normal" as const,
+    },
+    {
+      name: "Quicksand",
+      data: medium.buffer as ArrayBuffer,
+      weight: 500 as const,
+      style: "normal" as const,
+    },
   ];
 }
 
@@ -33,7 +43,10 @@ const CONTENT_WIDTH = WIDTH - 160; // 80px padding each side
 // cap is 220px (short words). Floor stays at 72px.
 function getHeadlineFontSize(phrase: string): number {
   const maxWordLen = Math.max(...phrase.split(" ").map((w) => w.length));
-  return Math.min(220, Math.max(72, Math.floor(CONTENT_WIDTH / (maxWordLen * 0.62))));
+  return Math.min(
+    220,
+    Math.max(72, Math.floor(CONTENT_WIDTH / (maxWordLen * 0.62))),
+  );
 }
 
 type ActivityCardData = {
@@ -74,8 +87,8 @@ function formatInviteDate(startsAt: string): string {
 // activities table policy no longer allows that via a plain select (see
 // restrict_activities_visibility), so this goes through the same
 // get_activity_for_viewer() RPC as getActivityById. Not yet in the generated
-// types (that migration hasn't been applied); same temporary cast, same
-// removal plan once it has been and types are regenerated.
+// types (src/types/supabase.ts hasn't been regenerated since that migration
+// landed); same temporary cast, same removal plan once it has been.
 async function getActivityCardData(
   id: string,
 ): Promise<ActivityCardData | null> {
@@ -132,97 +145,95 @@ export async function GET(
     const fonts = await loadFonts();
 
     return new ImageResponse(
-      (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: BG,
+          padding: 80,
+          fontFamily: "Quicksand",
+        }}
+      >
+        {/* Headline + date/time — left-aligned, vertically centered */}
         <div
           style={{
-            width: "100%",
-            height: "100%",
+            flex: 1,
             display: "flex",
             flexDirection: "column",
-            backgroundColor: BG,
-            padding: 80,
-            fontFamily: "Quicksand",
+            justifyContent: "center",
           }}
         >
-          {/* Headline + date/time — left-aligned, vertically centered */}
           <div
             style={{
-              flex: 1,
               display: "flex",
               flexDirection: "column",
-              justifyContent: "center",
+              fontSize: headlineFontSize,
+              fontWeight: 700,
+              color: CREAM,
+              lineHeight: 1.05,
+              letterSpacing: -1,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                fontSize: headlineFontSize,
-                fontWeight: 700,
-                color: CREAM,
-                lineHeight: 1.05,
-                letterSpacing: -1,
-              }}
-            >
-              {phrase.split(" ").map((word, i) => (
-                <div key={i} style={{ display: "flex" }}>
-                  {word.charAt(0).toUpperCase() + word.slice(1)}
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                marginTop: 48,
-                fontSize: 52,
-                fontWeight: 500,
-                color: CREAM,
-                opacity: 0.6,
-                letterSpacing: 0,
-                lineHeight: 1,
-              }}
-            >
-              {dateTime}
-            </div>
+            {phrase.split(" ").map((word, i) => (
+              <div key={i} style={{ display: "flex" }}>
+                {word.charAt(0).toUpperCase() + word.slice(1)}
+              </div>
+            ))}
           </div>
+          <div
+            style={{
+              display: "flex",
+              marginTop: 48,
+              fontSize: 52,
+              fontWeight: 500,
+              color: CREAM,
+              opacity: 0.6,
+              letterSpacing: 0,
+              lineHeight: 1,
+            }}
+          >
+            {dateTime}
+          </div>
+        </div>
 
-          {/* Rally wordmark — bottom right, three-ring mark. The card
+        {/* Rally wordmark — bottom right, three-ring mark. The card
               background is brand teal, so the bands are inverted from the
               standard mark (cream outer, teal middle, cream centre) instead
               of teal outer, or the outer band would disappear into the card. */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg
+            width={52}
+            height={52}
+            viewBox="0 0 100 100"
+            style={{ marginRight: 20, flexShrink: 0, opacity: 0.6 }}
+          >
+            <circle cx="50" cy="50" r="50" fill={CREAM} />
+            <circle cx="50" cy="50" r="38.5" fill={BG} />
+            <circle cx="50" cy="50" r="27" fill={CREAM} />
+          </svg>
           <div
             style={{
               display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              flexShrink: 0,
+              fontSize: 96,
+              fontWeight: 700,
+              color: CREAM,
+              letterSpacing: -3,
+              lineHeight: 1,
             }}
           >
-            <svg
-              width={52}
-              height={52}
-              viewBox="0 0 100 100"
-              style={{ marginRight: 20, flexShrink: 0, opacity: 0.6 }}
-            >
-              <circle cx="50" cy="50" r="50" fill={CREAM} />
-              <circle cx="50" cy="50" r="38.5" fill={BG} />
-              <circle cx="50" cy="50" r="27" fill={CREAM} />
-            </svg>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 96,
-                fontWeight: 700,
-                color: CREAM,
-                letterSpacing: -3,
-                lineHeight: 1,
-              }}
-            >
-              Rally
-            </div>
+            Rally
           </div>
         </div>
-      ),
+      </div>,
       {
         width: WIDTH,
         height: HEIGHT,

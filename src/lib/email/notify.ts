@@ -30,8 +30,8 @@ type DB = SupabaseClient<Database>;
 // still a participant, so a plain select would come back empty and the
 // host's "someone left" email would silently never send. The RPC is keyed on
 // the id alone, which this caller already has. Not yet in the generated
-// types (that migration hasn't been applied); same temporary cast as
-// elsewhere, same removal plan once it has been and types are regenerated.
+// types (src/types/supabase.ts hasn't been regenerated since that migration
+// landed); same temporary cast as elsewhere, same removal plan once it has.
 async function loadActivity(
   supabase: DB,
   activityId: string,
@@ -56,11 +56,20 @@ async function loadActivity(
   if (!data || !data.creator_id) return null;
 
   // Live count so the join/leave notices show the same "N spots left" as the
-  // app, as of the moment the notice is sent.
-  const { count } = await supabase
-    .from("participants")
-    .select("id", { count: "exact", head: true })
-    .eq("activity_id", activityId);
+  // app, as of the moment the notice is sent. Goes through
+  // get_participants_for_viewer(), not a plain select, for the same reason
+  // loadActivity above does: notifyParticipantLeft calls this with the
+  // leaving user's client after their participant row is already deleted,
+  // so on a private activity a plain select would see 0 (participants' own
+  // policy has no id-is-the-credential exception the way activities does),
+  // undercounting the notice.
+  const { data: participantRows } = await (
+    supabase.rpc as unknown as (
+      fn: "get_participants_for_viewer",
+      args: { p_activity_id: string },
+    ) => PromiseLike<{ data: { id: string; user_id: string }[] | null }>
+  )("get_participants_for_viewer", { p_activity_id: activityId });
+  const count = participantRows?.length ?? 0;
 
   return {
     id: data.id,

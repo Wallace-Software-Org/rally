@@ -36,7 +36,7 @@ import {
   cancelActivity,
   repeatActivity,
 } from "@/lib/actions/activities";
-import { getActivities } from "@/lib/queries/activities";
+import { getActivities, getActivityById } from "@/lib/queries/activities";
 import { WAIVERS } from "@/lib/waivers";
 import { fakeWaiverTable, type FakeWaiverRow } from "@/test/fake-waiver-table";
 
@@ -504,5 +504,180 @@ describe("getActivities feed query", () => {
     const res = await getActivities();
     expect(res).toEqual([]);
     expect(eqCalls).toContainEqual(["status", "open"]);
+  });
+});
+
+// Regression coverage for the lost-code incident: getActivityById must call
+// get_activity_for_viewer() and get_participants_for_viewer() via RPC, not
+// plain selects against activities/participants (the new policies block
+// those for anyone but the creator/a current participant). Exercises the
+// real call shape through the mocked Supabase client — not a module-level
+// mock of getActivityById itself, which would hide exactly this class of bug
+// (the activity-page integration tests mock getActivityById entirely, which
+// is why nothing caught the regression this follows from).
+describe("getActivityById (RLS-era call shape)", () => {
+  const coreRow = {
+    id: "a1",
+    title: "Sunset run",
+    sport: "running",
+    description: "Easy pace along the canal",
+    external_link: null,
+    location_name: "Papago Park",
+    starts_at: "2026-08-01T17:00:00.000Z",
+    max_participants: 8,
+    skill_level: "Beginner",
+    lat: 33.45,
+    lng: -111.95,
+    status: "open",
+    creator_id: "host-1",
+    visibility: "private",
+  };
+
+  const hostProfileRow = {
+    id: "host-1",
+    full_name: "Casey Host",
+    avatar_url: null,
+    instagram_handle: null,
+    username: "caseyhost",
+  };
+
+  const viewerProfileRow = {
+    id: "viewer-1",
+    full_name: "Jordan Viewer",
+    avatar_url: null,
+    instagram_handle: null,
+    username: "jordanviewer",
+  };
+
+  // Wires mockRpc to dispatch on function name (get_activity_for_viewer vs.
+  // get_participants_for_viewer — getActivityById calls both) and mockFrom
+  // to serve the two profiles reads (host lookup by id, participant profiles
+  // bulk lookup by .in()) and the hostedCount tally, so the only thing that
+  // varies per test is what get_participants_for_viewer hands back — the
+  // thing restrict_participants_visibility's policy used to block entirely
+  // for an invite-link viewer before get_participants_for_viewer closed it.
+  function serve({
+    activityRpcRows = [coreRow],
+    participantRpcRows = [] as { id: string; user_id: string }[],
+    participantProfileRows = [] as (typeof hostProfileRow)[],
+    hostedCount = 1,
+  } = {}) {
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === "get_activity_for_viewer") {
+        return Promise.resolve({ data: activityRpcRows });
+      }
+      if (fn === "get_participants_for_viewer") {
+        return Promise.resolve({ data: participantRpcRows });
+      }
+      throw new Error(`unexpected rpc ${fn}`);
+    });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "profiles") {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: hostProfileRow }),
+            }),
+            in: () => Promise.resolve({ data: participantProfileRows }),
+          }),
+        };
+      }
+      if (table === "activities") {
+        return { select: () => ({ eq: () => Promise.resolve({ count: hostedCount }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    });
+  }
+
+  it("calls get_activity_for_viewer and get_participants_for_viewer, not plain selects", async () => {
+    serve({
+      participantRpcRows: [{ id: "p1", user_id: "host-1" }],
+      participantProfileRows: [hostProfileRow],
+    });
+
+    await getActivityById("a1", "host-1");
+
+    expect(mockRpc).toHaveBeenCalledWith("get_activity_for_viewer", {
+      p_activity_id: "a1",
+    });
+    expect(mockRpc).toHaveBeenCalledWith("get_participants_for_viewer", {
+      p_activity_id: "a1",
+    });
+  });
+
+  it("a participant sees their own private activity, not the private sentinel", async () => {
+    serve({
+      participantRpcRows: [
+        { id: "p1", user_id: "host-1" },
+        { id: "p2", user_id: "viewer-1" },
+      ],
+      participantProfileRows: [hostProfileRow, viewerProfileRow],
+    });
+
+    const result = await getActivityById("a1", "viewer-1");
+
+    expect(result).not.toBe("private");
+    expect(result).not.toBeNull();
+    expect((result as { visibility: string }).visibility).toBe("private");
+    expect((result as { participants: unknown[] }).participants).toHaveLength(2);
+  });
+
+  it("the creator sees their own private activity", async () => {
+    serve({
+      participantRpcRows: [{ id: "p1", user_id: "host-1" }],
+      participantProfileRows: [hostProfileRow],
+    });
+
+    const result = await getActivityById("a1", "host-1");
+
+    expect(result).not.toBe("private");
+    expect((result as { creator_id: string }).creator_id).toBe("host-1");
+  });
+
+  it("an anonymous requester still gets the private sentinel", async () => {
+    serve({
+      participantRpcRows: [{ id: "p1", user_id: "host-1" }],
+      participantProfileRows: [hostProfileRow],
+    });
+
+    const result = await getActivityById("a1", null);
+
+    expect(result).toBe("private");
+  });
+
+  it("a non-existent activity resolves to null, not the private sentinel", async () => {
+    serve({ activityRpcRows: [] });
+
+    const result = await getActivityById("missing", "viewer-1");
+
+    expect(result).toBeNull();
+  });
+
+  // get_participants_for_viewer() closes the gap the previous version of
+  // this test pinned: an invite-link viewer who is neither creator nor
+  // participant now sees the real participant list, not an empty one, for
+  // the same reason get_activity_for_viewer() already let them see the
+  // activity itself — both are keyed on the id alone, no auth.uid() check,
+  // knowing the id is the credential either way.
+  it("an invite-link viewer who has not joined sees the activity and the real participant list", async () => {
+    serve({
+      participantRpcRows: [
+        { id: "p1", user_id: "host-1" },
+        { id: "p2", user_id: "viewer-1" },
+      ],
+      participantProfileRows: [hostProfileRow, viewerProfileRow],
+    });
+
+    const result = await getActivityById("a1", "uninvolved-viewer");
+
+    expect(result).not.toBe("private");
+    expect(result).not.toBeNull();
+    const participants = (result as { participants: { user_id: string }[] })
+      .participants;
+    expect(participants).toHaveLength(2);
+    expect(participants.map((p) => p.user_id).sort()).toEqual([
+      "host-1",
+      "viewer-1",
+    ]);
   });
 });
