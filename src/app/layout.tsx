@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import { getSiteUrl } from "@/lib/utils/site-url";
+import AnalyticsBeacon from "@/components/ui/analytics";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -55,6 +56,7 @@ export default function RootLayout({
           speed={200}
         />
         {children}
+        <AnalyticsBeacon />
       </body>
     </html>
   );
