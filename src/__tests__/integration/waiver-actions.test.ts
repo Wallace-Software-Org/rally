@@ -96,10 +96,12 @@ describe("acceptWaiver", () => {
     const waiver = WAIVERS.participant;
     const original = waiver.version;
     try {
-      waiver.version = 2;
+      // Deliberately not the current version, or this would pass whether or
+      // not the action reads waivers.ts.
+      waiver.version = 99;
       await acceptWaiver("participant", "WP");
       expect(upsert.mock.calls[0][0]).toMatchObject({
-        version: 2,
+        version: 99,
         waiver_text: waiver.text,
       });
     } finally {

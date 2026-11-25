@@ -61,14 +61,16 @@ function validActivity(over: Record<string, unknown> = {}) {
   };
 }
 
-// Serves waiver_acceptances from a fake table holding the given acceptances (all
-// at version 1, for the signed-in user). Returns the table so a test can inspect
-// which waiver types were queried.
+// Serves waiver_acceptances from a fake table holding the given acceptances (at
+// each waiver's current version, for the signed-in user). Returns the table so a
+// test can inspect which waiver types were queried. Reads the version from
+// waivers.ts rather than hardcoding it, so a version bump does not silently turn
+// every waiver-gated test below into a "waiver required" failure.
 function withAcceptedWaivers(...types: ("participant" | "host")[]) {
   const rows: FakeWaiverRow[] = types.map((waiver_type) => ({
     user_id: "host-1",
     waiver_type,
-    version: 1,
+    version: WAIVERS[waiver_type].version,
   }));
   const waivers = fakeWaiverTable(rows);
   mockFrom.mockImplementation((table: string) => {
@@ -220,8 +222,9 @@ describe("joinActivity participant waiver gate", () => {
     const waiver = WAIVERS.participant;
     const original = waiver.version;
     try {
-      withAcceptedWaivers("participant"); // accepted at version 1
-      waiver.version = 2;
+      // Seeded at the current version, then the current version moves past it.
+      withAcceptedWaivers("participant");
+      waiver.version = original + 1;
       const res = await joinActivity("a1");
       expect(res.waiverRequired).toBe(true);
       expect(mockRpc).not.toHaveBeenCalled();
@@ -270,7 +273,11 @@ describe("createActivity host waiver gate", () => {
     const writes = mockCreateWrites();
     serveTables(
       fakeWaiverTable([
-        { user_id: "host-1", waiver_type: "participant", version: 1 },
+        {
+          user_id: "host-1",
+          waiver_type: "participant",
+          version: WAIVERS.participant.version,
+        },
       ]),
       writes,
     );
@@ -286,7 +293,7 @@ describe("createActivity host waiver gate", () => {
     // still be inserted, and nothing may ask about the participant waiver.
     const writes = mockCreateWrites();
     const waivers = fakeWaiverTable([
-      { user_id: "host-1", waiver_type: "host", version: 1 },
+      { user_id: "host-1", waiver_type: "host", version: WAIVERS.host.version },
     ]);
     serveTables(waivers, writes);
 
@@ -313,11 +320,11 @@ describe("createActivity host waiver gate", () => {
       const writes = mockCreateWrites();
       serveTables(
         fakeWaiverTable([
-          { user_id: "host-1", waiver_type: "host", version: 1 },
+          { user_id: "host-1", waiver_type: "host", version: WAIVERS.host.version },
         ]),
         writes,
       );
-      waiver.version = 2;
+      waiver.version = original + 1;
 
       const res = await createActivity(validActivity());
 

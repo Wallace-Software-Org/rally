@@ -13,11 +13,11 @@ import { hasAcceptedWaiver } from "@/lib/queries/waivers";
 import { fakeWaiverTable } from "@/test/fake-waiver-table";
 
 describe("waiver content", () => {
-  it("defines both waivers at version 1 with the fields the UI needs", () => {
+  it("defines both waivers at version 2 with the fields the UI needs", () => {
     expect([...WAIVER_TYPES].sort()).toEqual(["host", "participant"]);
     for (const type of WAIVER_TYPES) {
       const waiver = WAIVERS[type];
-      expect(waiver.version).toBe(1);
+      expect(waiver.version).toBe(2);
       expect(waiver.title.length).toBeGreaterThan(0);
       expect(waiver.text.length).toBeGreaterThan(0);
       expect(waiver.checkboxLabel.length).toBeGreaterThan(0);
@@ -56,11 +56,19 @@ describe("waiver content", () => {
     }
   });
 
-  it("names Rally as the party, not an LLC", () => {
-    expect(WAIVERS.participant.text).toContain("Rally");
-    expect(WAIVERS.host.text).toContain("Rally");
-    expect(WAIVERS.participant.text).not.toMatch(/LLC/i);
-    expect(WAIVERS.host.text).not.toMatch(/LLC/i);
+  // Each document names the legal entity once, on first mention, and uses the
+  // short name everywhere after. "doing business as" and "dba" are deliberately
+  // absent: Rally is the entity's product name, not a registered trade name.
+  it("names the legal entity on first mention and Rally thereafter", () => {
+    const firstMention = 'Saguaro Crossing LLC ("Rally")';
+    for (const type of WAIVER_TYPES) {
+      const { text } = WAIVERS[type];
+      expect(text.split(firstMention).length - 1).toBe(1);
+      // Later references are the short name, so "Rally" outnumbers the one
+      // fully qualified mention.
+      expect(text.split("Rally").length - 1).toBeGreaterThan(1);
+      expect(text).not.toMatch(/doing business as|\bdba\b/i);
+    }
   });
 
   it("recognizes only the two waiver types", () => {
@@ -118,23 +126,25 @@ describe("hasAcceptedWaiver", () => {
 
   it("is true when the current version was accepted", async () => {
     const supabase = client([
-      { user_id: "u1", waiver_type: "participant", version: 1 },
+      { user_id: "u1", waiver_type: "participant", version: 2 },
     ]);
     expect(await hasAcceptedWaiver(supabase, "u1", "participant")).toBe(true);
   });
 
+  // Each row below is at the current version, so the only reason these come
+  // back false is the user or the waiver type, not a stale acceptance.
   it("is false with no acceptance, another user's, or another type's", async () => {
     expect(await hasAcceptedWaiver(client([]), "u1", "participant")).toBe(false);
     expect(
       await hasAcceptedWaiver(
-        client([{ user_id: "u2", waiver_type: "participant", version: 1 }]),
+        client([{ user_id: "u2", waiver_type: "participant", version: 2 }]),
         "u1",
         "participant",
       ),
     ).toBe(false);
     expect(
       await hasAcceptedWaiver(
-        client([{ user_id: "u1", waiver_type: "host", version: 1 }]),
+        client([{ user_id: "u1", waiver_type: "host", version: 2 }]),
         "u1",
         "participant",
       ),
